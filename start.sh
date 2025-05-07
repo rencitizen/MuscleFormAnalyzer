@@ -1,1 +1,2 @@
-gunicorn --bind 0.0.0.0:5000 simple_app:app
+#!/bin/bash
+gunicorn --bind 0.0.0.0:5000 enhanced_app:app
