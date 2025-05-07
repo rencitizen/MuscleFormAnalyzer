@@ -1,2 +1,1 @@
-#!/bin/bash
-gunicorn --bind 0.0.0.0:5000 --reuse-port --reload wsgi_adapter:app
+gunicorn --bind 0.0.0.0:5000 simple_app:app
