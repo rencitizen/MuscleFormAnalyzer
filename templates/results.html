@@ -56,8 +56,9 @@
           </div>
           <div class="card-body">
             <div class="video-container">
-              <video id="analysis-video" class="video-player" controls>
-                <source src="{{ url_for('static', filename='videos/sample.mp4') }}" type="video/mp4">
+              <video id="analysis-video" class="video-player" controls autoplay muted>
+                <!-- Custom demo video fallback if no uploaded video available -->
+                <source src="https://assets.mixkit.co/videos/preview/mixkit-exercising-in-the-gym-lifting-a-barbell-43074-large.mp4" type="video/mp4">
                 Your browser does not support the video tag.
               </video>
               <canvas class="skeleton-overlay"></canvas>
@@ -246,6 +247,21 @@
       const canvas = document.querySelector('.skeleton-overlay');
       
       if (video && canvas) {
+        // Make sure video actually loads and plays
+        video.addEventListener('error', function(e) {
+          console.error('Video error:', e);
+        });
+        
+        video.addEventListener('loadeddata', function() {
+          console.log('Video loaded successfully');
+        });
+        
+        // Try to trigger play manually after a short delay
+        setTimeout(() => {
+          video.play().catch(e => console.error('Could not play video:', e));
+        }, 1000);
+        
+        // Initialize the skeleton overlay
         const overlay = new SkeletonOverlay(video, canvas);
       }
     });
