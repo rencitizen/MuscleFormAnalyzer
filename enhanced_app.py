@@ -94,16 +94,16 @@ def results():
     # Generate simulated results
     overall_score = random.randint(60, 95)
     
-    # Determine overall assessment based on score
+    # 点数に基づいて全体評価を決定（日本語）
     if overall_score >= 85:
-        overall_assessment = "Excellent Form!"
-        overall_feedback = "Your form is excellent! You're maintaining proper technique throughout most of the movement."
+        overall_assessment = "素晴らしいフォーム！"
+        overall_feedback = "フォームは優れています！動作のほとんどで適切な技術を維持しています。"
     elif overall_score >= 70:
-        overall_assessment = "Good Form with Minor Issues"
-        overall_feedback = "Your form is good overall, with a few areas that need attention."
+        overall_assessment = "改善の余地があるフォーム"
+        overall_feedback = "全体的には良好ですが、いくつかの注意が必要な点があります。"
     else:
-        overall_assessment = "Form Needs Improvement"
-        overall_feedback = "Your form needs improvement in several key areas. Focus on the recommendations below."
+        overall_assessment = "フォームの改善が必要"
+        overall_feedback = "いくつかの重要な点でフォームの改善が必要です。以下の推奨事項に注目してください。"
     
     return render_template(
         'results.html',
