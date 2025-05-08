@@ -43,15 +43,19 @@ def index():
 @app.route('/analyze', methods=['POST'])
 def analyze():
     """Process video upload and simulate analysis"""
+    # ファイルがアップロードされていない場合はメインページにリダイレクト
     if 'file' not in request.files:
         return redirect(url_for('index'))
     
     file = request.files['file']
-    if file.filename == '':
+    
+    # ファイル名が空の場合はメインページにリダイレクト
+    if not file or file.filename == '':
         return redirect(url_for('index'))
     
+    # MP4形式かどうかをチェック
     if not file.filename.lower().endswith(('.mp4')):
-        return jsonify({'error': 'Only MP4 files are supported'}), 400
+        return jsonify({'error': 'MP4形式のファイルのみサポートしています'}), 400
     
     # Get exercise type
     exercise_type = request.form.get('exercise_type', 'squat')

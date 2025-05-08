@@ -111,69 +111,56 @@
       <div class="card-body">
         <h3 class="mb-3">検出された問題点</h3>
         
+        {% for feedback in specific_feedback %}
         <div class="feedback-card" data-expanded="false">
           <div class="feedback-header">
             <div class="d-flex align-items-center">
-              <div class="feedback-icon error">
+              <div class="feedback-icon {% if '適切' in feedback or '良好' in feedback or '安定' in feedback %}success{% elif '不十分' in feedback %}warning{% else %}error{% endif %}">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
-                  <path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0zm3.5 10.5a.5.5 0 0 1-.708.708L8 8.707l-2.793 2.793a.5.5 0 0 1-.707-.708L7.293 8 4.5 5.207a.5.5 0 0 1 .707-.708L8 7.293l2.793-2.793a.5.5 0 0 1 .708.707L8.708 8l2.793 2.793z"/>
-                </svg>
-              </div>
-              <h4 class="feedback-title">膝のアライメント</h4>
-            </div>
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="feedback-chevron" viewBox="0 0 16 16">
-              <path d="M7.646 4.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1-.708.708L8 5.707l-5.646 5.647a.5.5 0 0 1-.708-.708l6-6z"/>
-            </svg>
-          </div>
-          <div class="feedback-body">
-            <p>スクワット中に膝が足先より前に出過ぎており、膝関節にストレスがかかっています。</p>
-            <p><strong>推奨事項：</strong> 膝を足先と同じ方向に向け、スクワットの最下部でも膝が足先を越えないようにしましょう。</p>
-            <p><strong>問題のあるフレーム：</strong> 15-20, 75-80</p>
-          </div>
-        </div>
-        
-        <div class="feedback-card" data-expanded="false">
-          <div class="feedback-header">
-            <div class="d-flex align-items-center">
-              <div class="feedback-icon warning">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
-                  <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
-                  <path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0zM7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 4.995z"/>
-                </svg>
-              </div>
-              <h4 class="feedback-title">股関節の深さ</h4>
-            </div>
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="feedback-chevron" viewBox="0 0 16 16">
-              <path d="M7.646 4.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1-.708.708L8 5.707l-5.646 5.647a.5.5 0 0 1-.708-.708l6-6z"/>
-            </svg>
-          </div>
-          <div class="feedback-body">
-            <p>スクワットの深さが十分ではありません。お尻と太もも裏の筋肉を十分に使うためには、より深く腰を落とす必要があります。</p>
-            <p><strong>推奨事項：</strong> 太ももが地面と平行かそれ以下になるよう、モビリティを向上させましょう。</p>
-            <p><strong>問題のあるフレーム：</strong> 45-50</p>
-          </div>
-        </div>
-        
-        <div class="feedback-card" data-expanded="false">
-          <div class="feedback-header">
-            <div class="d-flex align-items-center">
-              <div class="feedback-icon success">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                  {% if '適切' in feedback or '良好' in feedback or '安定' in feedback %}
+                  <!-- 成功アイコン -->
                   <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
                   <path d="M10.97 4.97a.235.235 0 0 0-.02.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-1.071-1.05z"/>
+                  {% elif '不十分' in feedback %}
+                  <!-- 警告アイコン -->
+                  <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                  <path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0zM7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 4.995z"/>
+                  {% else %}
+                  <!-- エラーアイコン -->
+                  <path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0zm3.5 10.5a.5.5 0 0 1-.708.708L8 8.707l-2.793 2.793a.5.5 0 0 1-.707-.708L7.293 8 4.5 5.207a.5.5 0 0 1 .707-.708L8 7.293l2.793-2.793a.5.5 0 0 1 .708.707L8.708 8l2.793 2.793z"/>
+                  {% endif %}
                 </svg>
               </div>
-              <h4 class="feedback-title">背中のニュートラルポジション</h4>
+              <h4 class="feedback-title">
+                {% if exercise_type == 'squat' %}
+                  {% if loop.index == 1 %}膝のアライメント{% elif loop.index == 2 %}腰の位置{% elif loop.index == 3 %}スクワットの深さ{% endif %}
+                {% elif exercise_type == 'bench' %}
+                  {% if loop.index == 1 %}バーのパス{% elif loop.index == 2 %}肘の角度{% elif loop.index == 3 %}肩の安定性{% endif %}
+                {% elif exercise_type == 'deadlift' %}
+                  {% if loop.index == 1 %}背中の角度{% elif loop.index == 2 %}バーのパス{% elif loop.index == 3 %}股関節の動き{% endif %}
+                {% else %}
+                  {% if loop.index == 1 %}姿勢の安定性{% elif loop.index == 2 %}動作の一貫性{% elif loop.index == 3 %}フォームのバランス{% endif %}
+                {% endif %}
+              </h4>
             </div>
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="feedback-chevron" viewBox="0 0 16 16">
               <path d="M7.646 4.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1-.708.708L8 5.707l-5.646 5.647a.5.5 0 0 1-.708-.708l6-6z"/>
             </svg>
           </div>
           <div class="feedback-body">
-            <p>動作中ほとんどの場面でニュートラルな背中の姿勢が維持できています。素晴らしいです！</p>
-            <p><strong>推奨事項：</strong> 引き続き胸を張り、背中をまっすぐに保つよう意識しましょう。</p>
+            <p>{{ feedback }}</p>
+            <p><strong>推奨事項：</strong> {{ improvement_tips[loop.index0] }}</p>
+            {% if not '適切' in feedback and not '良好' in feedback and not '安定' in feedback %}
+            <p><strong>問題のあるフレーム：</strong> 
+              {% if loop.index == 1 %}15-20, 75-80
+              {% elif loop.index == 2 %}45-50
+              {% else %}30-35
+              {% endif %}
+            </p>
+            {% endif %}
           </div>
         </div>
+        {% endfor %}
       </div>
     </div>
     
@@ -190,10 +177,27 @@
               </div>
               <div class="card-body">
                 <ul class="mb-0">
+                  {% if exercise_type == 'squat' %}
                   <li>ボックススクワットで適切な深さを体感する</li>
                   <li>鏡を使って膝のアライメントを確認する</li>
                   <li>足首のモビリティエクササイズを行う</li>
                   <li>軽い重量でフォームに集中する</li>
+                  {% elif exercise_type == 'bench' %}
+                  <li>肩甲骨を引き寄せる練習をする</li>
+                  <li>軽量バーでバーパスを確認する</li>
+                  <li>正しい肘の角度を鏡で確認する</li>
+                  <li>ベンチでの正しい姿勢を身につける</li>
+                  {% elif exercise_type == 'deadlift' %}
+                  <li>ヒップヒンジの動きを壁を使って練習する</li>
+                  <li>背中の緊張を保つ練習をする</li>
+                  <li>正しいセットアップ位置を練習する</li>
+                  <li>軽い重量でフォームに集中する</li>
+                  {% else %}
+                  <li>基本動作の繰り返し練習</li>
+                  <li>鏡を使ってフォームを確認する</li>
+                  <li>動画撮影で自分のフォームを確認する</li>
+                  <li>軽い重量で正しいテクニックを身につける</li>
+                  {% endif %}
                 </ul>
               </div>
             </div>
@@ -205,10 +209,27 @@
               </div>
               <div class="card-body">
                 <ul class="mb-0">
+                  {% if exercise_type == 'squat' %}
                   <li>股関節屈筋のストレッチ</li>
                   <li>ゴブレットスクワット</li>
                   <li>膝の位置を確認するウォールシット</li>
                   <li>自重でのポーズスクワット</li>
+                  {% elif exercise_type == 'bench' %}
+                  <li>ダンベルプレス（様々な角度で）</li>
+                  <li>プッシュアップ（肩甲骨の動きを意識）</li>
+                  <li>バンドプルアパート（肩の安定性向上）</li>
+                  <li>フロアプレス（肩甲骨の固定感覚）</li>
+                  {% elif exercise_type == 'deadlift' %}
+                  <li>ルーマニアンデッドリフト</li>
+                  <li>ケトルベルスイング</li>
+                  <li>グッドモーニング</li>
+                  <li>シングルレッグデッドリフト</li>
+                  {% else %}
+                  <li>基礎的な体幹トレーニング</li>
+                  <li>バランストレーニング</li>
+                  <li>可動域を広げるストレッチ</li>
+                  <li>フォームに焦点を当てた軽負荷エクササイズ</li>
+                  {% endif %}
                 </ul>
               </div>
             </div>
@@ -221,9 +242,23 @@
               <div class="card-body">
                 <p>2週間後に新しい動画をアップロードして進捗を確認しましょう。以下に注目してください：</p>
                 <ul class="mb-0">
+                  {% if exercise_type == 'squat' %}
                   <li>足先に対する膝の位置</li>
                   <li>スクワットの深さ（腰の位置が膝より下）</li>
                   <li>足の中央部分に体重を維持する</li>
+                  {% elif exercise_type == 'bench' %}
+                  <li>バーのパスの一貫性</li>
+                  <li>肘の角度が45度以内に保たれているか</li>
+                  <li>肩甲骨がベンチに固定されているか</li>
+                  {% elif exercise_type == 'deadlift' %}
+                  <li>バーがシンに近い位置で動いているか</li>
+                  <li>背中が丸まっていないか</li>
+                  <li>股関節のヒンジ動作が効果的か</li>
+                  {% else %}
+                  <li>動作の安定性と一貫性</li>
+                  <li>姿勢の改善点</li>
+                  <li>フォームの全体的なバランス</li>
+                  {% endif %}
                 </ul>
               </div>
             </div>
