@@ -85,33 +85,97 @@ def analyze():
         if os.path.exists(temp_file_path):
             os.remove(temp_file_path)
 
+def generate_exercise_feedback(exercise_type, score):
+    """種目ごとのフィードバックを生成する"""
+    feedback = {
+        'score': score,
+        'assessment': "",
+        'overall_feedback': "",
+        'specific_feedback': [],
+        'improvement_tips': []
+    }
+    
+    # 点数に基づいて全体評価を決定（日本語）
+    if score >= 85:
+        feedback['assessment'] = "素晴らしいフォーム！"
+        feedback['overall_feedback'] = "フォームは優れています！動作のほとんどで適切な技術を維持しています。"
+    elif score >= 70:
+        feedback['assessment'] = "改善の余地があるフォーム"
+        feedback['overall_feedback'] = "全体的には良好ですが、いくつかの注意が必要な点があります。"
+    else:
+        feedback['assessment'] = "フォームの改善が必要"
+        feedback['overall_feedback'] = "いくつかの重要な点でフォームの改善が必要です。以下の推奨事項に注目してください。"
+    
+    # 種目ごとの具体的なフィードバック
+    if exercise_type == 'squat':
+        feedback['specific_feedback'] = [
+            "膝とつま先の位置が適切です" if score > 75 else "膝がつま先より前に出ています",
+            "腰の位置が安定しています" if score > 80 else "スクワット中に腰が丸まっています",
+            "深さが適切です" if score > 70 else "スクワットの深さが不十分です"
+        ]
+        feedback['improvement_tips'] = [
+            "スクワット中は背筋をまっすぐに保ちましょう",
+            "膝がつま先と同じ方向を向くようにしましょう",
+            "かかとに体重をかけるようにしましょう"
+        ]
+    elif exercise_type == 'bench':
+        feedback['specific_feedback'] = [
+            "バーのパスが適切です" if score > 75 else "バーが胸の上で安定していません",
+            "肘の角度が適切です" if score > 80 else "肘の角度が広すぎます",
+            "肩の安定性は良好です" if score > 70 else "肩甲骨が固定できていません"
+        ]
+        feedback['improvement_tips'] = [
+            "バーは胸の下部（乳頭の少し下）にタッチさせましょう",
+            "肩甲骨をベンチに固定して安定させましょう",
+            "肘を体に45度以内に保ちましょう"
+        ]
+    elif exercise_type == 'deadlift':
+        feedback['specific_feedback'] = [
+            "背中の角度が適切です" if score > 75 else "リフト中に背中が丸まっています",
+            "バーのパスが効率的です" if score > 80 else "バーがシンからの距離が遠すぎます",
+            "股関節のヒンジが効果的です" if score > 70 else "股関節の動きが不十分です"
+        ]
+        feedback['improvement_tips'] = [
+            "バーはシン（すね）に近い位置に保ちましょう",
+            "持ち上げる前に背中の緊張を作りましょう",
+            "股関節をヒンジのように使い、リフト時に臀部を後ろに引きましょう"
+        ]
+    else:
+        # デフォルトのフィードバック
+        feedback['specific_feedback'] = [
+            "姿勢の安定性は良好です" if score > 75 else "姿勢が不安定です",
+            "動作の一貫性があります" if score > 80 else "動作にばらつきがあります",
+            "フォームのバランスが取れています" if score > 70 else "バランスが悪いです"
+        ]
+        feedback['improvement_tips'] = [
+            "動作を安定させるためにコア（体幹）を常に締めましょう",
+            "呼吸を意識して、力を入れるタイミングで息を止めましょう",
+            "動作のテンポを一定に保ちましょう"
+        ]
+    
+    return feedback
+
 @app.route('/results')
 def results():
     """Display analysis results"""
     video_filename = request.args.get('video', '')
     exercise_type = request.args.get('exercise', 'squat')
     
-    # Generate simulated results
+    # シミュレートされたスコアを生成
     overall_score = random.randint(60, 95)
     
-    # 点数に基づいて全体評価を決定（日本語）
-    if overall_score >= 85:
-        overall_assessment = "素晴らしいフォーム！"
-        overall_feedback = "フォームは優れています！動作のほとんどで適切な技術を維持しています。"
-    elif overall_score >= 70:
-        overall_assessment = "改善の余地があるフォーム"
-        overall_feedback = "全体的には良好ですが、いくつかの注意が必要な点があります。"
-    else:
-        overall_assessment = "フォームの改善が必要"
-        overall_feedback = "いくつかの重要な点でフォームの改善が必要です。以下の推奨事項に注目してください。"
+    # 種目に基づいたフィードバックを生成
+    feedback = generate_exercise_feedback(exercise_type, overall_score)
     
     return render_template(
         'results.html',
         video_filename=video_filename,
         exercise_type=exercise_type,
         overall_score=overall_score,
-        overall_assessment=overall_assessment,
-        overall_feedback=overall_feedback
+        overall_assessment=feedback['assessment'],
+        overall_feedback=feedback['overall_feedback'],
+        specific_feedback=feedback['specific_feedback'],
+        improvement_tips=feedback['improvement_tips']
     )
 
 # API endpoint for getting pose data (would be used by the frontend)

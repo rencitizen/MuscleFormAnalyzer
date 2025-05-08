@@ -1,32 +1,33 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ja">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Muscle-Form Analyzer MVP</title>
+  <title>マッスルフォームアナライザー MVP</title>
   <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
   <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
 </head>
 <body data-bs-theme="dark">
   <div class="container">
     <header class="app-header">
-      <h1 class="app-title">Muscle-Form Analyzer</h1>
-      <p class="lead">Upload a workout video to analyze your exercise form</p>
+      <h1 class="app-title">マッスルフォームアナライザー</h1>
+      <p class="lead">トレーニング動画をアップロードしてフォームを分析</p>
     </header>
     
     <section id="upload-container">
       <div class="card">
         <div class="card-header">
-          <h2 class="card-title">Upload Video</h2>
+          <h2 class="card-title">動画をアップロード</h2>
         </div>
         <div class="card-body">
           <form id="upload-form" class="upload-form" action="/analyze" method="post" enctype="multipart/form-data">
             <div class="form-group">
-              <label for="video-file" class="form-label">Select a video file (MP4 format, max 150MB)</label>
+              <label for="video-file" class="form-label">動画ファイルを選択（MP4形式、最大150MB）</label>
               <input type="file" id="video-file" name="file" class="form-control" accept="video/mp4" required>
               <div class="file-feedback mt-2">
-                <span class="file-label">No file selected</span>
+                <span class="file-label">ファイルが選択されていません</span>
               </div>
             </div>
             
@@ -37,18 +38,18 @@
                 </svg>
               </div>
               <div>
-                <strong>Auto-detected exercise:</strong> <span id="detected-exercise">Squat</span>. 
-                Please verify or change if needed.
+                <strong>自動検出された種目：</strong> <span id="detected-exercise">スクワット</span>
+                必要に応じて変更してください。
               </div>
             </div>
             
             <div class="form-group">
-              <label for="exercise-type" class="form-label">Exercise Type</label>
+              <label for="exercise-type" class="form-label">種目の選択</label>
               <select id="exercise-type" name="exercise_type" class="form-control" required>
-                <option value="">Select exercise type</option>
-                <option value="squat">Squat</option>
-                <option value="bench">Bench Press</option>
-                <option value="deadlift">Deadlift</option>
+                <option value="">種目を選択してください</option>
+                <option value="squat">スクワット</option>
+                <option value="bench">ベンチプレス</option>
+                <option value="deadlift">デッドリフト</option>
               </select>
             </div>
             
@@ -57,7 +58,7 @@
                 <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
                 <path d="M6.271 5.055a.5.5 0 0 1 .52.038l3.5 2.5a.5.5 0 0 1 0 .814l-3.5 2.5A.5.5 0 0 1 6 10.5v-5a.5.5 0 0 1 .271-.445z"/>
               </svg>
-              Analyze Form
+              フォームを分析
             </button>
           </form>
         </div>
@@ -65,7 +66,7 @@
       
       <div class="card">
         <div class="card-header">
-          <h2 class="card-title">How It Works</h2>
+          <h2 class="card-title">使い方</h2>
         </div>
         <div class="card-body">
           <div class="row">
@@ -75,8 +76,8 @@
                   <path d="M6 10.117V5.883a.5.5 0 0 1 .757-.429l3.528 2.117a.5.5 0 0 1 0 .858l-3.528 2.117a.5.5 0 0 1-.757-.43z"/>
                   <path d="M4 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H4zm0 1h8a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1z"/>
                 </svg>
-                <h5 class="mt-3">Upload Video</h5>
-                <p class="text-muted">Upload your workout video (MP4, max 150MB)</p>
+                <h5 class="mt-3">ビデオのアップロード</h5>
+                <p class="text-muted">トレーニング動画をアップロード（MP4形式、最大150MB）</p>
               </div>
             </div>
             <div class="col-md-3 text-center mb-3 mb-md-0">
@@ -84,8 +85,8 @@
                 <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" viewBox="0 0 16 16">
                   <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4zm-1-.004c0-.001-.001-.003-.003-.005a5.5 5.5 0 0 0-.52-.851 6 6 0 0 0-5.477-3.09C5.5 3.05 4.252 3.539 3.251 4.5a4.5 4.5 0 0 0-1.248 3.496c0 .002 0 .004.003.006a.5.5 0 0 0 .49.108h10.5a.5.5 0 0 0 .006 0z"/>
                 </svg>
-                <h5 class="mt-3">Pose Detection</h5>
-                <p class="text-muted">Our system extracts body pose from each frame</p>
+                <h5 class="mt-3">ポーズ検出</h5>
+                <p class="text-muted">各フレームから身体の姿勢を抽出します</p>
               </div>
             </div>
             <div class="col-md-3 text-center mb-3 mb-md-0">
@@ -95,8 +96,8 @@
                   <path d="M7.5 2.217a1.5 1.5 0 0 0-2 0v1.828a1.5 1.5 0 0 0 2 0V2.217zm3.5 3.221a1.5 1.5 0 0 0-2 0v1.5a1.5 1.5 0 0 0 2 0v-1.5zm-7 0a1.5 1.5 0 0 0-2 0v1.5a1.5 1.5 0 0 0 2 0v-1.5z"/>
                   <path d="M7.5 4.972V3.766a.5.5 0 1 0-1 0v1.5a.5.5 0 0 0 1 0v-.294zm3.5 1.5v-1.5a.5.5 0 1 0-1 0v1.5a.5.5 0 0 0 1 0zm-7 0v-1.5a.5.5 0 1 0-1 0v1.5a.5.5 0 0 0 1 0z"/>
                 </svg>
-                <h5 class="mt-3">Analysis</h5>
-                <p class="text-muted">Compares form with ideal reference pose</p>
+                <h5 class="mt-3">分析</h5>
+                <p class="text-muted">理想的な基準フォームと比較します</p>
               </div>
             </div>
             <div class="col-md-3 text-center">
@@ -105,8 +106,8 @@
                   <path d="M14 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h12zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2z"/>
                   <path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/>
                 </svg>
-                <h5 class="mt-3">Feedback</h5>
-                <p class="text-muted">Get detailed feedback on your form</p>
+                <h5 class="mt-3">フィードバック</h5>
+                <p class="text-muted">フォームに関する詳細なフィードバックを提供</p>
               </div>
             </div>
           </div>
@@ -117,7 +118,7 @@
     <section id="processing-container" style="display: none;">
       <div class="card">
         <div class="card-header">
-          <h2 class="card-title">Analyzing Video</h2>
+          <h2 class="card-title">動画を分析中</h2>
         </div>
         <div class="card-body">
           <div class="progress-container">
@@ -128,7 +129,7 @@
                     <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4zm-1-.004c0-.001-.001-.003-.003-.005a5.5 5.5 0 0 0-.52-.851 6 6 0 0 0-5.477-3.09C5.5 3.05 4.252 3.539 3.251 4.5a4.5 4.5 0 0 0-1.248 3.496c0 .002 0 .004.003.006a.5.5 0 0 0 .49.108h10.5a.5.5 0 0 0 .006 0z"/>
                   </svg>
                 </div>
-                <span class="step-label">Pose Detection</span>
+                <span class="step-label">ポーズ検出</span>
               </div>
               <div class="progress-step">
                 <div class="step-icon">
@@ -138,7 +139,7 @@
                     <path d="M7.5 4.972V3.766a.5.5 0 1 0-1 0v1.5a.5.5 0 0 0 1 0v-.294zm3.5 1.5v-1.5a.5.5 0 1 0-1 0v1.5a.5.5 0 0 0 1 0zm-7 0v-1.5a.5.5 0 1 0-1 0v1.5a.5.5 0 0 0 1 0z"/>
                   </svg>
                 </div>
-                <span class="step-label">Angle Calculation</span>
+                <span class="step-label">角度計算</span>
               </div>
               <div class="progress-step">
                 <div class="step-icon">
@@ -147,13 +148,13 @@
                     <path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/>
                   </svg>
                 </div>
-                <span class="step-label">Feedback Generation</span>
+                <span class="step-label">フィードバック生成</span>
               </div>
             </div>
             <div class="progress-bar">
               <div class="progress-fill" style="width: 0%"></div>
             </div>
-            <p class="text-center mt-3">Please wait while we analyze your video...</p>
+            <p class="text-center mt-3">動画を分析中です。しばらくお待ちください...</p>
           </div>
         </div>
       </div>
