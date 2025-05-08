@@ -49,10 +49,16 @@ function initUploadForm() {
   // Form submission
   if (uploadForm) {
     uploadForm.addEventListener('submit', function(e) {
-      e.preventDefault();
-      
+      // VisualUIのみ表示（フォーム送信は通常どおり行う）
       if (!videoFile.files || !videoFile.files[0]) {
-        alert('Please select a video file first.');
+        alert('動画ファイルを選択してください');
+        e.preventDefault();
+        return;
+      }
+      
+      if (!exerciseType.value) {
+        alert('種目を選択してください');
+        e.preventDefault();
         return;
       }
       
@@ -60,14 +66,11 @@ function initUploadForm() {
       document.getElementById('upload-container').style.display = 'none';
       document.getElementById('processing-container').style.display = 'block';
       
-      // Simulate processing steps
+      // 処理ステップのアニメーションを開始
       startProcessingSimulation();
       
-      // In a real implementation, we would submit the form via AJAX here
-      // For demo, we'll just simulate the steps and then redirect
-      setTimeout(() => {
-        window.location.href = '/results';
-      }, 8000);
+      // フォームは通常通りサーバーに送信される
+      // preventDefault()は呼び出さない - 通常のフォーム送信を許可
     });
   }
 }
