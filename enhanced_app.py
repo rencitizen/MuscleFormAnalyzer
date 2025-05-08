@@ -50,7 +50,7 @@ def analyze():
     file = request.files['file']
     
     # ファイル名が空の場合はメインページにリダイレクト
-    if not file or file.filename == '':
+    if file.filename == '':
         return redirect(url_for('index'))
     
     # MP4形式かどうかをチェック
@@ -59,6 +59,9 @@ def analyze():
     
     # Get exercise type
     exercise_type = request.form.get('exercise_type', 'squat')
+    
+    # デバッグのためにログ出力
+    logger.info(f"受け取った種目タイプ: {exercise_type}")
     
     # Create temporary file
     temp_file_path = os.path.join('/tmp', f"{uuid.uuid4()}.mp4")
@@ -164,6 +167,9 @@ def results():
     """Display analysis results"""
     video_filename = request.args.get('video', '')
     exercise_type = request.args.get('exercise', 'squat')
+    
+    # デバッグのためにログ出力
+    logger.info(f"結果ページで受け取った種目タイプ: {exercise_type}")
     
     # シミュレートされたスコアを生成
     overall_score = random.randint(60, 95)
