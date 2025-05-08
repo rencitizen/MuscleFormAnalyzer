@@ -50,11 +50,11 @@ def analyze():
     file = request.files['file']
     
     # ファイル名が空の場合はメインページにリダイレクト
-    if file.filename == '':
+    if not file or not file.filename:
         return redirect(url_for('index'))
     
     # MP4形式かどうかをチェック
-    if not file.filename.lower().endswith(('.mp4')):
+    if not file.filename.endswith(('.mp4', '.MP4')):
         return jsonify({'error': 'MP4形式のファイルのみサポートしています'}), 400
     
     # Get exercise type
@@ -80,8 +80,12 @@ def analyze():
         import shutil
         shutil.copy(temp_file_path, output_path)
         
+        # リダイレクト前の値をログに出力（デバッグ用）
+        result_url = url_for('results', video=os.path.basename(output_path), exercise=exercise_type)
+        logger.info(f"リダイレクト先URL: {result_url}, 種目タイプ: {exercise_type}")
+        
         # Redirect to results page
-        return redirect(url_for('results', video=os.path.basename(output_path), exercise=exercise_type))
+        return redirect(result_url)
     
     except Exception as e:
         logger.error(f"Error analyzing video: {str(e)}")
@@ -94,6 +98,9 @@ def analyze():
 
 def generate_exercise_feedback(exercise_type, score):
     """種目ごとのフィードバックを生成する"""
+    # ログに出力して種目タイプを確認
+    logger.info(f"フィードバック生成時の種目タイプ: {exercise_type}")
+    
     feedback = {
         'score': score,
         'assessment': "",
@@ -113,8 +120,11 @@ def generate_exercise_feedback(exercise_type, score):
         feedback['assessment'] = "フォームの改善が必要"
         feedback['overall_feedback'] = "いくつかの重要な点でフォームの改善が必要です。以下の推奨事項に注目してください。"
     
+    # 種目タイプの正規化（念のため小文字に変換して比較）
+    exercise_type = exercise_type.lower() if exercise_type else 'squat'
+    
     # 種目ごとの具体的なフィードバック
-    if exercise_type == 'squat':
+    if 'squat' in exercise_type:
         feedback['specific_feedback'] = [
             "膝とつま先の位置が適切です" if score > 75 else "膝がつま先より前に出ています",
             "腰の位置が安定しています" if score > 80 else "スクワット中に腰が丸まっています",
@@ -125,7 +135,7 @@ def generate_exercise_feedback(exercise_type, score):
             "膝がつま先と同じ方向を向くようにしましょう",
             "かかとに体重をかけるようにしましょう"
         ]
-    elif exercise_type == 'bench':
+    elif 'bench' in exercise_type:
         feedback['specific_feedback'] = [
             "バーのパスが適切です" if score > 75 else "バーが胸の上で安定していません",
             "肘の角度が適切です" if score > 80 else "肘の角度が広すぎます",
@@ -136,7 +146,7 @@ def generate_exercise_feedback(exercise_type, score):
             "肩甲骨をベンチに固定して安定させましょう",
             "肘を体に45度以内に保ちましょう"
         ]
-    elif exercise_type == 'deadlift':
+    elif 'dead' in exercise_type:
         feedback['specific_feedback'] = [
             "背中の角度が適切です" if score > 75 else "リフト中に背中が丸まっています",
             "バーのパスが効率的です" if score > 80 else "バーがシンからの距離が遠すぎます",
@@ -170,6 +180,11 @@ def results():
     
     # デバッグのためにログ出力
     logger.info(f"結果ページで受け取った種目タイプ: {exercise_type}")
+    logger.info(f"リクエストパラメータ全体: {request.args}")
+    
+    # 種目タイプの正規化（念のため）
+    if exercise_type:
+        exercise_type = exercise_type.lower()
     
     # シミュレートされたスコアを生成
     overall_score = random.randint(60, 95)
