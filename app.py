@@ -16,8 +16,8 @@ app.secret_key = os.environ.get("SESSION_SECRET", "development_key")
 
 # サンプルデータのパス
 SAMPLE_METRICS_PATH = 'results/sample_metrics.json'
-SAMPLE_TRAINING_PATH = 'results/sample_training_analysis.json'
-SAMPLE_EXERCISE_PATH = 'results/sample_exercise_classification.json'
+SAMPLE_TRAINING_PATH = 'results/sample_training.json'
+SAMPLE_EXERCISE_PATH = 'results/sample_exercises.json'
 
 # 結果保存先ディレクトリ
 RESULTS_DIR = 'results'

@@ -1,0 +1,85 @@
+{
+  "dominant_exercise": "squat",
+  "confidence_score": 85,
+  "exercise_distribution": {
+    "squat": 75,
+    "deadlift": 15,
+    "lunge": 8,
+    "unknown": 2
+  },
+  "total_frames": 300,
+  "segments": [
+    {
+      "start_frame": 0,
+      "end_frame": 30,
+      "exercise": "unknown",
+      "confidence": 45
+    },
+    {
+      "start_frame": 31,
+      "end_frame": 120,
+      "exercise": "squat",
+      "confidence": 88,
+      "repetitions": 3
+    },
+    {
+      "start_frame": 121,
+      "end_frame": 150,
+      "exercise": "rest",
+      "confidence": 92
+    },
+    {
+      "start_frame": 151,
+      "end_frame": 240,
+      "exercise": "squat",
+      "confidence": 90,
+      "repetitions": 3
+    },
+    {
+      "start_frame": 241,
+      "end_frame": 270,
+      "exercise": "deadlift",
+      "confidence": 75,
+      "repetitions": 2
+    },
+    {
+      "start_frame": 271,
+      "end_frame": 300,
+      "exercise": "unknown",
+      "confidence": 40
+    }
+  ],
+  "performance_metrics": {
+    "squat": {
+      "joint_rom": {
+        "left_knee": 105.2,
+        "right_knee": 104.8,
+        "left_hip": 110.3,
+        "right_hip": 109.7
+      },
+      "movement_speed": {
+        "average": 0.85,
+        "max": 1.2,
+        "consistency": 0.92
+      },
+      "form_score": 82
+    },
+    "deadlift": {
+      "joint_rom": {
+        "left_knee": 75.3,
+        "right_knee": 74.9,
+        "left_hip": 95.2,
+        "right_hip": 94.6,
+        "left_shoulder": 45.2,
+        "right_shoulder": 44.8
+      },
+      "movement_speed": {
+        "average": 0.72,
+        "max": 0.95,
+        "consistency": 0.88
+      },
+      "form_score": 78
+    }
+  },
+  "analysis_date": "2025-05-15"
+}
