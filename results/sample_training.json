@@ -3,6 +3,7 @@
   "user_height_cm": 170,
   "repetitions": 8,
   "form_score": 85,
+  "depth_score": 88,
   "max_depth": 82.5,
   "asymmetry_index": 3.2,
   "joint_angles": {
