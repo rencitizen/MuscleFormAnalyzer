@@ -204,12 +204,26 @@ def training_results():
         return jsonify({"error": "身体測定データの読み込みに失敗しました"}), 500
     
     # 両方のデータを統合して、正しい参照構造を持つようにする
+    left_arm_cm = body_metrics.get('left_arm_cm', 60)
+    right_arm_cm = body_metrics.get('right_arm_cm', 60)
+    left_leg_cm = body_metrics.get('left_leg_cm', 90) 
+    right_leg_cm = body_metrics.get('right_leg_cm', 90)
+    height_cm = body_metrics.get('user_height_cm', 170)
+    
+    # 平均値と比率を計算
+    arm_length_avg = (left_arm_cm + right_arm_cm) / 2
+    leg_length_avg = (left_leg_cm + right_leg_cm) / 2
+    arm_length_ratio = arm_length_avg / height_cm if height_cm > 0 else 0.35
+    leg_length_ratio = leg_length_avg / height_cm if height_cm > 0 else 0.53
+    
     training_data['body_metrics'] = {
-        'left_arm_cm': body_metrics.get('left_arm_cm', 60),
-        'right_arm_cm': body_metrics.get('right_arm_cm', 60),
-        'left_leg_cm': body_metrics.get('left_leg_cm', 90),
-        'right_leg_cm': body_metrics.get('right_leg_cm', 90),
-        'height_cm': body_metrics.get('user_height_cm', 170)
+        'left_arm_cm': left_arm_cm,
+        'right_arm_cm': right_arm_cm,
+        'left_leg_cm': left_leg_cm,
+        'right_leg_cm': right_leg_cm,
+        'height_cm': height_cm,
+        'arm_length_ratio': arm_length_ratio,
+        'leg_length_ratio': leg_length_ratio
     }
     
     return render_template('training_results.html', 
