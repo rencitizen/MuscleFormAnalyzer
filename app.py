@@ -87,6 +87,8 @@ def load_training_sample():
                 "repetitions": 8,
                 "form_score": 85,
                 "depth_score": 88,
+                "balance_score": 82,
+                "stability_score": 79,
                 "max_depth": 82.5,
                 "asymmetry_index": 3.2,
                 "joint_angles": {
@@ -398,55 +400,67 @@ def training_results():
     if not body_metrics:
         return jsonify({"error": "身体測定データの読み込みに失敗しました"}), 500
     
-    # 両方のデータを統合して、正しい参照構造を持つようにする
-    left_arm_cm = body_metrics.get('left_arm_cm', 60)
-    right_arm_cm = body_metrics.get('right_arm_cm', 60)
-    left_leg_cm = body_metrics.get('left_leg_cm', 90) 
-    right_leg_cm = body_metrics.get('right_leg_cm', 90)
-    height_cm = body_metrics.get('user_height_cm', 170)
-    
-    # 平均値と比率を計算
-    arm_length_avg = (left_arm_cm + right_arm_cm) / 2
-    leg_length_avg = (left_leg_cm + right_leg_cm) / 2
-    arm_length_ratio = arm_length_avg / height_cm if height_cm > 0 else 0.35
-    leg_length_ratio = leg_length_avg / height_cm if height_cm > 0 else 0.53
-    
-    training_data['body_metrics'] = {
-        'left_arm_cm': left_arm_cm,
-        'right_arm_cm': right_arm_cm,
-        'left_leg_cm': left_leg_cm,
-        'right_leg_cm': right_leg_cm,
-        'height_cm': height_cm,
-        'arm_length_ratio': arm_length_ratio,
-        'leg_length_ratio': leg_length_ratio
-    }
-    
-    # 身体プロポーションに基づく分析を追加
-    exercise_type = training_data.get('exercise_type', 'squat')
-    
-    # 脚の長さに基づく分析
-    training_data['leg_length_analysis'] = {
-        'form_adjustment': '脚の長さに合わせたスタンス幅を調整してください。',
-        'depth_advice': '膝と足首の動きを連動させて効率的な動作を心がけましょう。',
-        'symmetry_issue': None
-    }
-    
-    # 腕の長さに基づく分析
-    training_data['arm_length_analysis'] = {
-        'grip_width': '肩幅よりやや広めのグリップ幅が最適です。',
-        'rom_advice': '肘を適切に曲げて、可動域を最大限に活用しましょう。',
-        'symmetry_issue': None
-    }
-    
-    # 胸幅の影響
-    training_data['chest_width_impact'] = '胸の幅が標準的なため、通常のフォームで問題ありません。'
-    
-    # 体型プロポーションの洞察
-    training_data['body_proportion_insights'] = [
-        '腕長と脚長のバランスが良好です。',
-        '全身の可動域を最大化するために、柔軟性トレーニングを取り入れると効果的です。',
-        '姿勢を意識して、関節の動きを適切にコントロールしましょう。'
-    ]
+    # モードがsampleの場合は、サンプルデータをそのまま使用
+    if mode == 'sample':
+        # サンプルデータをロード
+        training_data = load_training_sample()
+        if not training_data:
+            return jsonify({"error": "トレーニング分析サンプルデータの読み込みに失敗しました"}), 500
+    else:
+        # 身体メトリクスデータから計算
+        # 両方のデータを統合して、正しい参照構造を持つようにする
+        left_arm_cm = body_metrics.get('left_arm_cm', 60)
+        right_arm_cm = body_metrics.get('right_arm_cm', 60)
+        left_leg_cm = body_metrics.get('left_leg_cm', 90) 
+        right_leg_cm = body_metrics.get('right_leg_cm', 90)
+        height_cm = body_metrics.get('user_height_cm', 170)
+        
+        # 平均値と比率を計算
+        arm_length_avg = (left_arm_cm + right_arm_cm) / 2
+        leg_length_avg = (left_leg_cm + right_leg_cm) / 2
+        arm_length_ratio = arm_length_avg / height_cm if height_cm > 0 else 0.35
+        leg_length_ratio = leg_length_avg / height_cm if height_cm > 0 else 0.53
+        
+        training_data['body_metrics'] = {
+            'left_arm_cm': left_arm_cm,
+            'right_arm_cm': right_arm_cm,
+            'left_leg_cm': left_leg_cm,
+            'right_leg_cm': right_leg_cm,
+            'height_cm': height_cm,
+            'arm_length_ratio': arm_length_ratio,
+            'leg_length_ratio': leg_length_ratio
+        }
+        
+        # 身体プロポーションに基づく分析を追加
+        exercise_type = training_data.get('exercise_type', 'squat')
+        
+        # スコアを追加
+        training_data['balance_score'] = 82
+        training_data['stability_score'] = 79
+        
+        # 脚の長さに基づく分析
+        training_data['leg_length_analysis'] = {
+            'form_adjustment': '脚の長さに合わせたスタンス幅を調整してください。',
+            'depth_advice': '膝と足首の動きを連動させて効率的な動作を心がけましょう。',
+            'symmetry_issue': None
+        }
+        
+        # 腕の長さに基づく分析
+        training_data['arm_length_analysis'] = {
+            'grip_width': '肩幅よりやや広めのグリップ幅が最適です。',
+            'rom_advice': '肘を適切に曲げて、可動域を最大限に活用しましょう。',
+            'symmetry_issue': None
+        }
+        
+        # 胸幅の影響
+        training_data['chest_width_impact'] = '胸の幅が標準的なため、通常のフォームで問題ありません。'
+        
+        # 体型プロポーションの洞察
+        training_data['body_proportion_insights'] = [
+            '腕長と脚長のバランスが良好です。',
+            '全身の可動域を最大化するために、柔軟性トレーニングを取り入れると効果的です。',
+            '姿勢を意識して、関節の動きを適切にコントロールしましょう。'
+        ]
     
     return render_template('training_results.html', 
                           training=training_data, 
