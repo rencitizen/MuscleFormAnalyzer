@@ -34,6 +34,41 @@ def allowed_file(filename):
 def load_sample_data():
     """サンプルデータを読み込む"""
     try:
+        # サンプルデータファイルが存在するか確認
+        if not os.path.exists(SAMPLE_METRICS_PATH):
+            # なければ作成する
+            sample_data = {
+                "user_height_cm": 170,
+                "left_arm_cm": 62.5,
+                "right_arm_cm": 62.8,
+                "left_leg_cm": 91.2,
+                "right_leg_cm": 91.5,
+                "shoulder_width_cm": 42.3,
+                "chest_width_cm": 38.6,
+                "hip_width_cm": 36.2,
+                "torso_length_cm": 51.4,
+                "analysis_date": "2025-05-15",
+                "joints_cm": {
+                    "leftShoulder": {"x": 42.3, "y": 120.5, "z": 0.0},
+                    "rightShoulder": {"x": 0.0, "y": 120.5, "z": 0.0},
+                    "leftElbow": {"x": 62.5, "y": 95.2, "z": 5.1},
+                    "rightElbow": {"x": -20.2, "y": 95.2, "z": 5.1},
+                    "leftWrist": {"x": 70.8, "y": 80.3, "z": 10.2},
+                    "rightWrist": {"x": -28.5, "y": 80.3, "z": 10.2},
+                    "leftHip": {"x": 33.1, "y": 80.5, "z": 0.0},
+                    "rightHip": {"x": 9.2, "y": 80.5, "z": 0.0},
+                    "leftKnee": {"x": 35.5, "y": 45.2, "z": 7.3},
+                    "rightKnee": {"x": 6.8, "y": 45.2, "z": 7.3},
+                    "leftAnkle": {"x": 38.2, "y": 10.5, "z": 12.5},
+                    "rightAnkle": {"x": 4.1, "y": 10.5, "z": 12.5}
+                }
+            }
+            os.makedirs(os.path.dirname(SAMPLE_METRICS_PATH), exist_ok=True)
+            with open(SAMPLE_METRICS_PATH, 'w', encoding='utf-8') as f:
+                json.dump(sample_data, f, indent=2)
+            return sample_data
+        
+        # 存在する場合はファイルから読み込む
         with open(SAMPLE_METRICS_PATH, 'r', encoding='utf-8') as f:
             return json.load(f)
     except Exception as e:
@@ -43,6 +78,72 @@ def load_sample_data():
 def load_training_sample():
     """トレーニング分析のサンプルデータを読み込む"""
     try:
+        # サンプルデータファイルが存在するか確認
+        if not os.path.exists(SAMPLE_TRAINING_PATH):
+            # なければ作成する
+            sample_data = {
+                "exercise_type": "squat",
+                "user_height_cm": 170,
+                "repetitions": 8,
+                "form_score": 85,
+                "depth_score": 88,
+                "max_depth": 82.5,
+                "asymmetry_index": 3.2,
+                "joint_angles": {
+                    "left_knee": {
+                        "min": 75.2,
+                        "max": 178.3,
+                        "range": 103.1
+                    },
+                    "right_knee": {
+                        "min": 72.8,
+                        "max": 177.9,
+                        "range": 105.1
+                    },
+                    "left_hip": {
+                        "min": 65.4,
+                        "max": 172.1,
+                        "range": 106.7
+                    },
+                    "right_hip": {
+                        "min": 66.2,
+                        "max": 171.8,
+                        "range": 105.6
+                    }
+                },
+                "body_metrics": {
+                    "left_arm_cm": 62.5,
+                    "right_arm_cm": 62.8,
+                    "left_leg_cm": 91.2,
+                    "right_leg_cm": 91.5,
+                    "height_cm": 170,
+                    "arm_length_ratio": 0.369,
+                    "leg_length_ratio": 0.537
+                },
+                "leg_length_analysis": {
+                    "form_adjustment": "脚の長さに合わせたスタンス幅を調整してください。",
+                    "depth_advice": "膝と足首の動きを連動させて効率的な動作を心がけましょう。",
+                    "symmetry_issue": None
+                },
+                "arm_length_analysis": {
+                    "grip_width": "肩幅よりやや広めのグリップ幅が最適です。",
+                    "rom_advice": "肘を適切に曲げて、可動域を最大限に活用しましょう。",
+                    "symmetry_issue": None
+                },
+                "chest_width_impact": "胸の幅が標準的なため、通常のフォームで問題ありません。",
+                "body_proportion_insights": [
+                    "腕長と脚長のバランスが良好です。",
+                    "全身の可動域を最大化するために、柔軟性トレーニングを取り入れると効果的です。",
+                    "姿勢を意識して、関節の動きを適切にコントロールしましょう。"
+                ],
+                "analysis_date": "2025-05-15"
+            }
+            os.makedirs(os.path.dirname(SAMPLE_TRAINING_PATH), exist_ok=True)
+            with open(SAMPLE_TRAINING_PATH, 'w', encoding='utf-8') as f:
+                json.dump(sample_data, f, indent=2)
+            return sample_data
+        
+        # 存在する場合はファイルから読み込む
         with open(SAMPLE_TRAINING_PATH, 'r', encoding='utf-8') as f:
             return json.load(f)
     except Exception as e:
@@ -52,6 +153,100 @@ def load_training_sample():
 def load_exercise_classification_sample():
     """運動分類のサンプルデータを読み込む"""
     try:
+        # サンプルデータファイルが存在するか確認
+        if not os.path.exists(SAMPLE_EXERCISE_PATH):
+            # なければ作成する
+            sample_data = {
+                "dominant_exercise": "squat",
+                "confidence_score": 85,
+                "exercise_distribution": {
+                    "squat": 75,
+                    "deadlift": 15,
+                    "lunge": 8,
+                    "unknown": 2
+                },
+                "total_frames": 300,
+                "segments": [
+                    {
+                        "start_frame": 0,
+                        "end_frame": 30,
+                        "exercise": "unknown",
+                        "confidence": 45
+                    },
+                    {
+                        "start_frame": 31,
+                        "end_frame": 120,
+                        "exercise": "squat",
+                        "confidence": 88,
+                        "repetitions": 3
+                    },
+                    {
+                        "start_frame": 121,
+                        "end_frame": 150,
+                        "exercise": "rest",
+                        "confidence": 92
+                    },
+                    {
+                        "start_frame": 151,
+                        "end_frame": 240,
+                        "exercise": "squat",
+                        "confidence": 90,
+                        "repetitions": 3
+                    },
+                    {
+                        "start_frame": 241,
+                        "end_frame": 270,
+                        "exercise": "deadlift",
+                        "confidence": 75,
+                        "repetitions": 2
+                    },
+                    {
+                        "start_frame": 271,
+                        "end_frame": 300,
+                        "exercise": "unknown",
+                        "confidence": 40
+                    }
+                ],
+                "performance_metrics": {
+                    "squat": {
+                        "joint_rom": {
+                            "left_knee": 105.2,
+                            "right_knee": 104.8,
+                            "left_hip": 110.3,
+                            "right_hip": 109.7
+                        },
+                        "movement_speed": {
+                            "average": 0.85,
+                            "max": 1.2,
+                            "consistency": 0.92
+                        },
+                        "form_score": 82
+                    },
+                    "deadlift": {
+                        "joint_rom": {
+                            "left_knee": 75.3,
+                            "right_knee": 74.9,
+                            "left_hip": 95.2,
+                            "right_hip": 94.6,
+                            "left_shoulder": 45.2,
+                            "right_shoulder": 44.8
+                        },
+                        "movement_speed": {
+                            "average": 0.72,
+                            "max": 0.95,
+                            "consistency": 0.88
+                        },
+                        "form_score": 78
+                    }
+                },
+                "analysis_date": "2025-05-15"
+            }
+            os.makedirs(os.path.dirname(SAMPLE_EXERCISE_PATH), exist_ok=True)
+            with open(SAMPLE_EXERCISE_PATH, 'w', encoding='utf-8') as f:
+                json.dump(sample_data, f, indent=2)
+            return sample_data
+        
+        # 存在する場合はファイルから読み込む
         with open(SAMPLE_EXERCISE_PATH, 'r', encoding='utf-8') as f:
             return json.load(f)
     except Exception as e:
@@ -313,16 +508,25 @@ def exercise_results():
     else:
         # サンプルデータを読み込む
         classification_data = load_exercise_classification_sample()
-        classification_summary = {
-            "dominant_exercise": "サンプルデータ",
-            "confidence": 0.85,
-            "class_distribution": {"squat": 0.85, "rest": 0.15},
-            "frame_count": 120,
-            "processing_time": 2.5
-        }
+        # サマリーデータを作成
+        if classification_data:
+            classification_summary = {
+                "dominant_exercise": classification_data.get("dominant_exercise", "squat"),
+                "confidence": classification_data.get("confidence_score", 85) / 100,
+                "class_distribution": classification_data.get("exercise_distribution", {"squat": 75, "rest": 15, "unknown": 10}),
+                "frame_count": classification_data.get("total_frames", 300),
+                "processing_time": 2.5
+            }
+        else:
+            classification_summary = {
+                "dominant_exercise": "squat",
+                "confidence": 0.85,
+                "class_distribution": {"squat": 75, "rest": 15, "unknown": 10},
+                "frame_count": 300,
+                "processing_time": 2.5
+            }
     
-    if not classification_data:
-        return jsonify({"error": "運動分類データの読み込みに失敗しました"}), 500
+    # 既に条件チェック済みなので削除
     
     # 身体測定データも読み込む（表示に使用）
     body_metrics = load_sample_data()
