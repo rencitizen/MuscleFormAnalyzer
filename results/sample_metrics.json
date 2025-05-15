@@ -8,5 +8,19 @@
   "chest_width_cm": 38.6,
   "hip_width_cm": 36.2,
   "torso_length_cm": 51.4,
-  "analysis_date": "2025-05-15"
+  "analysis_date": "2025-05-15",
+  "joints_cm": {
+    "leftShoulder": {"x": 42.3, "y": 120.5, "z": 0.0},
+    "rightShoulder": {"x": 0.0, "y": 120.5, "z": 0.0},
+    "leftElbow": {"x": 62.5, "y": 95.2, "z": 5.1},
+    "rightElbow": {"x": -20.2, "y": 95.2, "z": 5.1},
+    "leftWrist": {"x": 70.8, "y": 80.3, "z": 10.2},
+    "rightWrist": {"x": -28.5, "y": 80.3, "z": 10.2},
+    "leftHip": {"x": 33.1, "y": 80.5, "z": 0.0},
+    "rightHip": {"x": 9.2, "y": 80.5, "z": 0.0},
+    "leftKnee": {"x": 35.5, "y": 45.2, "z": 7.3},
+    "rightKnee": {"x": 6.8, "y": 45.2, "z": 7.3},
+    "leftAnkle": {"x": 38.2, "y": 10.5, "z": 12.5},
+    "rightAnkle": {"x": 4.1, "y": 10.5, "z": 12.5}
+  }
 }
