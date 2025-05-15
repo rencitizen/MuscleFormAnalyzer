@@ -61,23 +61,74 @@
                             <p class="text-muted">動画をアップロードして、身体各部の寸法（cm）を自動で計測します</p>
                         </div>
                         
-                        <form action="/analyze" method="post" enctype="multipart/form-data" class="mb-4">
-                            <div class="mb-3">
-                                <label for="height" class="form-label">身長 (cm): <span id="height-value">170</span></label>
-                                <input type="range" class="form-range" id="height" name="height" min="100" max="220" value="170" step="1" oninput="document.getElementById('height-value').textContent = this.value">
-                            </div>
+                        <div class="mb-4">
+                            <ul class="nav nav-tabs" id="analysisTab" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active" id="body-tab" data-bs-toggle="tab" data-bs-target="#body-content" type="button" role="tab" aria-controls="body-content" aria-selected="true">身体計測</button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="training-tab" data-bs-toggle="tab" data-bs-target="#training-content" type="button" role="tab" aria-controls="training-content" aria-selected="false">トレーニング分析</button>
+                                </li>
+                            </ul>
                             
-                            <div class="mb-3">
-                                <label for="video" class="form-label">動画ファイル (MP4、MOV、WebM形式)</label>
-                                <input class="form-control" type="file" id="video" name="video" accept="video/mp4,video/quicktime,video/webm">
-                                <div class="form-text">※ ファイルサイズは50MB以下にしてください</div>
+                            <div class="tab-content pt-3" id="analysisTabContent">
+                                <!-- 身体計測タブ -->
+                                <div class="tab-pane fade show active" id="body-content" role="tabpanel" aria-labelledby="body-tab">
+                                    <form action="/analyze" method="post" enctype="multipart/form-data">
+                                        <input type="hidden" name="analysis_type" value="body_metrics">
+                                        
+                                        <div class="mb-3">
+                                            <label for="height-body" class="form-label">身長 (cm): <span id="height-value-body">170</span></label>
+                                            <input type="range" class="form-range" id="height-body" name="height" min="100" max="220" value="170" step="1" oninput="document.getElementById('height-value-body').textContent = this.value">
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="video-body" class="form-label">動画ファイル (MP4、MOV、WebM形式)</label>
+                                            <input class="form-control" type="file" id="video-body" name="video" accept="video/mp4,video/quicktime,video/webm">
+                                            <div class="form-text">※ 全身が映っている動画をアップロードしてください</div>
+                                        </div>
+                                        
+                                        <div class="d-grid gap-2">
+                                            <button class="btn btn-primary" type="submit">身体寸法を計測</button>
+                                            <a href="/results?mode=sample" class="btn btn-outline-secondary">サンプルデータを見る</a>
+                                        </div>
+                                    </form>
+                                </div>
+                                
+                                <!-- トレーニング分析タブ -->
+                                <div class="tab-pane fade" id="training-content" role="tabpanel" aria-labelledby="training-tab">
+                                    <form action="/analyze" method="post" enctype="multipart/form-data">
+                                        <input type="hidden" name="analysis_type" value="training">
+                                        
+                                        <div class="mb-3">
+                                            <label for="height-training" class="form-label">身長 (cm): <span id="height-value-training">170</span></label>
+                                            <input type="range" class="form-range" id="height-training" name="height" min="100" max="220" value="170" step="1" oninput="document.getElementById('height-value-training').textContent = this.value">
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="exercise_type" class="form-label">トレーニング種目</label>
+                                            <select class="form-select" id="exercise_type" name="exercise_type">
+                                                <option value="squat" selected>スクワット</option>
+                                                <option value="bench_press">ベンチプレス</option>
+                                                <option value="deadlift">デッドリフト</option>
+                                                <option value="overhead_press">オーバーヘッドプレス</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="video-training" class="form-label">動画ファイル (MP4、MOV、WebM形式)</label>
+                                            <input class="form-control" type="file" id="video-training" name="video" accept="video/mp4,video/quicktime,video/webm">
+                                            <div class="form-text">※ トレーニング動作が横から見えるアングルの動画を推奨</div>
+                                        </div>
+                                        
+                                        <div class="d-grid gap-2">
+                                            <button class="btn btn-primary" type="submit">フォームを分析</button>
+                                            <a href="/training_results?mode=sample&exercise=squat" class="btn btn-outline-secondary">サンプル分析を見る</a>
+                                        </div>
+                                    </form>
+                                </div>
                             </div>
-                            
-                            <div class="d-grid gap-2">
-                                <button class="btn btn-primary" type="submit">分析開始</button>
-                                <a href="/results?mode=sample" class="btn btn-outline-secondary">サンプルデータを見る</a>
-                            </div>
-                        </form>
+                        </div>
                         
                         <div class="sample-preview">
                             <h5>測定できる項目</h5>

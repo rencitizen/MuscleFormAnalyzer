@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="ja" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>トレーニング分析結果 - BodyScale Pose Analyzer</title>
+    <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .main-container {
+            padding-top: 2rem;
+            padding-bottom: 2rem;
+        }
+        .card {
+            margin-bottom: 2rem;
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .card-header {
+            border-radius: 10px 10px 0 0;
+            font-weight: 600;
+        }
+        .result-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--bs-info);
+        }
+        .metric-card {
+            text-align: center;
+            padding: 1.5rem 0;
+        }
+        .metric-title {
+            font-size: 0.875rem;
+            margin-bottom: 0.5rem;
+            color: var(--bs-secondary-color);
+        }
+        .score-badge {
+            display: inline-block;
+            width: 3rem;
+            height: 3rem;
+            line-height: 3rem;
+            border-radius: 50%;
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 0.5rem;
+        }
+        .score-high {
+            background-color: rgba(25, 135, 84, 0.2);
+            color: var(--bs-success);
+        }
+        .score-medium {
+            background-color: rgba(255, 193, 7, 0.2);
+            color: var(--bs-warning);
+        }
+        .score-low {
+            background-color: rgba(220, 53, 69, 0.2);
+            color: var(--bs-danger);
+        }
+        .advice-item {
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            margin-bottom: 0.75rem;
+            background-color: rgba(13, 110, 253, 0.1);
+            border-left: 4px solid var(--bs-info);
+        }
+        .strength-item {
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            margin-bottom: 0.5rem;
+            background-color: rgba(25, 135, 84, 0.1);
+            border-left: 4px solid var(--bs-success);
+        }
+        .issue-item {
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            margin-bottom: 0.5rem;
+            background-color: rgba(255, 193, 7, 0.1);
+            border-left: 4px solid var(--bs-warning);
+        }
+        #exercise-video {
+            border-radius: 0.5rem;
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+        .rep-visualization {
+            height: 150px;
+            background-color: rgba(0, 0, 0, 0.05);
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+        .proportion-info {
+            padding: 0.75rem;
+            background-color: rgba(0, 0, 0, 0.05);
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .proportion-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--bs-info);
+        }
+    </style>
+</head>
+<body>
+    <div class="container main-container">
+        <div class="row justify-content-center mb-4">
+            <div class="col-md-10">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="/">ホーム</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">トレーニング分析結果</li>
+                    </ol>
+                </nav>
+                
+                <div class="card">
+                    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                        <h3 class="mb-0">
+                            {% if training.exercise_type == 'squat' %}
+                                スクワット
+                            {% elif training.exercise_type == 'bench_press' %}
+                                ベンチプレス
+                            {% elif training.exercise_type == 'deadlift' %}
+                                デッドリフト
+                            {% elif training.exercise_type == 'overhead_press' %}
+                                オーバーヘッドプレス
+                            {% else %}
+                                トレーニング
+                            {% endif %}
+                            フォーム分析
+                        </h3>
+                        <span class="badge bg-info">{{ metrics.user_height_cm }}cm</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <h5 class="mb-3">総合スコア</h5>
+                                <div class="row">
+                                    <div class="col-3 text-center">
+                                        <div class="score-badge {% if training.form_score >= 85 %}score-high{% elif training.form_score >= 70 %}score-medium{% else %}score-low{% endif %}">
+                                            {{ training.form_score }}
+                                        </div>
+                                        <div class="small">フォーム</div>
+                                    </div>
+                                    
+                                    {% if training.exercise_type == 'squat' %}
+                                    <div class="col-3 text-center">
+                                        <div class="score-badge {% if training.depth_score >= 85 %}score-high{% elif training.depth_score >= 70 %}score-medium{% else %}score-low{% endif %}">
+                                            {{ training.depth_score }}
+                                        </div>
+                                        <div class="small">深さ</div>
+                                    </div>
+                                    <div class="col-3 text-center">
+                                        <div class="score-badge {% if training.balance_score >= 85 %}score-high{% elif training.balance_score >= 70 %}score-medium{% else %}score-low{% endif %}">
+                                            {{ training.balance_score }}
+                                        </div>
+                                        <div class="small">バランス</div>
+                                    </div>
+                                    <div class="col-3 text-center">
+                                        <div class="score-badge {% if training.tempo_score >= 85 %}score-high{% elif training.tempo_score >= 70 %}score-medium{% else %}score-low{% endif %}">
+                                            {{ training.tempo_score }}
+                                        </div>
+                                        <div class="small">テンポ</div>
+                                    </div>
+                                    {% elif training.exercise_type == 'bench_press' %}
+                                    <div class="col-3 text-center">
+                                        <div class="score-badge {% if training.bar_path_score >= 85 %}score-high{% elif training.bar_path_score >= 70 %}score-medium{% else %}score-low{% endif %}">
+                                            {{ training.bar_path_score }}
+                                        </div>
+                                        <div class="small">バーパス</div>
+                                    </div>
+                                    <div class="col-3 text-center">
+                                        <div class="score-badge {% if training.elbow_position_score >= 85 %}score-high{% elif training.elbow_position_score >= 70 %}score-medium{% else %}score-low{% endif %}">
+                                            {{ training.elbow_position_score }}
+                                        </div>
+                                        <div class="small">肘位置</div>
+                                    </div>
+                                    <div class="col-3 text-center">
+                                        <div class="score-badge {% if training.tempo_score >= 85 %}score-high{% elif training.tempo_score >= 70 %}score-medium{% else %}score-low{% endif %}">
+                                            {{ training.tempo_score }}
+                                        </div>
+                                        <div class="small">テンポ</div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="mt-4">
+                                    <h5 class="mb-3">レップ数: {{ training.rep_count }}回</h5>
+                                    <div class="rep-visualization mb-3" id="rep-chart"></div>
+                                    
+                                    <h5 class="mb-2">強み</h5>
+                                    <div class="mb-3">
+                                        {% for strength in training.strengths %}
+                                        <div class="strength-item">{{ strength }}</div>
+                                        {% endfor %}
+                                    </div>
+                                    
+                                    <h5 class="mb-2">改善点</h5>
+                                    <div class="mb-3">
+                                        {% for issue in training.issues %}
+                                        <div class="issue-item">{{ issue }}</div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-4">
+                                    <video id="exercise-video" class="w-100" controls>
+                                        <source src="/static/videos/sample_exercise.mp4" type="video/mp4">
+                                        お使いのブラウザはビデオタグをサポートしていません。
+                                    </video>
+                                </div>
+                                
+                                <h5 class="mb-3">体のプロポーションに基づく分析</h5>
+                                
+                                <!-- 身体サイズ情報 -->
+                                <div class="proportion-info">
+                                    <div class="proportion-title">身体サイズ</div>
+                                    <div class="row g-2 mb-2">
+                                        <div class="col-6">
+                                            <div class="d-flex justify-content-between">
+                                                <span>左腕の長さ:</span>
+                                                <span class="fw-bold">{{ training.body_metrics.left_arm_cm }}cm</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="d-flex justify-content-between">
+                                                <span>右腕の長さ:</span>
+                                                <span class="fw-bold">{{ training.body_metrics.right_arm_cm }}cm</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="d-flex justify-content-between">
+                                                <span>左脚の長さ:</span>
+                                                <span class="fw-bold">{{ training.body_metrics.left_leg_cm }}cm</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="d-flex justify-content-between">
+                                                <span>右脚の長さ:</span>
+                                                <span class="fw-bold">{{ training.body_metrics.right_leg_cm }}cm</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="small text-muted">腕長/身長比: {{ "%.2f"|format(training.body_metrics.arm_length_ratio) }}, 脚長/身長比: {{ "%.2f"|format(training.body_metrics.leg_length_ratio) }}</div>
+                                </div>
+                                
+                                <!-- 種目別の身体プロポーション分析 -->
+                                {% if training.exercise_type == 'squat' %}
+                                    <div class="proportion-info">
+                                        <div class="proportion-title">脚の長さに基づく分析</div>
+                                        {% if training.leg_length_analysis.form_adjustment %}
+                                            <div class="mb-2">{{ training.leg_length_analysis.form_adjustment }}</div>
+                                        {% endif %}
+                                        {% if training.leg_length_analysis.depth_advice %}
+                                            <div class="mb-2">{{ training.leg_length_analysis.depth_advice }}</div>
+                                        {% endif %}
+                                        {% if training.leg_length_analysis.symmetry_issue %}
+                                            <div class="text-warning">{{ training.leg_length_analysis.symmetry_issue }}</div>
+                                        {% endif %}
+                                    </div>
+                                {% elif training.exercise_type == 'bench_press' %}
+                                    <div class="proportion-info">
+                                        <div class="proportion-title">腕の長さに基づく分析</div>
+                                        {% if training.arm_length_analysis.grip_width %}
+                                            <div class="mb-2">{{ training.arm_length_analysis.grip_width }}</div>
+                                        {% endif %}
+                                        {% if training.arm_length_analysis.rom_advice %}
+                                            <div class="mb-2">{{ training.arm_length_analysis.rom_advice }}</div>
+                                        {% endif %}
+                                        {% if training.arm_length_analysis.symmetry_issue %}
+                                            <div class="text-warning">{{ training.arm_length_analysis.symmetry_issue }}</div>
+                                        {% endif %}
+                                    </div>
+                                    {% if training.chest_width_impact %}
+                                        <div class="proportion-info">
+                                            <div class="proportion-title">胸幅の影響</div>
+                                            <div>{{ training.chest_width_impact }}</div>
+                                        </div>
+                                    {% endif %}
+                                {% endif %}
+                                
+                                <!-- 体全体のプロポーション分析 -->
+                                <div class="proportion-info">
+                                    <div class="proportion-title">体型プロポーションの洞察</div>
+                                    <ul class="mb-0 ps-3">
+                                        {% for insight in training.body_proportion_insights %}
+                                            <li class="mb-1">{{ insight }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card mb-0">
+                            <div class="card-header bg-info bg-opacity-25">
+                                <h5 class="mb-0">改善アドバイス</h5>
+                            </div>
+                            <div class="card-body">
+                                {% if training.advice %}
+                                    {% for advice in training.advice %}
+                                        <div class="advice-item">{{ advice }}</div>
+                                    {% endfor %}
+                                {% else %}
+                                    <div class="advice-item">
+                                        {% if training.exercise_type == 'squat' %}
+                                            膝が内側に入る傾向があります。足幅を少し広げ、膝を足の方向に向けるよう意識してください。また、より深いスクワットを目指すなら、足首と股関節の柔軟性を高めるストレッチを取り入れると良いでしょう。
+                                        {% elif training.exercise_type == 'bench_press' %}
+                                            バーの軌道にばらつきがあります。胸の同じ位置にバーが触れるよう意識し、左右均等に力を入れてバーを押し上げてください。また、肩の安定性を高めるため、肩甲骨をしっかり寄せることを忘れないでください。
+                                        {% elif training.exercise_type == 'deadlift' %}
+                                            背中が丸まりやすい傾向があります。リフト開始時に胸を張り、腹筋に力を入れて背中をまっすぐに保つことに集中してください。また、効果的なヒップヒンジのために、お尻を後ろに引くイメージで動作を始めましょう。
+                                        {% elif training.exercise_type == 'overhead_press' %}
+                                            腰が反りがちです。腹筋に力を入れ、骨盤を少し前傾させて腰の反りを抑えましょう。また、左右の肩の高さを揃えるために、片側ずつのトレーニングも取り入れると効果的です。
+                                        {% else %}
+                                            動作のテンポが一定でないようです。上げる時と下げる時の速度を意識して、安定したリズムを保つよう心がけましょう。
+                                        {% endif %}
+                                    </div>
+                                {% endif %}
+                                
+                                <div class="mt-3">
+                                    <div class="proportion-title">体型を考慮したアドバイス</div>
+                                    <div class="advice-item">
+                                        あなたの体型データから分析されたプロポーションに基づき、
+                                        {% if training.exercise_type == 'squat' and training.body_metrics.leg_length_ratio > 0.55 %}
+                                            脚が比較的長いため、スクワットの際は足幅を少し広めに取り、より安定した姿勢を維持しましょう。また、深いスクワットにはより高い柔軟性が必要になるため、ウォームアップをしっかり行ってください。
+                                        {% elif training.exercise_type == 'bench_press' and training.body_metrics.arm_length_ratio > 0.37 %}
+                                            腕が比較的長いため、ベンチプレスでは肩関節への負担が大きくなる傾向があります。肩幅よりやや広めのグリップ幅を試し、肩関節の可動域を意識してトレーニングしてください。
+                                        {% elif training.exercise_type == 'deadlift' and training.body_metrics.leg_length_ratio < 0.52 %}
+                                            脚が比較的短いため、従来のコンベンショナルスタンスが適していると考えられます。背中のポジションを保ちやすく、効率的なリフトが可能です。
+                                        {% elif training.exercise_type == 'overhead_press' and training.body_metrics.arm_length_ratio < 0.34 %}
+                                            腕が比較的短いため、オーバーヘッドプレスでは自然に垂直なバーパスを維持しやすい傾向があります。この強みを活かし、肩の安定性に集中してください。
+                                        {% else %}
+                                            あなたの体型はバランスが取れているため、標準的なフォームで効果的なトレーニングが可能です。左右対称性を保ち、正しいフォームを意識して取り組みましょう。
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="text-center mt-4">
+                    <a href="/" class="btn btn-primary">トップに戻る</a>
+                    <a href="/api/training" class="btn btn-outline-secondary ms-2" target="_blank">JSONデータを表示</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // トレーニングデータ
+        const trainingData = {{ training|tojson }};
+        
+        // レップごとの可視化
+        function initRepChart() {
+            const ctx = document.getElementById('rep-chart').getContext('2d');
+            
+            // サンプルデータ生成
+            const repData = trainingData.rep_data || generateSampleRepData();
+            
+            // データの準備
+            const labels = repData.map(rep => `Rep ${rep.rep_number}`);
+            const depthData = repData.map(rep => rep.depth_cm);
+            const kneeAngleData = repData.map(rep => rep.knee_angle_deg);
+            const durationData = repData.map(rep => rep.duration_sec);
+            
+            // ターゲット値
+            const idealValues = trainingData.ideal_values || {
+                knee_angle_deg: 90,
+                depth_target_cm: 60
+            };
+            
+            const depthTarget = Array(repData.length).fill(idealValues.depth_target_cm);
+            
+            // チャート作成
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: '深さ (cm)',
+                            data: depthData,
+                            borderColor: 'rgba(23, 162, 184, 1)',
+                            backgroundColor: 'rgba(23, 162, 184, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        },
+                        {
+                            label: '目標深さ',
+                            data: depthTarget,
+                            borderColor: 'rgba(25, 135, 84, 0.5)',
+                            borderDash: [5, 5],
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        }
+                    },
+                    scales: {
+                        y: {
+                            min: Math.min(...depthData) * 0.9,
+                            max: Math.max(...depthData) * 1.1,
+                            title: {
+                                display: true,
+                                text: '深さ (cm)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // サンプルデータの生成（実際のデータがない場合用）
+        function generateSampleRepData() {
+            const repCount = trainingData.rep_count || 8;
+            const data = [];
+            
+            for (let i = 1; i <= repCount; i++) {
+                // 徐々に疲労して浅くなる傾向を表現
+                const fatigueFactor = 1 + (i / repCount) * 0.25;
+                
+                data.push({
+                    rep_number: i,
+                    depth_cm: 60 + (i * 2),
+                    knee_angle_deg: 90 + (i * 2),
+                    hip_angle_deg: 80 + (i * 2),
+                    back_angle_deg: 45 + (i / 2),
+                    duration_sec: 3.5 - (i * 0.15)
+                });
+            }
+            
+            return data;
+        }
+        
+        // ページ読み込み時の処理
+        window.addEventListener('load', function() {
+            initRepChart();
+        });
+    </script>
+</body>
+</html>
