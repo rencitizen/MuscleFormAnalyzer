@@ -203,6 +203,15 @@ def training_results():
     if not body_metrics:
         return jsonify({"error": "身体測定データの読み込みに失敗しました"}), 500
     
+    # 両方のデータを統合して、正しい参照構造を持つようにする
+    training_data['body_metrics'] = {
+        'left_arm_cm': body_metrics.get('left_arm_cm', 60),
+        'right_arm_cm': body_metrics.get('right_arm_cm', 60),
+        'left_leg_cm': body_metrics.get('left_leg_cm', 90),
+        'right_leg_cm': body_metrics.get('right_leg_cm', 90),
+        'height_cm': body_metrics.get('user_height_cm', 170)
+    }
+    
     return render_template('training_results.html', 
                           training=training_data, 
                           metrics=body_metrics,
@@ -279,6 +288,10 @@ def exercise_results():
     
     if not body_metrics:
         return jsonify({"error": "身体測定データの読み込みに失敗しました"}), 500
+    
+    # 必要なデータ構造を確保する
+    if not isinstance(body_metrics, dict):
+        body_metrics = {}
     
     return render_template('exercise_results.html', 
                           classification=classification_data,
