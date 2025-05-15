@@ -1173,7 +1173,9 @@ dependencies = [
     { name = "psycopg2-binary" },
     { name = "pydantic" },
     { name = "python-multipart" },
+    { name = "pyyaml" },
     { name = "requests" },
+    { name = "scipy" },
     { name = "uvicorn", extra = ["standard"] },
     { name = "werkzeug" },
 ]
@@ -1191,7 +1193,9 @@ requires-dist = [
     { name = "psycopg2-binary", specifier = ">=2.9.10" },
     { name = "pydantic", specifier = ">=2.11.4" },
     { name = "python-multipart", specifier = ">=0.0.20" },
+    { name = "pyyaml", specifier = ">=6.0.2" },
     { name = "requests", specifier = ">=2.32.3" },
+    { name = "scipy", specifier = ">=1.15.2" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.34.2" },
     { name = "werkzeug", specifier = ">=3.1.3" },
 ]

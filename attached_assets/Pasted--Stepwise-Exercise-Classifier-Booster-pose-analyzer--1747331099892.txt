@@ -1,0 +1,81 @@
+# 📌 プロジェクト名
+Stepwise Exercise Classifier Booster
+
+# 🎯 最終目標
+既存の pose_analyzer を改造せず、  
+**後付けモジュール** で精度を段階的に上げる。  
+サーバー負荷（推論時間・メモリ）は現状＋20% 以内に抑える。
+
+# 🗂️ 生成するファイル構成
+.
+├─ main.py                 # 全体の実行ハブ（ステップをON/OFF）
+├─ step01_cleanup.py       # 欠損補間＆visibility 重み
+├─ step02_smooth.py        # 移動平均 / Savitzky-Golay
+├─ step03_normalize.py     # 骨盤中心・肩幅=1 の正規化
+├─ step04_temporal.py      # 時系列特徴 (angle,Δangle,Δ²angle)
+├─ step05_voting.py        # 窓幅多数決＋HMM 後処理
+├─ step06_rulegate.py      # ルールベース優先判定ゲート
+├─ config.yaml             # しきい値・パラメータ一括管理
+└─ README_STEPUP.md        # 各ステップの説明と実行コマンド
+
+# 🛠️ 共通ライブラリ
+- numpy
+- scipy   (signal.savgol_filter 用)
+- pyyaml  (設定読み書き)
+※ 追加学習はしない＝TensorFlow/PyTorch 不要
+
+# ▶️ main.py の仕様
+- コマンドライン引数 `--steps=1,2,3` のように実行ステップを列挙  
+  （何も付けなければ 1→6 を順番に全適用）  
+- 入力: 既存システムが吐く JSON `raw_landmarks_by_frame.json`  
+- 出力: `enhanced_predictions.json` ―― 各フレームの種目ラベル
+
+# 🔄 各ステップの内容
+
+## step01_cleanup.py
+- visibility < config.min_visibility (0.5) のランドマークを線形補間
+- ランドマーク座標に visibility を掛けてノイズ緩和
+> 時間: ★☆☆　メモリ: ✩☆☆
+
+## step02_smooth.py
+- Savitzky-Golay フィルタ (window=11, poly=3) で全ランドマークを平滑化
+> 時間: ★☆☆
+
+## step03_normalize.py
+- 骨盤中心＝原点, 肩幅でスケーリング
+- XY 平面で肩ラインを X 軸へ回転 → 視点ロバスト
+> 時間: ★☆☆
+
+## step04_temporal.py
+- 角度系列（股関節・膝・肘など主要 6 角度）を計算  
+- Δangle・Δ²angle を追加特徴として JSON に追記
+> 時間: ★★☆　メモリ: ✩☆☆
+
+## step05_voting.py
+- 30 フレーム窓で多数決  
+- 切り替わり揺らぎを HMM(2状態) で後処理
+> 時間: ★★☆　メモリ: ★☆☆
+
+## step06_rulegate.py
+- 「手が床より下＆体幹水平→Push-up」「股関節屈曲角>90°→Squat」など  
+  判定が ML と食い違う場合はルールを優先
+> 時間: ★☆☆
+
+# 🧩 各ステップは完全モジュール化
+- 入出力とも 「frame_id: {ランドマーク or ラベル}」 の dict JSON
+- main.py で `importlib.import_module(f"step0{i}_*.apply")` 呼び出し
+
+# 📝 README_STEPUP.md
+1. `python main.py --steps=1` でクリーンアップだけ確認  
+2. グラフ例（before / after）を matplotlib で出力  
+3. `time` モジュールで処理時間を自動計測 → スプレッドシート風に表示
+
+# 🎯 完了条件
+- `python main.py` 1 回で enhanced_predictions.json が生成
+- 処理時間レポートが Console に表示
+- 各ステップを個別 ON/OFF して比較できる
+
+# 🌱 メモ
+- もし raw JSON が 100k フレーム以上なら main.py が自動で
+  `--chunk` 処理（5000 フレームずつ）に切り替えてメモリ節約
+- 追加学習は行わず、全て「既存推論結果を後加工」で精度向上を狙う

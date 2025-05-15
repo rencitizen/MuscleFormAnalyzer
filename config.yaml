@@ -1,0 +1,77 @@
+# Stepwise Exercise Classifier Booster Configuration
+
+# Step 1: Cleanup parameters
+cleanup:
+  min_visibility: 0.5  # visibility閾値
+  interpolation_method: 'linear'  # 補間方法
+
+# Step 2: Smoothing parameters
+smooth:
+  method: 'savgol'  # 'savgol' or 'moving_avg'
+  window_size: 11   # フィルタの窓サイズ
+  polyorder: 3      # Savitzky-Golayの多項式次数
+  moving_avg_window: 5  # 移動平均の窓サイズ（method='moving_avg'の場合）
+
+# Step 3: Normalization parameters
+normalize:
+  scale_by: 'shoulder_width'  # スケーリング基準
+  reference_shoulder_width: 1.0  # 正規化後の肩幅
+
+# Step 4: Temporal feature parameters
+temporal:
+  angles:  # 計算する主要角度
+    - 'left_shoulder'    # 左肩
+    - 'right_shoulder'   # 右肩
+    - 'left_elbow'       # 左肘
+    - 'right_elbow'      # 右肘
+    - 'left_hip'         # 左股関節
+    - 'right_hip'        # 右股関節
+    - 'left_knee'        # 左膝
+    - 'right_knee'       # 右膝
+    - 'torso'            # 体幹（肩-腰）
+  delta_window: 3  # 角速度計算の時間窓
+  delta2_window: 5  # 角加速度計算の時間窓
+
+# Step 5: Voting parameters
+voting:
+  window_size: 30  # 多数決ウィンドウサイズ
+  min_confidence: 0.6  # 最小信頼度
+  hmm:
+    enabled: true  # HMM後処理の有効化
+    transition_prob: 0.1  # 状態遷移確率
+    min_state_duration: 15  # 最小状態持続フレーム数
+
+# Step 6: Rule-based gate parameters
+rulegate:
+  rules:
+    pushup:
+      # 手が床より下＆体幹水平でプッシュアップと判定
+      hands_below_floor: true
+      torso_horizontal: true
+      torso_angle_threshold: 30  # 度
+    squat:
+      # 股関節屈曲角>90°でスクワットと判定
+      hip_flexion_threshold: 90  # 度
+    deadlift:
+      # 脚伸展＆体幹前傾でデッドリフトと判定
+      leg_extended: true
+      torso_forward_tilt: true
+      torso_angle_threshold: 45  # 度
+    overhead_press:
+      # 手が頭上＆肘伸展でオーバーヘッドプレスと判定
+      hands_above_head: true
+      elbow_extension: true
+      elbow_angle_threshold: 160  # 度
+  rule_priority: true  # ルールが判定と食い違う場合、ルールを優先するか
+
+# 一般設定
+general:
+  memory_efficient_threshold: 100000  # フレーム数がこれを超えるとチャンク処理
+  chunk_size: 5000  # チャンク処理時のフレーム数
+  classes:  # 認識する運動クラス
+    - 'squat'
+    - 'pushup'
+    - 'deadlift'
+    - 'overhead_press'
+    - 'bench_press'
+    - 'rest'  # 休止状態
