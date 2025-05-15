@@ -1,0 +1,41 @@
+{
+  "knee_angle_bottom": 90.0,
+  "hip_angle_bottom": 80.0,
+  "back_angle": 45.0,
+  "symmetry_threshold": 10.0,
+  "depth_target": 0.4,
+  "joint_positions": {
+    "bottom_phase": {
+      "hip_knee_ankle_angle": 90.0,
+      "knee_position": "tracked_to_ankle",
+      "back_position": "neutral"
+    },
+    "top_phase": {
+      "hip_knee_ankle_angle": 170.0,
+      "knee_position": "neutral",
+      "back_position": "upright"
+    }
+  },
+  "movement_pattern": [
+    {
+      "phase": "eccentric",
+      "speed": "controlled",
+      "duration_sec": 2.0
+    },
+    {
+      "phase": "bottom",
+      "speed": "pause",
+      "duration_sec": 1.0
+    },
+    {
+      "phase": "concentric",
+      "speed": "explosive",
+      "duration_sec": 1.0
+    },
+    {
+      "phase": "top",
+      "speed": "pause",
+      "duration_sec": 1.0
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "elbow_angle_bottom": 90.0,
+  "bar_path_variance": 5.0,
+  "wrist_alignment": 5.0,
+  "symmetry_threshold": 8.0,
+  "joint_positions": {
+    "bottom_phase": {
+      "elbow_angle": 90.0,
+      "wrist_position": "straight",
+      "shoulder_position": "retracted"
+    },
+    "top_phase": {
+      "elbow_angle": 170.0,
+      "wrist_position": "straight",
+      "shoulder_position": "stable"
+    }
+  },
+  "bar_path": {
+    "horizontal_variance_cm": 2.0,
+    "touch_point": "lower_chest",
+    "lockout_position": "above_shoulders"
+  },
+  "movement_pattern": [
+    {
+      "phase": "eccentric",
+      "speed": "controlled",
+      "duration_sec": 2.0
+    },
+    {
+      "phase": "bottom",
+      "speed": "pause",
+      "duration_sec": 0.5
+    },
+    {
+      "phase": "concentric",
+      "speed": "explosive",
+      "duration_sec": 1.0
+    },
+    {
+      "phase": "top",
+      "speed": "pause",
+      "duration_sec": 0.5
+    }
+  ]
+}
