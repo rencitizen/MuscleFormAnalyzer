@@ -236,9 +236,9 @@
                                     <div class="card-body">
                                         <div class="row">
                                             <div class="col-md-6">
-                                                <h6>腕の長さ: {{ metrics.arm_measurements.average_arm_length_cm|round|int }}cm</h6>
+                                                <h6>腕の長さ: {{ ((metrics.left_arm_cm + metrics.right_arm_cm) / 2)|round|int }}cm</h6>
                                                 <p>
-                                                    {% if metrics.arm_measurements.average_arm_length_cm > 70 %}
+                                                    {% if ((metrics.left_arm_cm + metrics.right_arm_cm) / 2) > 70 %}
                                                         腕が比較的長いため、プッシュアップでは手の位置を少し肩幅より広めに設定すると良いでしょう。
                                                     {% else %}
                                                         腕の長さは標準的です。基本的なフォームでエクササイズを行えます。
@@ -246,9 +246,9 @@
                                                 </p>
                                             </div>
                                             <div class="col-md-6">
-                                                <h6>脚の長さ: {{ metrics.leg_measurements.average_leg_length_cm|round|int }}cm</h6>
+                                                <h6>脚の長さ: {{ ((metrics.left_leg_cm + metrics.right_leg_cm) / 2)|round|int }}cm</h6>
                                                 <p>
-                                                    {% if metrics.leg_measurements.average_leg_length_cm > 85 %}
+                                                    {% if ((metrics.left_leg_cm + metrics.right_leg_cm) / 2) > 85 %}
                                                         脚が比較的長いため、スクワットではスタンスを少し広めにとると安定します。
                                                     {% else %}
                                                         脚の長さは標準的です。通常のスタンス幅で問題ありません。
