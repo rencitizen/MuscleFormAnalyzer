@@ -1,166 +1,128 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="ja" data-bs-theme="dark">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>マッスルフォームアナライザー MVP</title>
-  <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
-  <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BodyScale Pose Analyzer</title>
+    <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
+    <style>
+        .main-container {
+            padding-top: 2rem;
+            padding-bottom: 2rem;
+        }
+        .card {
+            margin-bottom: 2rem;
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .card-header {
+            border-radius: 10px 10px 0 0;
+            font-weight: 600;
+        }
+        .upload-icon {
+            font-size: 3rem;
+            color: var(--bs-info);
+            margin-bottom: 1rem;
+        }
+        .sample-preview {
+            background-color: rgba(0, 0, 0, 0.05);
+            border-radius: 10px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+        .form-range::-webkit-slider-thumb {
+            background: var(--bs-info);
+        }
+        .btn-primary {
+            background-color: var(--bs-info);
+            border-color: var(--bs-info);
+        }
+        .btn-primary:hover {
+            background-color: var(--bs-info-emphasis);
+            border-color: var(--bs-info-emphasis);
+        }
+    </style>
 </head>
-<body data-bs-theme="dark">
-  <div class="container">
-    <header class="app-header">
-      <h1 class="app-title">マッスルフォームアナライザー</h1>
-      <p class="lead">トレーニング動画をアップロードしてフォームを分析</p>
-    </header>
+<body>
+    <div class="container main-container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header bg-dark text-white">
+                        <h2 class="mb-0">BodyScale Pose Analyzer</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="text-center mb-4">
+                            <div class="upload-icon">
+                                <i class="bi bi-camera-video"></i>
+                            </div>
+                            <h4>身体寸法の自動計測システム</h4>
+                            <p class="text-muted">動画をアップロードして、身体各部の寸法（cm）を自動で計測します</p>
+                        </div>
+                        
+                        <form action="/analyze" method="post" enctype="multipart/form-data" class="mb-4">
+                            <div class="mb-3">
+                                <label for="height" class="form-label">身長 (cm): <span id="height-value">170</span></label>
+                                <input type="range" class="form-range" id="height" name="height" min="100" max="220" value="170" step="1" oninput="document.getElementById('height-value').textContent = this.value">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="video" class="form-label">動画ファイル (MP4、MOV、WebM形式)</label>
+                                <input class="form-control" type="file" id="video" name="video" accept="video/mp4,video/quicktime,video/webm">
+                                <div class="form-text">※ ファイルサイズは50MB以下にしてください</div>
+                            </div>
+                            
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-primary" type="submit">分析開始</button>
+                                <a href="/results?mode=sample" class="btn btn-outline-secondary">サンプルデータを見る</a>
+                            </div>
+                        </form>
+                        
+                        <div class="sample-preview">
+                            <h5>測定できる項目</h5>
+                            <ul class="mb-0">
+                                <li>両腕の長さ (肩から手首まで)</li>
+                                <li>両脚の長さ (腰から足首まで)</li>
+                                <li>33の関節ポイント3D座標 (実寸cm単位)</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header bg-dark text-white">
+                        <h5 class="mb-0">使用方法</h5>
+                    </div>
+                    <div class="card-body">
+                        <ol>
+                            <li class="mb-2">正確な身長を入力してください (スケール変換に使用します)</li>
+                            <li class="mb-2">全身が映っている動画をアップロードします</li>
+                            <li class="mb-2">「分析開始」ボタンをクリックし、処理完了を待ちます</li>
+                            <li>結果ページで身体各部の寸法を確認できます</li>
+                        </ol>
+                        <div class="alert alert-info" role="alert">
+                            <strong>ヒント:</strong> より正確な結果を得るために、明るい環境で撮影された、背景と被写体のコントラストがはっきりした動画を使用してください。
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     
-    <section id="upload-container">
-      <div class="card">
-        <div class="card-header">
-          <h2 class="card-title">動画をアップロード</h2>
-        </div>
-        <div class="card-body">
-          <form id="upload-form" class="upload-form" action="/analyze" method="post" enctype="multipart/form-data">
-            <div class="form-group">
-              <label for="video-file" class="form-label">動画ファイルを選択（MP4形式、最大150MB）</label>
-              <input type="file" id="video-file" name="file" class="form-control" accept="video/mp4" required>
-              <div class="file-feedback mt-2">
-                <span class="file-label">ファイルが選択されていません</span>
-              </div>
-            </div>
+    <script>
+        // ファイルサイズの検証
+        document.querySelector('form').addEventListener('submit', function(event) {
+            const fileInput = document.getElementById('video');
+            const maxSize = 50 * 1024 * 1024; // 50MB
             
-            <div class="auto-detect" style="display: none;">
-              <div class="auto-detect-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
-                  <path d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/>
-                </svg>
-              </div>
-              <div>
-                <strong>自動検出された種目：</strong> <span id="detected-exercise">スクワット</span>
-                必要に応じて変更してください。
-              </div>
-            </div>
-            
-            <div class="form-group">
-              <label for="exercise-type" class="form-label">種目の選択</label>
-              <select id="exercise-type" name="exercise_type" class="form-control" required>
-                <option value="">種目を選択してください</option>
-                <option value="squat">スクワット</option>
-                <option value="bench">ベンチプレス</option>
-                <option value="deadlift">デッドリフト</option>
-              </select>
-            </div>
-            
-            <button type="submit" class="btn btn-success">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
-                <path d="M6.271 5.055a.5.5 0 0 1 .52.038l3.5 2.5a.5.5 0 0 1 0 .814l-3.5 2.5A.5.5 0 0 1 6 10.5v-5a.5.5 0 0 1 .271-.445z"/>
-              </svg>
-              フォームを分析
-            </button>
-          </form>
-        </div>
-      </div>
-      
-      <div class="card">
-        <div class="card-header">
-          <h2 class="card-title">使い方</h2>
-        </div>
-        <div class="card-body">
-          <div class="row">
-            <div class="col-md-3 text-center mb-3 mb-md-0">
-              <div class="p-3">
-                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" viewBox="0 0 16 16">
-                  <path d="M6 10.117V5.883a.5.5 0 0 1 .757-.429l3.528 2.117a.5.5 0 0 1 0 .858l-3.528 2.117a.5.5 0 0 1-.757-.43z"/>
-                  <path d="M4 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H4zm0 1h8a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1z"/>
-                </svg>
-                <h5 class="mt-3">ビデオのアップロード</h5>
-                <p class="text-muted">トレーニング動画をアップロード（MP4形式、最大150MB）</p>
-              </div>
-            </div>
-            <div class="col-md-3 text-center mb-3 mb-md-0">
-              <div class="p-3">
-                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" viewBox="0 0 16 16">
-                  <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4zm-1-.004c0-.001-.001-.003-.003-.005a5.5 5.5 0 0 0-.52-.851 6 6 0 0 0-5.477-3.09C5.5 3.05 4.252 3.539 3.251 4.5a4.5 4.5 0 0 0-1.248 3.496c0 .002 0 .004.003.006a.5.5 0 0 0 .49.108h10.5a.5.5 0 0 0 .006 0z"/>
-                </svg>
-                <h5 class="mt-3">ポーズ検出</h5>
-                <p class="text-muted">各フレームから身体の姿勢を抽出します</p>
-              </div>
-            </div>
-            <div class="col-md-3 text-center mb-3 mb-md-0">
-              <div class="p-3">
-                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" viewBox="0 0 16 16">
-                  <path d="M9.5 2.672a.5.5 0 1 0 1 0V1.5a.5.5 0 0 0-1 0v1.172zm4.5 3.766a.5.5 0 0 0-1 0v1.5a.5.5 0 0 0 1 0v-1.5zm-9-.5a.5.5 0 0 0-1 0v1.5a.5.5 0 0 0 1 0v-1.5z"/>
-                  <path d="M7.5 2.217a1.5 1.5 0 0 0-2 0v1.828a1.5 1.5 0 0 0 2 0V2.217zm3.5 3.221a1.5 1.5 0 0 0-2 0v1.5a1.5 1.5 0 0 0 2 0v-1.5zm-7 0a1.5 1.5 0 0 0-2 0v1.5a1.5 1.5 0 0 0 2 0v-1.5z"/>
-                  <path d="M7.5 4.972V3.766a.5.5 0 1 0-1 0v1.5a.5.5 0 0 0 1 0v-.294zm3.5 1.5v-1.5a.5.5 0 1 0-1 0v1.5a.5.5 0 0 0 1 0zm-7 0v-1.5a.5.5 0 1 0-1 0v1.5a.5.5 0 0 0 1 0z"/>
-                </svg>
-                <h5 class="mt-3">分析</h5>
-                <p class="text-muted">理想的な基準フォームと比較します</p>
-              </div>
-            </div>
-            <div class="col-md-3 text-center">
-              <div class="p-3">
-                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" viewBox="0 0 16 16">
-                  <path d="M14 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h12zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2z"/>
-                  <path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/>
-                </svg>
-                <h5 class="mt-3">フィードバック</h5>
-                <p class="text-muted">フォームに関する詳細なフィードバックを提供</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-    
-    <section id="processing-container" style="display: none;">
-      <div class="card">
-        <div class="card-header">
-          <h2 class="card-title">動画を分析中</h2>
-        </div>
-        <div class="card-body">
-          <div class="progress-container">
-            <div class="progress-steps">
-              <div class="progress-step">
-                <div class="step-icon">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
-                    <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4zm-1-.004c0-.001-.001-.003-.003-.005a5.5 5.5 0 0 0-.52-.851 6 6 0 0 0-5.477-3.09C5.5 3.05 4.252 3.539 3.251 4.5a4.5 4.5 0 0 0-1.248 3.496c0 .002 0 .004.003.006a.5.5 0 0 0 .49.108h10.5a.5.5 0 0 0 .006 0z"/>
-                  </svg>
-                </div>
-                <span class="step-label">ポーズ検出</span>
-              </div>
-              <div class="progress-step">
-                <div class="step-icon">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
-                    <path d="M9.5 2.672a.5.5 0 1 0 1 0V1.5a.5.5 0 0 0-1 0v1.172zm4.5 3.766a.5.5 0 0 0-1 0v1.5a.5.5 0 0 0 1 0v-1.5zm-9-.5a.5.5 0 0 0-1 0v1.5a.5.5 0 0 0 1 0v-1.5z"/>
-                    <path d="M7.5 2.217a1.5 1.5 0 0 0-2 0v1.828a1.5 1.5 0 0 0 2 0V2.217zm3.5 3.221a1.5 1.5 0 0 0-2 0v1.5a1.5 1.5 0 0 0 2 0v-1.5zm-7 0a1.5 1.5 0 0 0-2 0v1.5a1.5 1.5 0 0 0 2 0v-1.5z"/>
-                    <path d="M7.5 4.972V3.766a.5.5 0 1 0-1 0v1.5a.5.5 0 0 0 1 0v-.294zm3.5 1.5v-1.5a.5.5 0 1 0-1 0v1.5a.5.5 0 0 0 1 0zm-7 0v-1.5a.5.5 0 1 0-1 0v1.5a.5.5 0 0 0 1 0z"/>
-                  </svg>
-                </div>
-                <span class="step-label">角度計算</span>
-              </div>
-              <div class="progress-step">
-                <div class="step-icon">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
-                    <path d="M14 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h12zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2z"/>
-                    <path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/>
-                  </svg>
-                </div>
-                <span class="step-label">フィードバック生成</span>
-              </div>
-            </div>
-            <div class="progress-bar">
-              <div class="progress-fill" style="width: 0%"></div>
-            </div>
-            <p class="text-center mt-3">動画を分析中です。しばらくお待ちください...</p>
-          </div>
-        </div>
-      </div>
-    </section>
-  </div>
-  
-  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+            if (fileInput.files.length > 0) {
+                if (fileInput.files[0].size > maxSize) {
+                    event.preventDefault();
+                    alert('ファイルサイズが大きすぎます (最大50MB)');
+                }
+            }
+        });
+    </script>
 </body>
 </html>
