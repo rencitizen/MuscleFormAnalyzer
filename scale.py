@@ -6,8 +6,14 @@ import numpy as np
 from typing import Tuple, Dict, Any, List, Optional
 
 # MediaPipe Poseのランドマーク列挙型
-mp_pose = mp.solutions.pose
-PoseLandmark = mp_pose.PoseLandmark
+try:
+    mp_pose = mp.solutions.pose
+    PoseLandmark = mp_pose.PoseLandmark
+except AttributeError:
+    # MediaPipeのバージョンによって構造が異なる場合の対応
+    import mediapipe.python as mp_python
+    mp_pose = mp_python.solutions.pose
+    PoseLandmark = mp_pose.PoseLandmark
 
 class ScaleCalculator:
     """

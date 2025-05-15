@@ -9,8 +9,6 @@ import cv2
 import mediapipe as mp
 import numpy as np
 from typing import Dict, Any, Optional, Tuple, List, Union
-import tkinter as tk
-from tkinter import simpledialog, filedialog, messagebox
 
 from config import save_height, load_height
 from scale import ScaleCalculator
@@ -23,55 +21,16 @@ except ImportError:
     app = None
 
 # MediaPipe Poseの初期化
-mp_pose = mp.solutions.pose
-mp_drawing = mp.solutions.drawing_utils
-mp_drawing_styles = mp.solutions.drawing_styles
-
-def input_height() -> float:
-    """
-    ユーザーから身長を入力してもらう（GUI）
-    
-    Returns:
-        float: 入力された身長（cm）
-    """
-    # 保存済みの身長を確認
-    saved_height = load_height()
-    
-    # GUIウィンドウを作成
-    root = tk.Tk()
-    root.withdraw()  # メインウィンドウを非表示
-    
-    if saved_height:
-        # 保存済みの身長があれば確認
-        use_saved = messagebox.askyesno(
-            "保存された身長情報",
-            f"前回保存された身長 {saved_height} cm を使用しますか？\n「いいえ」を選択すると新しく入力できます。"
-        )
-        if use_saved:
-            return saved_height
-    
-    # 新しい身長を入力
-    while True:
-        height_str = simpledialog.askstring(
-            "身長を入力", 
-            "身長（cm）を入力してください:",
-            initialvalue="170" if not saved_height else str(saved_height)
-        )
-        
-        if height_str is None:
-            # キャンセルした場合はデフォルト値
-            print("入力がキャンセルされました。デフォルト値 170cm を使用します。")
-            return 170.0
-        
-        try:
-            height = float(height_str)
-            if 100 <= height <= 250:
-                save_height(height)  # 入力値を保存
-                return height
-            else:
-                messagebox.showerror("エラー", "身長は100cm～250cmの範囲で入力してください")
-        except ValueError:
-            messagebox.showerror("エラー", "有効な数値を入力してください")
+try:
+    mp_pose = mp.solutions.pose
+    mp_drawing = mp.solutions.drawing_utils
+    mp_drawing_styles = mp.solutions.drawing_styles
+except AttributeError:
+    # MediaPipeのバージョンによって構造が異なる場合の対応
+    import mediapipe.python as mp_python
+    mp_pose = mp_python.solutions.pose
+    mp_drawing = mp_python.solutions.drawing_utils
+    mp_drawing_styles = mp_python.solutions.drawing_styles
 
 def input_height_cli() -> float:
     """
@@ -107,26 +66,6 @@ def input_height_cli() -> float:
         except ValueError:
             print("有効な数値を入力してください")
 
-def select_video_file() -> Optional[str]:
-    """
-    分析する動画ファイルを選択する（GUI）
-    
-    Returns:
-        Optional[str]: 選択された動画ファイルのパス、キャンセルされた場合はNone
-    """
-    root = tk.Tk()
-    root.withdraw()  # メインウィンドウを非表示
-    
-    file_path = filedialog.askopenfilename(
-        title="分析する動画ファイルを選択",
-        filetypes=[
-            ("動画ファイル", "*.mp4 *.avi *.mov *.mkv"),
-            ("すべてのファイル", "*.*")
-        ]
-    )
-    
-    return file_path if file_path else None
-
 def select_video_file_cli() -> Optional[str]:
     """
     分析する動画ファイルのパスを入力（CUI）
@@ -143,15 +82,24 @@ def select_video_file_cli() -> Optional[str]:
             return file_path
         else:
             print(f"ファイル '{file_path}' が見つかりません。正しいパスを入力してください。")
+            
+            # サンプルファイルの提案
+            sample_dir = "sample_videos"
+            if os.path.exists(sample_dir) and os.path.isdir(sample_dir):
+                samples = [f for f in os.listdir(sample_dir) if f.endswith(('.mp4', '.avi', '.mov'))]
+                if samples:
+                    print("\n利用可能なサンプル動画:")
+                    for i, sample in enumerate(samples, 1):
+                        print(f"  {i}. {sample}")
+                    print(f"サンプルを使用する場合は、パス（例: {sample_dir}/{samples[0]}）を入力してください")
 
-def analyze_video(video_path: str, user_height_cm: float, use_gui: bool = True) -> Dict[str, Any]:
+def analyze_video_cli(video_path: str, user_height_cm: float) -> Dict[str, Any]:
     """
-    動画を分析して身体各部の寸法を計測する
+    動画を分析して身体各部の寸法を計測する (CLI版)
     
     Args:
         video_path (str): 分析する動画ファイルのパス
         user_height_cm (float): ユーザーの身長（cm）
-        use_gui (bool, optional): GUIを使用するかどうか. Defaults to True.
     
     Returns:
         Dict[str, Any]: 分析結果
@@ -194,22 +142,6 @@ def analyze_video(video_path: str, user_height_cm: float, use_gui: bool = True) 
         print("\n動画を分析中...")
         frame_count = 0
         
-        # プログレスバーの初期化
-        if use_gui:
-            progress_window = tk.Toplevel()
-            progress_window.title("分析の進行状況")
-            progress_window.geometry("400x100")
-            
-            progress_label = tk.Label(progress_window, text="動画を分析中...")
-            progress_label.pack(pady=10)
-            
-            progress_bar = tk.Canvas(progress_window, width=300, height=20, bg="white")
-            progress_bar.pack()
-            
-            progress_rect = progress_bar.create_rectangle(0, 0, 0, 20, fill="blue")
-            
-            progress_window.update()
-        
         while cap.isOpened():
             success, image = cap.read()
             if not success:
@@ -220,16 +152,9 @@ def analyze_video(video_path: str, user_height_cm: float, use_gui: bool = True) 
             # 進行状況の表示
             if frame_count % 10 == 0 or frame_count == 1:
                 progress_percentage = min(100, int((frame_count / total_frames) * 100))
-                
-                if use_gui:
-                    # GUIプログレスバーを更新
-                    progress_bar.coords(progress_rect, 0, 0, 3 * progress_percentage, 20)
-                    progress_label.config(text=f"分析中... {progress_percentage}% ({frame_count}/{total_frames})")
-                    progress_window.update()
-                else:
-                    # コンソールに進行状況を表示
-                    sys.stdout.write(f"\r分析中... {progress_percentage}% ({frame_count}/{total_frames})")
-                    sys.stdout.flush()
+                # コンソールに進行状況を表示
+                sys.stdout.write(f"\r分析中... {progress_percentage}% ({frame_count}/{total_frames})")
+                sys.stdout.flush()
             
             # 画像の前処理
             # MediaPipeはRGB形式を期待するが、OpenCVはBGRで読み込む
@@ -270,11 +195,7 @@ def analyze_video(video_path: str, user_height_cm: float, use_gui: bool = True) 
                     best_landmarks = landmarks_dict
         
         # 終了処理
-        if use_gui:
-            progress_window.destroy()
-        else:
-            print("\nポーズ分析完了!")
-        
+        print("\nポーズ分析完了!")
         cap.release()
     
     # 最も良いフレームの分析結果
@@ -301,21 +222,19 @@ def main():
     print("====== BodyScale Pose Analyzer ======")
     print("動画から体のスケールを分析し、実寸法（cm）で計測します")
     
-    try:
-        # GUIが利用可能かチェック
-        use_gui = True
-        root = tk.Tk()
-        root.withdraw()
-    except:
-        use_gui = False
-        print("GUIが利用できないため、コマンドラインモードで実行します")
+    # サンプル動画フォルダの確認・作成
+    sample_dir = "sample_videos"
+    if not os.path.exists(sample_dir):
+        os.makedirs(sample_dir)
+        print(f"サンプル動画用フォルダを作成しました: {sample_dir}/")
+        print(f"このフォルダにテスト用の動画ファイルを入れると利用できます。")
     
     # 身長の入力
-    user_height_cm = input_height() if use_gui else input_height_cli()
+    user_height_cm = input_height_cli()
     print(f"身長情報: {user_height_cm} cm")
     
     # 動画ファイルの選択
-    video_path = select_video_file() if use_gui else select_video_file_cli()
+    video_path = select_video_file_cli()
     if not video_path:
         print("処理をキャンセルしました。")
         return
@@ -323,22 +242,12 @@ def main():
     print(f"選択された動画: {video_path}")
     
     # 動画分析
-    results = analyze_video(video_path, user_height_cm, use_gui)
+    results = analyze_video_cli(video_path, user_height_cm)
     
     if results:
-        # 分析結果が得られた場合は成功
-        if use_gui:
-            messagebox.showinfo(
-                "分析完了", 
-                f"身体寸法の分析が完了しました!\n結果はresultsフォルダに保存されています。"
-            )
+        print("\n分析が正常に完了しました！")
     else:
-        # 分析に失敗した場合
-        if use_gui:
-            messagebox.showerror(
-                "分析エラー", 
-                "動画からポーズの検出に失敗しました。別の動画で再試行してください。"
-            )
+        print("\n分析に失敗しました。別の動画で再試行してください。")
 
 if __name__ == "__main__":
     main()

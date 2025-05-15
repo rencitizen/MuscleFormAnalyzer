@@ -1,48 +1,63 @@
-# Muscle-Form Analyzer MVP
+# BodyScale Pose Analyzer
 
-A FastAPI-based workout form analyzer that compares uploaded exercise videos with ideal postures using MediaPipe.
+動画から姿勢推定を行い、ユーザーの身長を元に実寸法（cm単位）で体の各部位を計測するツール。
 
-## Overview
+## 機能
 
-This project provides a backend API for analyzing workout form in uploaded videos. It uses MediaPipe to extract joint coordinates from each frame of a video and compares them with ideal reference poses to provide feedback on form quality.
+- 身長情報に基づいたピクセルからcm単位への変換
+- MediaPipeを使用した姿勢推定
+- 両腕の長さ（肩～手首）の計測
+- 両脚の長さ（股関節～足首）の計測
+- 各関節の3D位置（cm単位）の算出
+- 結果のJSON出力
 
-## Features
+## 使い方
 
-- Extract pose landmarks from workout videos (MP4 format)
-- Compare extracted landmarks with ideal reference poses
-- Provide feedback and advice on form differences
-- Support for videos up to 60 seconds (720p/30fps, max 150MB)
+### コマンドラインから実行
 
-## Technical Stack
+```bash
+python run_cli.py
+```
 
-- Python 3.11
-- FastAPI
-- OpenCV (opencv-python==4.10.0.82)
-- MediaPipe (mediapipe==0.10.9)
-- NumPy
-- Uvicorn (ASGI server)
+初回起動時は身長を入力するように促されます。前回の値が保存されている場合はそれを使用するかどうか選択できます。
 
-## API Endpoints
+### 必要なもの
 
-### POST /extract
+- MP4形式の動画ファイル
+- 被験者の身長情報（cm）
 
-Extracts pose landmarks from an uploaded video file.
+### 分析結果
 
-**Request:**
-- `file` (MP4 video file, multipart/form-data)
+分析結果は `results/body_metrics.json` に保存されます。以下のような形式で出力されます：
 
-**Response:**
 ```json
 {
-  "frames": [
-    {
-      "frame": 0,
-      "landmarks": {
-        "lm_0": {"x": 0.5, "y": 0.3, "z": 0.0},
-        "lm_1": {"x": 0.48, "y": 0.29, "z": 0.01},
-        ...
-      }
-    },
+  "user_height_cm": 170,
+  "left_arm_cm": 61.4,
+  "right_arm_cm": 60.9,
+  "left_leg_cm": 91.2,
+  "right_leg_cm": 90.8,
+  "joints_cm": {
+    "LEFT_SHOULDER": {"x":-12.3,"y":145.0,"z":5.1},
     ...
-  ]
+  }
 }
+```
+
+## 仕組み
+
+1. 動画からMediaPipe Poseを使用してランドマークを抽出
+2. 鼻から足首までの距離と身長を元にスケール係数を計算
+3. 各ランドマーク間の距離をcm単位に変換
+4. 3D空間での関節位置を計算
+5. 結果をJSONとして保存
+
+## フォルダ構成
+
+- `main.py` - メイン実行モジュール
+- `config.py` - 身長情報の保存・読み込み
+- `scale.py` - ピクセル→cm変換ロジック
+- `analysis.py` - 腕長・脚長・関節位置計算
+- `run_cli.py` - コマンドライン版実行ファイル
+- `sample_videos/` - サンプル動画用フォルダ
+- `results/` - 分析結果出力先フォルダ
