@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="ja" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>運動分類結果 - Stepwise Exercise Classifier Booster</title>
+    <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .main-container {
+            padding-top: 2rem;
+            padding-bottom: 2rem;
+        }
+        .card {
+            margin-bottom: 2rem;
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .card-header {
+            border-radius: 10px 10px 0 0;
+            font-weight: 600;
+        }
+        .metric-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--bs-info);
+        }
+        .metric-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        .score-card {
+            text-align: center;
+            padding: 1.5rem;
+        }
+        .score-value {
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--bs-info);
+        }
+        .table th {
+            font-weight: 600;
+            color: var(--bs-info-emphasis);
+        }
+        .timeline {
+            height: 100px;
+            position: relative;
+            margin: 20px 0;
+            background-color: rgba(0, 0, 0, 0.1);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        .timeline-segment {
+            position: absolute;
+            height: 100%;
+            text-align: center;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            text-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
+        }
+        .alert-exercise {
+            border-left: 4px solid var(--bs-info);
+        }
+    </style>
+</head>
+<body>
+    <div class="container main-container">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="card mb-4">
+                    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                        <h2 class="mb-0">運動分類結果</h2>
+                        <a href="/" class="btn btn-outline-light btn-sm">ホームに戻る</a>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card score-card">
+                                    <h5>主要運動種目</h5>
+                                    <div class="score-value">{{ summary.dominant_exercise }}</div>
+                                    <div class="text-muted">信頼度: {{ "%.1f"|format(summary.confidence * 100) }}%</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">運動種目の分布</div>
+                                    <div class="card-body">
+                                        <canvas id="exerciseChart" width="400" height="200"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header bg-dark text-white">
+                        <h4 class="mb-0">詳細分析</h4>
+                    </div>
+                    <div class="card-body">
+                        <ul class="nav nav-tabs" id="analysisTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="summary-tab" data-bs-toggle="tab" data-bs-target="#summary" type="button" role="tab" aria-controls="summary" aria-selected="true">
+                                    サマリー
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="segments-tab" data-bs-toggle="tab" data-bs-target="#segments" type="button" role="tab" aria-controls="segments" aria-selected="false">
+                                    セグメント分析
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="metrics-tab" data-bs-toggle="tab" data-bs-target="#metrics" type="button" role="tab" aria-controls="metrics" aria-selected="false">
+                                    パフォーマンス指標
+                                </button>
+                            </li>
+                        </ul>
+                        <div class="tab-content p-3" id="analysisTabsContent">
+                            <!-- サマリータブ -->
+                            <div class="tab-pane fade show active" id="summary" role="tabpanel" aria-labelledby="summary-tab">
+                                <div class="row mb-4">
+                                    <div class="col-md-3 mb-3">
+                                        <div class="card h-100">
+                                            <div class="card-body text-center">
+                                                <div class="metric-label">フレーム数</div>
+                                                <div class="metric-value">{{ summary.frame_count }}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3 mb-3">
+                                        <div class="card h-100">
+                                            <div class="card-body text-center">
+                                                <div class="metric-label">処理時間</div>
+                                                <div class="metric-value">{{ "%.2f"|format(summary.processing_time) }}秒</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <div class="card h-100">
+                                            <div class="card-body">
+                                                <div class="metric-label">運動認識パイプライン</div>
+                                                <div class="d-flex justify-content-between mt-2">
+                                                    <span class="badge bg-dark">クリーンアップ</span>
+                                                    <span class="badge bg-dark">平滑化</span>
+                                                    <span class="badge bg-dark">正規化</span>
+                                                    <span class="badge bg-dark">時系列特徴量</span>
+                                                    <span class="badge bg-dark">多数決/HMM</span>
+                                                    <span class="badge bg-dark">ルール判定</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <h5>運動タイムライン</h5>
+                                <div class="timeline" id="timeline"></div>
+                                
+                                <div class="alert alert-info alert-exercise mt-4">
+                                    <h5>フィードバック</h5>
+                                    <p>分析の結果、この動画では主に <strong>{{ summary.dominant_exercise }}</strong> の動作が検出されました。</p>
+                                    <p>このエクササイズでは、以下のポイントに注意して行うと効果的です：</p>
+                                    <ul>
+                                        {% if summary.dominant_exercise == 'squat' %}
+                                            <li>膝が足先より前に出ないように注意する</li>
+                                            <li>背中をまっすぐに保ち、腰を落とす</li>
+                                            <li>膝と足先の向きを一致させる</li>
+                                        {% elif summary.dominant_exercise == 'pushup' %}
+                                            <li>身体を一直線に保つ</li>
+                                            <li>肘を身体に近づけて曲げる</li>
+                                            <li>肩甲骨を安定させる</li>
+                                        {% elif summary.dominant_exercise == 'deadlift' %}
+                                            <li>背中を真っ直ぐに保つ</li>
+                                            <li>膝と足首を同時に曲げる</li>
+                                            <li>バーを身体に近づけて持ち上げる</li>
+                                        {% elif summary.dominant_exercise == 'overhead_press' %}
+                                            <li>腕を完全に伸ばす</li>
+                                            <li>頭を前後に動かして腕の軌道を確保する</li>
+                                            <li>コアを強く意識して安定させる</li>
+                                        {% else %}
+                                            <li>正しいフォームを意識して行う</li>
+                                            <li>動作の速度を適切に保つ</li>
+                                            <li>呼吸を意識する</li>
+                                        {% endif %}
+                                    </ul>
+                                </div>
+                            </div>
+                            
+                            <!-- セグメントタブ -->
+                            <div class="tab-pane fade" id="segments" role="tabpanel" aria-labelledby="segments-tab">
+                                <div class="table-responsive">
+                                    <table class="table">
+                                        <thead>
+                                            <tr>
+                                                <th scope="col">#</th>
+                                                <th scope="col">運動種目</th>
+                                                <th scope="col">開始フレーム</th>
+                                                <th scope="col">終了フレーム</th>
+                                                <th scope="col">フレーム数</th>
+                                                <th scope="col">割合</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="segments-table">
+                                            <!-- JavaScriptで動的に生成 -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            
+                            <!-- パフォーマンス指標タブ -->
+                            <div class="tab-pane fade" id="metrics" role="tabpanel" aria-labelledby="metrics-tab">
+                                <div class="row">
+                                    <div class="col-md-6 mb-4">
+                                        <div class="card">
+                                            <div class="card-header">反復回数</div>
+                                            <div class="card-body">
+                                                <canvas id="repCountChart" width="400" height="200"></canvas>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 mb-4">
+                                        <div class="card">
+                                            <div class="card-header">関節角度範囲</div>
+                                            <div class="card-body">
+                                                <canvas id="jointRangeChart" width="400" height="200"></canvas>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="card">
+                                    <div class="card-header">身体構造に基づく推奨事項</div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <h6>腕の長さ: {{ metrics.arm_measurements.average_arm_length_cm|round|int }}cm</h6>
+                                                <p>
+                                                    {% if metrics.arm_measurements.average_arm_length_cm > 70 %}
+                                                        腕が比較的長いため、プッシュアップでは手の位置を少し肩幅より広めに設定すると良いでしょう。
+                                                    {% else %}
+                                                        腕の長さは標準的です。基本的なフォームでエクササイズを行えます。
+                                                    {% endif %}
+                                                </p>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <h6>脚の長さ: {{ metrics.leg_measurements.average_leg_length_cm|round|int }}cm</h6>
+                                                <p>
+                                                    {% if metrics.leg_measurements.average_leg_length_cm > 85 %}
+                                                        脚が比較的長いため、スクワットではスタンスを少し広めにとると安定します。
+                                                    {% else %}
+                                                        脚の長さは標準的です。通常のスタンス幅で問題ありません。
+                                                    {% endif %}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // セグメントデータとパフォーマンス指標を設定
+        // サンプルデータ
+        const segments = [
+            { exercise: "{{ summary.dominant_exercise }}", start_frame: 0, end_frame: 120, frames: 120 },
+        ];
+        
+        const performanceMetrics = {
+            "{{ summary.dominant_exercise }}": {
+                rep_count: 10,
+                joint_rom: {
+                    left_knee: 90,
+                    right_knee: 92,
+                    left_hip: 85,
+                    right_hip: 87,
+                    left_elbow: 100,
+                    right_elbow: 102,
+                    left_shoulder: 80,
+                    right_shoulder: 78
+                }
+            }
+        };
+        
+        // 円グラフの作成: 運動種目の分布
+        const exerciseCtx = document.getElementById('exerciseChart').getContext('2d');
+        const exerciseChart = new Chart(exerciseCtx, {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys({{ summary.class_distribution|tojson }}),
+                datasets: [{
+                    data: Object.values({{ summary.class_distribution|tojson }}).map(val => val * 100),
+                    backgroundColor: [
+                        'rgba(54, 162, 235, 0.8)',
+                        'rgba(255, 206, 86, 0.8)',
+                        'rgba(75, 192, 192, 0.8)',
+                        'rgba(153, 102, 255, 0.8)',
+                        'rgba(255, 159, 64, 0.8)',
+                        'rgba(200, 200, 200, 0.8)'
+                    ],
+                    borderColor: [
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(153, 102, 255, 1)',
+                        'rgba(255, 159, 64, 1)',
+                        'rgba(200, 200, 200, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.label}: ${context.raw.toFixed(1)}%`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // セグメントテーブルの生成
+        const segmentsTable = document.getElementById('segments-table');
+        segments.forEach((segment, index) => {
+            const row = document.createElement('tr');
+            const totalFrames = {{ summary.frame_count }};
+            const percentage = ((segment.frames / totalFrames) * 100).toFixed(1);
+            
+            row.innerHTML = `
+                <td>${index + 1}</td>
+                <td>${segment.exercise}</td>
+                <td>${segment.start_frame}</td>
+                <td>${segment.end_frame}</td>
+                <td>${segment.frames}</td>
+                <td>${percentage}%</td>
+            `;
+            
+            segmentsTable.appendChild(row);
+        });
+        
+        // タイムラインの生成
+        const timeline = document.getElementById('timeline');
+        segments.forEach((segment, index) => {
+            const totalFrames = {{ summary.frame_count }};
+            const startPercent = (segment.start_frame / totalFrames) * 100;
+            const widthPercent = (segment.frames / totalFrames) * 100;
+            
+            // 色の配列
+            const colors = [
+                'rgba(54, 162, 235, 0.8)',
+                'rgba(255, 206, 86, 0.8)',
+                'rgba(75, 192, 192, 0.8)',
+                'rgba(153, 102, 255, 0.8)',
+                'rgba(255, 159, 64, 0.8)'
+            ];
+            
+            // セグメント要素を作成
+            const segmentElem = document.createElement('div');
+            segmentElem.className = 'timeline-segment';
+            segmentElem.style.left = `${startPercent}%`;
+            segmentElem.style.width = `${widthPercent}%`;
+            segmentElem.style.backgroundColor = colors[index % colors.length];
+            segmentElem.textContent = segment.exercise;
+            
+            timeline.appendChild(segmentElem);
+        });
+        
+        // 反復回数のグラフ
+        const repCountCtx = document.getElementById('repCountChart').getContext('2d');
+        const repCountData = Object.entries(performanceMetrics).map(([key, value]) => {
+            return {
+                exercise: key,
+                reps: value.rep_count
+            };
+        });
+        
+        const repCountChart = new Chart(repCountCtx, {
+            type: 'bar',
+            data: {
+                labels: repCountData.map(d => d.exercise),
+                datasets: [{
+                    label: '反復回数',
+                    data: repCountData.map(d => d.reps),
+                    backgroundColor: 'rgba(54, 162, 235, 0.8)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: '回数'
+                        }
+                    }
+                }
+            }
+        });
+        
+        // 関節角度範囲のグラフ
+        const jointRangeCtx = document.getElementById('jointRangeChart').getContext('2d');
+        
+        // 最初の運動の関節ROM取得（存在する場合）
+        let jointLabels = [];
+        let jointRanges = [];
+        
+        if (Object.keys(performanceMetrics).length > 0) {
+            const firstExercise = Object.keys(performanceMetrics)[0];
+            const jointRomData = performanceMetrics[firstExercise].joint_rom;
+            
+            jointLabels = Object.keys(jointRomData).map(key => {
+                // キーを読みやすいラベルに変換
+                const labels = {
+                    left_knee: '左膝',
+                    right_knee: '右膝',
+                    left_hip: '左股関節',
+                    right_hip: '右股関節',
+                    left_elbow: '左肘',
+                    right_elbow: '右肘',
+                    left_shoulder: '左肩',
+                    right_shoulder: '右肩'
+                };
+                return labels[key] || key;
+            });
+            
+            jointRanges = Object.values(jointRomData);
+        }
+        
+        const jointRangeChart = new Chart(jointRangeCtx, {
+            type: 'radar',
+            data: {
+                labels: jointLabels,
+                datasets: [{
+                    label: '関節角度範囲 (度)',
+                    data: jointRanges,
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1,
+                    pointBackgroundColor: 'rgba(54, 162, 235, 1)'
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    r: {
+                        beginAtZero: true,
+                        min: 0,
+                        max: 180
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
