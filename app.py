@@ -61,34 +61,11 @@ def analyze():
 
 @app.route('/training_results')
 def training_results():
-    mode = request.args.get('mode', 'sample')
-    result_file = request.args.get('result_file')
-    if mode == 'processed' and result_file:
-        result_path = os.path.join(RESULTS_DIR, result_file)
-        if os.path.exists(result_path):
-            with open(result_path, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-        else:
-            return jsonify({"error": "結果ファイルが見つかりません"}), 404
-    elif mode == 'sample':
-        # サンプルデータを読み込む
-        sample_file = os.path.join(RESULTS_DIR, 'sample_training.json')
-        if os.path.exists(sample_file):
-            with open(sample_file, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-        else:
-            return jsonify({"error": "サンプルデータが見つかりません"}), 404
-    else:
-        return jsonify({"error": "無効なモードです"}), 400
-    # メトリクスデータも読み込む
-    metrics_file = os.path.join(RESULTS_DIR, 'sample_metrics.json')
-    if os.path.exists(metrics_file):
-        with open(metrics_file, 'r', encoding='utf-8') as f:
-            metrics = json.load(f)
-    else:
-        metrics = {}
-    
-    return render_template('training_results.html', training=data, metrics=metrics)
+    """
+    トレーニング分析ページ (簡易版に置き換え)
+    """
+    # シンプル版にリダイレクト
+    return redirect('/simple_training?mode=sample')
 
 @app.route('/exercise_results')
 def exercise_results():
