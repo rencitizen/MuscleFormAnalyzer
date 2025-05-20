@@ -157,5 +157,22 @@ def exercise_results():
                           summary=classification_summary,
                           metrics=metrics)
 
+@app.route('/test')
+def test_route():
+    """テスト用の簡単なページ"""
+    return """
+    <html>
+    <head><title>テストページ</title></head>
+    <body>
+        <h1>テストページ - 正常に動作しています</h1>
+        <p>以下のリンクをクリックしてください：</p>
+        <ul>
+            <li><a href="/training_results?mode=sample">トレーニング分析</a></li>
+            <li><a href="/exercise_results?mode=sample">運動分類</a></li>
+        </ul>
+    </body>
+    </html>
+    """
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
