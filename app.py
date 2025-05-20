@@ -169,10 +169,49 @@ def test_route():
         <ul>
             <li><a href="/training_results?mode=sample">トレーニング分析</a></li>
             <li><a href="/exercise_results?mode=sample">運動分類</a></li>
+            <li><a href="/simple_training?mode=sample">シンプルトレーニング分析</a></li>
         </ul>
     </body>
     </html>
     """
+
+@app.route('/simple_training')
+def simple_training():
+    """シンプルなトレーニング分析ページ"""
+    mode = request.args.get('mode', 'sample')
+    
+    if mode == 'sample':
+        # サンプルデータを読み込む
+        sample_file = os.path.join(RESULTS_DIR, 'sample_training.json')
+        if os.path.exists(sample_file):
+            with open(sample_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+        else:
+            # サンプルデータがない場合は基本的なデータを作成
+            data = {
+                "exercise_type": "スクワット",
+                "repetitions": 10,
+                "form_score": 85,
+                "body_metrics": {
+                    "height_cm": 170,
+                    "left_arm_cm": 62.5,
+                    "right_arm_cm": 62.8
+                }
+            }
+    else:
+        # それ以外のモードの場合は基本的なデータを返す
+        data = {
+            "exercise_type": "スクワット",
+            "repetitions": 10,
+            "form_score": 85,
+            "body_metrics": {
+                "height_cm": 170,
+                "left_arm_cm": 62.5,
+                "right_arm_cm": 62.8
+            }
+        }
+    
+    return render_template('simple_training.html', training=data)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
