@@ -15,8 +15,10 @@ logger = logging.getLogger(__name__)
 # MediaPipe設定
 mp_pose = mp.solutions.pose
 mp_drawing = mp.solutions.drawing_utils
+mp_drawing_styles = mp.solutions.drawing_styles
 
 IDEAL_FORMS_PATH = 'ideal_forms/'
+VISUALIZATION_PATH = 'static/analysis_results/'
 
 # トレーニング種目名の辞書
 EXERCISE_NAMES = {
@@ -483,6 +485,13 @@ class TrainingAnalyzer:
                 "advice": assessment.get("advice", [])
             }
             
+            # 視覚的な分析（ポーズの比較と軌跡）を生成
+            visualizations = self._generate_visualizations(landmarks_data, video_path)
+            
+            # 結果に視覚化情報を追加
+            if visualizations:
+                results["visualizations"] = visualizations
+            
             return results
             
         except Exception as e:
@@ -585,6 +594,386 @@ class TrainingAnalyzer:
             advice.append('テンポを一定に保ちましょう。')
         return advice
 
+    def _generate_visualizations(self, landmarks_data: Dict[int, Dict[int, Dict[str, float]]], video_path: str) -> Dict[str, str]:
+        """
+        ポーズランドマークの可視化を生成する
+        
+        Args:
+            landmarks_data: 検出されたポーズランドマーク
+            video_path: 入力動画のパス
+            
+        Returns:
+            Dict[str, str]: 生成された可視化画像のパス
+        """
+        os.makedirs(VISUALIZATION_PATH, exist_ok=True)
+        visualization_paths = {}
+        
+        try:
+            # 動画キャプチャを開く
+            cap = cv2.VideoCapture(video_path)
+            
+            # 理想的なフォームのランドマークを取得（もしあれば）
+            ideal_landmarks = self._get_ideal_landmarks()
+            
+            # 代表的なフレームを選択（動作の中間点など）
+            key_frames = self._select_key_frames(landmarks_data)
+            
+            for frame_idx in key_frames:
+                if frame_idx not in landmarks_data:
+                    continue
+                    
+                # そのフレームに動画をシーク
+                cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
+                success, image = cap.read()
+                
+                if not success:
+                    continue
+                
+                # 画像の寸法
+                h, w, _ = image.shape
+                
+                # 実際のポーズを描画（赤色）
+                image = self._draw_pose_landmarks(image, landmarks_data[frame_idx], color=(0, 0, 255))
+                
+                # 理想的なフォームを描画（緑色）
+                if ideal_landmarks:
+                    # 理想のランドマークを現在のフレームに合わせて調整
+                    adjusted_ideal = self._align_ideal_landmarks(ideal_landmarks, landmarks_data[frame_idx], (w, h))
+                    image = self._draw_pose_landmarks(image, adjusted_ideal, color=(0, 255, 0))
+                
+                # 分析情報を画像に追加
+                phase = "不明"
+                if frame_idx in key_frames:
+                    phase_idx = key_frames.index(frame_idx)
+                    phases = ["開始", "中間", "終了"]
+                    if phase_idx < len(phases):
+                        phase = phases[phase_idx]
+                
+                # 画像上部に情報を追加
+                cv2.putText(
+                    image, 
+                    f"{self._get_exercise_name()} - {phase}フェーズ", 
+                    (10, 30), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 
+                    1, 
+                    (255, 255, 255), 
+                    2
+                )
+                
+                # 凡例を追加
+                cv2.putText(
+                    image, 
+                    "赤: あなたのフォーム  緑: 理想的なフォーム", 
+                    (10, 70), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 
+                    0.7, 
+                    (255, 255, 255), 
+                    2
+                )
+                
+                # 画像を保存
+                output_filename = f"pose_{self.exercise_type}_{phase}_{frame_idx}.jpg"
+                output_path = os.path.join(VISUALIZATION_PATH, output_filename)
+                cv2.imwrite(output_path, image)
+                
+                # 結果に追加
+                phase_key = f"{phase.lower()}_phase_image"
+                visualization_paths[phase_key] = f"/static/analysis_results/{output_filename}"
+            
+            cap.release()
+            
+            # 動画から軌跡を生成
+            trajectory_path = self._generate_trajectory_visualization(landmarks_data, video_path)
+            if trajectory_path:
+                visualization_paths["trajectory_image"] = trajectory_path
+            
+            return visualization_paths
+            
+        except Exception as e:
+            logger.error(f"Error generating visualizations: {e}")
+            return {}
+    
+    def _draw_pose_landmarks(self, image: np.ndarray, landmarks: Dict[int, Dict[str, float]], color: Tuple[int, int, int] = (0, 0, 255)) -> np.ndarray:
+        """
+        画像にポーズランドマークを描画
+        
+        Args:
+            image: 描画する画像
+            landmarks: ランドマークデータ
+            color: 描画色 (BGR)
+            
+        Returns:
+            描画された画像
+        """
+        h, w, _ = image.shape
+        
+        # 主要な体の部位を接続線で描画
+        # 体の接続を手動で定義
+        connections = [
+            # 腕
+            (11, 13), (13, 15),  # 右腕
+            (12, 14), (14, 16),  # 左腕
+            
+            # 脚
+            (23, 25), (25, 27), (27, 31),  # 右脚
+            (24, 26), (26, 28), (28, 32),  # 左脚
+            
+            # 胴体
+            (11, 12),  # 肩
+            (11, 23), (12, 24),  # 体側
+            (23, 24),  # 腰
+        ]
+        
+        # 接続線を描画
+        for connection in connections:
+            if connection[0] in landmarks and connection[1] in landmarks:
+                pt1 = (int(landmarks[connection[0]]['x']), int(landmarks[connection[0]]['y']))
+                pt2 = (int(landmarks[connection[1]]['x']), int(landmarks[connection[1]]['y']))
+                cv2.line(image, pt1, pt2, color, 2)
+        
+        # 関節点を描画
+        for idx, landmark in landmarks.items():
+            # 主要な関節点のみ描画
+            if idx in [11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28, 31, 32]:
+                x, y = int(landmark['x']), int(landmark['y'])
+                cv2.circle(image, (x, y), 5, color, -1)
+        
+        return image
+    
+    def _convert_to_mediapipe_landmarks(self, landmarks: Dict[int, Dict[str, float]], image_shape: Tuple[int, int, int]) -> Optional[object]:
+        """
+        カスタム形式のランドマークをMediaPipe形式に変換
+        
+        Args:
+            landmarks: カスタム形式のランドマーク
+            image_shape: 画像の形状 (height, width, channels)
+            
+        Returns:
+            MediaPipe形式のランドマーク
+        """
+        try:
+            # MediaPipeのバージョンによっては異なるインポート方法が必要
+            h, w, _ = image_shape
+            
+            # 直接ランドマークを描画する方法を使用
+            # カスタムランドマークをMediaPipeの形式に合わせるためのリスト
+            mp_landmarks = []
+            
+            for i in range(33):  # MediaPipe Poseは33個のランドマークを持つ
+                point = {}
+                if i in landmarks:
+                    point = {
+                        'x': landmarks[i].get('x', 0) / w,
+                        'y': landmarks[i].get('y', 0) / h,
+                        'z': landmarks[i].get('z', 0) / w,
+                        'visibility': landmarks[i].get('visibility', 0)
+                    }
+                else:
+                    point = {
+                        'x': 0,
+                        'y': 0,
+                        'z': 0,
+                        'visibility': 0
+                    }
+                mp_landmarks.append(point)
+                
+            return mp_landmarks
+        except Exception as e:
+            logger.error(f"Error converting landmarks: {e}")
+            return None
+    
+    def _select_key_frames(self, landmarks_data: Dict[int, Dict[int, Dict[str, float]]]) -> List[int]:
+        """
+        代表的なフレームを選択（開始、中間、終了）
+        
+        Args:
+            landmarks_data: ランドマークデータ
+            
+        Returns:
+            選択されたフレームインデックスのリスト
+        """
+        if not landmarks_data:
+            return []
+            
+        frame_indices = sorted(landmarks_data.keys())
+        if len(frame_indices) < 3:
+            return frame_indices
+            
+        # 開始、中間、終了フレームを選択
+        start_idx = frame_indices[0]
+        middle_idx = frame_indices[len(frame_indices) // 2]
+        end_idx = frame_indices[-1]
+        
+        return [start_idx, middle_idx, end_idx]
+    
+    def _get_ideal_landmarks(self) -> Optional[Dict[int, Dict[str, float]]]:
+        """
+        理想的なポーズのランドマークを取得
+        
+        Returns:
+            理想的なランドマークデータ
+        """
+        try:
+            ideal_path = os.path.join(IDEAL_FORMS_PATH, f"{self.exercise_type}_landmarks.json")
+            if os.path.exists(ideal_path):
+                with open(ideal_path, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            return None
+        except Exception as e:
+            logger.error(f"Error loading ideal landmarks: {e}")
+            return None
+    
+    def _align_ideal_landmarks(self, ideal_landmarks: Dict[int, Dict[str, float]], 
+                             actual_landmarks: Dict[int, Dict[str, float]], 
+                             frame_dim: Tuple[int, int]) -> Dict[int, Dict[str, float]]:
+        """
+        理想的なランドマークを実際のフレームに合わせて調整
+        
+        Args:
+            ideal_landmarks: 理想的なランドマーク
+            actual_landmarks: 実際のランドマーク
+            frame_dim: フレームの寸法 (width, height)
+            
+        Returns:
+            調整されたランドマーク
+        """
+        w, h = frame_dim
+        
+        # 体の中心点を取得（両肩の中点）
+        if 11 in actual_landmarks and 12 in actual_landmarks:
+            actual_center_x = (actual_landmarks[11]['x'] + actual_landmarks[12]['x']) / 2
+            actual_center_y = (actual_landmarks[11]['y'] + actual_landmarks[12]['y']) / 2
+        else:
+            actual_center_x, actual_center_y = w/2, h/2
+        
+        # スケール係数を計算（肩幅に基づく）
+        actual_shoulder_width = 0
+        if 11 in actual_landmarks and 12 in actual_landmarks:
+            actual_shoulder_width = abs(actual_landmarks[11]['x'] - actual_landmarks[12]['x'])
+        
+        ideal_shoulder_width = 0
+        if 11 in ideal_landmarks and 12 in ideal_landmarks:
+            ideal_shoulder_width = abs(ideal_landmarks[11]['x'] - ideal_landmarks[12]['x'])
+        
+        scale = 1.0
+        if ideal_shoulder_width > 0 and actual_shoulder_width > 0:
+            scale = actual_shoulder_width / ideal_shoulder_width
+        
+        # 理想的なランドマークを調整
+        adjusted_landmarks = {}
+        for idx, landmark in ideal_landmarks.items():
+            adjusted_landmark = landmark.copy()
+            
+            # スケーリングと中心合わせ
+            if 'x' in landmark and 'y' in landmark:
+                # 中心を原点として考える
+                centered_x = landmark['x'] - w/2
+                centered_y = landmark['y'] - h/2
+                
+                # スケーリングして中心をactual_centerに合わせる
+                adjusted_landmark['x'] = centered_x * scale + actual_center_x
+                adjusted_landmark['y'] = centered_y * scale + actual_center_y
+            
+            adjusted_landmarks[idx] = adjusted_landmark
+        
+        return adjusted_landmarks
+    
+    def _generate_trajectory_visualization(self, landmarks_data: Dict[int, Dict[int, Dict[str, float]]], video_path: str) -> Optional[str]:
+        """
+        動作の軌跡を可視化
+        
+        Args:
+            landmarks_data: ランドマークデータ
+            video_path: 入力動画のパス
+            
+        Returns:
+            生成された軌跡画像のパス
+        """
+        try:
+            # 動画の最初のフレームを取得
+            cap = cv2.VideoCapture(video_path)
+            success, background = cap.read()
+            cap.release()
+            
+            if not success:
+                return None
+                
+            h, w, _ = background.shape
+            
+            # 背景をやや暗くする
+            background = cv2.addWeighted(background, 0.6, np.zeros_like(background), 0.4, 0)
+            
+            # 種目に基づいて追跡するキーポイントを選択
+            track_points = []
+            if self.exercise_type == 'squat':
+                track_points = [23, 25, 27]  # 右足: 股関節、膝、足首
+            elif self.exercise_type == 'bench_press':
+                track_points = [15, 13, 11]  # 右腕: 手首、肘、肩
+            elif self.exercise_type == 'deadlift':
+                track_points = [23, 11, 7]   # 股関節、肩、手首
+            elif self.exercise_type == 'overhead_press':
+                track_points = [11, 13, 15]  # 右腕: 肩、肘、手首
+            else:
+                track_points = [11, 13, 15, 23, 25, 27]  # 両腕と脚
+            
+            # キーポイントの軌跡を描画
+            colors = [(0, 0, 255), (0, 128, 255), (0, 255, 255), (0, 255, 0), (255, 0, 255), (255, 0, 0)]
+            
+            frame_indices = sorted(landmarks_data.keys())
+            for i, point_idx in enumerate(track_points):
+                color = colors[i % len(colors)]
+                
+                # 軌跡の点を収集
+                trajectory_points = []
+                for frame_idx in frame_indices:
+                    if point_idx in landmarks_data[frame_idx]:
+                        x = int(landmarks_data[frame_idx][point_idx]['x'])
+                        y = int(landmarks_data[frame_idx][point_idx]['y'])
+                        trajectory_points.append((x, y))
+                
+                # 軌跡を描画
+                for j in range(1, len(trajectory_points)):
+                    cv2.line(background, trajectory_points[j-1], trajectory_points[j], color, 2)
+                    
+                # 最後の点に関節名を表示
+                if trajectory_points:
+                    joint_names = {
+                        11: "肩", 13: "肘", 15: "手首", 
+                        23: "股関節", 25: "膝", 27: "足首",
+                        7: "手首"
+                    }
+                    if point_idx in joint_names:
+                        cv2.putText(
+                            background,
+                            joint_names[point_idx],
+                            (trajectory_points[-1][0] + 5, trajectory_points[-1][1]),
+                            cv2.FONT_HERSHEY_SIMPLEX,
+                            0.5,
+                            color,
+                            1
+                        )
+            
+            # 画像上部に説明を追加
+            cv2.putText(
+                background, 
+                f"{self._get_exercise_name()} - 軌跡分析", 
+                (10, 30), 
+                cv2.FONT_HERSHEY_SIMPLEX, 
+                1, 
+                (255, 255, 255), 
+                2
+            )
+            
+            # 画像を保存
+            output_filename = f"trajectory_{self.exercise_type}.jpg"
+            output_path = os.path.join(VISUALIZATION_PATH, output_filename)
+            cv2.imwrite(output_path, background)
+            
+            return f"/static/analysis_results/{output_filename}"
+        except Exception as e:
+            logger.error(f"Error generating trajectory visualization: {e}")
+            return None
+            
     def save_results(self, results: Dict[str, Any], filename: str = 'results.json') -> str:
         os.makedirs('results', exist_ok=True)
         path = os.path.join('results', filename)
