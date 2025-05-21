@@ -51,7 +51,11 @@ def analyze():
         if analysis_type == 'training':
             exercise_type = request.form.get('exercise_type', 'squat')
             analyzer = TrainingAnalyzer(exercise_type=exercise_type)
-            results = analyzer.analyze_video(filepath, user_height=height)
+            results = analyzer.analyze_video(filepath)  # user_heightパラメーターを削除
+            # 身長情報を結果に追加
+            if 'user_data' not in results:
+                results['user_data'] = {}
+            results['user_data']['height_cm'] = height
             result_file = os.path.join(RESULTS_DIR, f"training_result_{unique_id}.json")
             with open(result_file, 'w', encoding='utf-8') as f:
                 json.dump(results, f, ensure_ascii=False, indent=2)
