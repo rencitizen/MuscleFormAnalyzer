@@ -717,11 +717,110 @@ class TrainingAnalyzer:
                 else:
                     sampled_frames = frames
                 
-                # 連番の画像として保存
+                # 連番の画像として保存（軌道の可視化を強化）
                 animation_frames = []
+                
+                # 軌道を描画するための点の記録
+                trajectory_points = {}
+                key_joints = [11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28]  # 肩、肘、手首、腰、膝、足首
+                
+                # 各関節ごとの色を設定（ユーザーの軌道用）
+                joint_colors = {
+                    11: (0, 0, 220),  # 右肩: 赤
+                    12: (0, 0, 220),  # 左肩: 赤
+                    13: (0, 70, 255),  # 右肘: オレンジ
+                    14: (0, 70, 255),  # 左肘: オレンジ
+                    15: (0, 150, 255),  # 右手首: 黄色がかった赤
+                    16: (0, 150, 255),  # 左手首: 黄色がかった赤
+                    23: (0, 0, 220),  # 右腰: 赤
+                    24: (0, 0, 220),  # 左腰: 赤
+                    25: (0, 70, 255),  # 右膝: オレンジ
+                    26: (0, 70, 255),  # 左膝: オレンジ
+                    27: (0, 150, 255),  # 右足首: 黄色がかった赤
+                    28: (0, 150, 255),  # 左足首: 黄色がかった赤
+                }
+                
+                # 理想フォームの軌道色
+                ideal_joint_colors = {
+                    11: (0, 220, 0),  # 右肩: 緑
+                    12: (0, 220, 0),  # 左肩: 緑
+                    13: (70, 255, 70),  # 右肘: 黄緑
+                    14: (70, 255, 70),  # 左肘: 黄緑
+                    15: (150, 255, 150),  # 右手首: 淡い緑
+                    16: (150, 255, 150),  # 左手首: 淡い緑
+                    23: (0, 220, 0),  # 右腰: 緑
+                    24: (0, 220, 0),  # 左腰: 緑
+                    25: (70, 255, 70),  # 右膝: 黄緑
+                    26: (70, 255, 70),  # 左膝: 黄緑
+                    27: (150, 255, 150),  # 右足首: 淡い緑
+                    28: (150, 255, 150),  # 左足首: 淡い緑
+                }
+                
+                # 各フレームに対して処理
                 for i, frame in enumerate(sampled_frames):
                     # サイズを縮小して処理を軽く
                     resized_frame = cv2.resize(frame, (640, 360))
+                    frame_idx = int(len(frames) * i / len(sampled_frames))
+                    
+                    if frame_idx in landmarks_data:
+                        # キー関節に対して軌道を描画
+                        for joint_id in key_joints:
+                            # 軌道点を初期化
+                            if joint_id not in trajectory_points:
+                                trajectory_points[joint_id] = []
+                            
+                            # 現在の関節位置を取得
+                            if str(joint_id) in landmarks_data[frame_idx]:
+                                joint = landmarks_data[frame_idx][str(joint_id)]
+                                x = int(joint["x"] * 640)
+                                y = int(joint["y"] * 360)
+                                
+                                # 軌道に点を追加
+                                trajectory_points[joint_id].append((x, y))
+                                
+                                # 軌道を描画（過去の点を接続）
+                                if len(trajectory_points[joint_id]) > 1:
+                                    for j in range(1, len(trajectory_points[joint_id])):
+                                        # 不透明度を調整（新しいほど濃く）
+                                        alpha = min(1.0, j / 10.0)
+                                        color = joint_colors[joint_id]
+                                        
+                                        # 線の太さを設定
+                                        thickness = 2
+                                        
+                                        # 点と点を結ぶ線を描画
+                                        pt1 = trajectory_points[joint_id][j-1]
+                                        pt2 = trajectory_points[joint_id][j]
+                                        cv2.line(resized_frame, pt1, pt2, color, thickness)
+                        
+                        # 理想的なフォームの軌道も描画
+                        if ideal_landmarks:
+                            # 理想フォームを現在のフレームに合わせて調整
+                            h, w = resized_frame.shape[:2]
+                            adjusted_ideal = self._align_ideal_landmarks(ideal_landmarks, landmarks_data[frame_idx], (w, h))
+                            
+                            # 理想の軌道を描画
+                            for joint_id in key_joints:
+                                if str(joint_id) in adjusted_ideal:
+                                    # 理想の関節位置
+                                    ideal_joint = adjusted_ideal[str(joint_id)]
+                                    ideal_x = int(ideal_joint["x"])
+                                    ideal_y = int(ideal_joint["y"])
+                                    
+                                    # 理想の軌道点を描画（大きめの点で）
+                                    cv2.circle(resized_frame, (ideal_x, ideal_y), 4, ideal_joint_colors[joint_id], -1)
+                    
+                    # フレーム情報を追加
+                    cv2.putText(
+                        resized_frame,
+                        f"Frame {i+1}/{len(sampled_frames)}",
+                        (10, 30),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        0.7,
+                        (255, 255, 255),
+                        2
+                    )
+                    
                     frame_filename = f"frame_{self.exercise_type}_{i:03d}.jpg"
                     frame_path = os.path.join(VISUALIZATION_PATH, frame_filename)
                     cv2.imwrite(frame_path, resized_frame)
@@ -729,7 +828,7 @@ class TrainingAnalyzer:
                 
                 # 結果に追加
                 visualization_paths["animation_frames"] = animation_frames
-                logger.info(f"Generated {len(animation_frames)} animation frames")
+                logger.info(f"Generated {len(animation_frames)} animation frames with enhanced trajectory visualization")
                 
                 # どのフレームを保存するか選択（最大6フレーム）- バックアップとして
                 if len(frames) > 0:
