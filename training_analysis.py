@@ -698,9 +698,47 @@ class TrainingAnalyzer:
                 
                 frame_idx += 1
             
-            # 連続フレーム画像を保存（動画の代わり）
+            # MP4動画を生成して保存
             try:
-                # どのフレームを保存するか選択（最大6フレーム）
+                # 動画出力の設定
+                output_filename = f"analysis_{self.exercise_type}.mp4"
+                output_path = os.path.join(VISUALIZATION_PATH, output_filename)
+                
+                # 動画ライターの初期化 (H.264コーデックを使用)
+                # 'avc1'はほとんどのブラウザで対応している
+                try:
+                    fourcc = cv2.VideoWriter_fourcc(*'avc1')
+                    out = cv2.VideoWriter(output_path, fourcc, 10.0, (frame_width, frame_height))
+                    
+                    # フレームを書き込む
+                    for frame in frames:
+                        out.write(frame)
+                    
+                    # リソース解放
+                    out.release()
+                    logger.info(f"MP4 video saved successfully to {output_path}")
+                    
+                    # 動画へのパスを追加
+                    visualization_paths["mp4_video"] = f"/static/analysis_results/{output_filename}"
+                    
+                except Exception as codec_error:
+                    logger.error(f"Error with avc1 codec: {codec_error}, trying fallback codec")
+                    
+                    # フォールバック: MJPG codec + AVI format (ほぼすべての環境で動作)
+                    avi_filename = f"analysis_{self.exercise_type}.avi"
+                    avi_path = os.path.join(VISUALIZATION_PATH, avi_filename)
+                    
+                    fourcc = cv2.VideoWriter_fourcc(*'MJPG')
+                    out = cv2.VideoWriter(avi_path, fourcc, 10.0, (frame_width, frame_height))
+                    
+                    for frame in frames:
+                        out.write(frame)
+                    
+                    out.release()
+                    logger.info(f"AVI video saved successfully to {avi_path}")
+                    visualization_paths["avi_video"] = f"/static/analysis_results/{avi_filename}"
+                
+                # どのフレームを保存するか選択（最大6フレーム）- バックアップとして
                 if len(frames) > 0:
                     frame_count = len(frames)
                     # 均等に分布したフレームを選択
@@ -730,7 +768,7 @@ class TrainingAnalyzer:
                     visualization_paths["summary_image"] = f"/static/analysis_results/{summary_filename}"
                 
             except Exception as e:
-                logger.error(f"Error creating frame sequence: {e}")
+                logger.error(f"Error creating video and images: {e}")
                 
             # 後片付け
             cap.release()

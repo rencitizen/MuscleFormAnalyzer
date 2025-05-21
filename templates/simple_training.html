@@ -80,8 +80,45 @@
                         <h4 class="text-center mb-3">Pose Analysis Visualization</h4>
                     </div>
                     
-                    <!-- サマリー画像 -->
-                    {% if training.get('visualizations', {}).get('summary_image') %}
+                    <!-- MP4動画再生 -->
+                    {% if training.get('visualizations', {}).get('mp4_video') %}
+                    <div class="col-12 mb-4">
+                        <div class="card bg-dark">
+                            <div class="card-header bg-dark text-light">Form Analysis Video</div>
+                            <div class="card-body p-0">
+                                <video controls class="w-100">
+                                    <source src="{{ training.get('visualizations', {}).get('mp4_video') }}" type="video/mp4">
+                                    <!-- AVIフォールバック -->
+                                    {% if training.get('visualizations', {}).get('avi_video') %}
+                                    <source src="{{ training.get('visualizations', {}).get('avi_video') }}" type="video/avi">
+                                    {% endif %}
+                                    Your browser does not support video playback.
+                                </video>
+                            </div>
+                            <div class="card-footer bg-dark text-light">
+                                <small>Red: Your Form / Green: Ideal Form</small>
+                            </div>
+                        </div>
+                    </div>
+                    {% elif training.get('visualizations', {}).get('avi_video') %}
+                    <div class="col-12 mb-4">
+                        <div class="card bg-dark">
+                            <div class="card-header bg-dark text-light">Form Analysis Video</div>
+                            <div class="card-body p-0">
+                                <video controls class="w-100">
+                                    <source src="{{ training.get('visualizations', {}).get('avi_video') }}" type="video/avi">
+                                    Your browser does not support video playback.
+                                </video>
+                            </div>
+                            <div class="card-footer bg-dark text-light">
+                                <small>Red: Your Form / Green: Ideal Form</small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- フォールバック：サマリー画像 -->
+                    {% if not training.get('visualizations', {}).get('mp4_video') and not training.get('visualizations', {}).get('avi_video') and training.get('visualizations', {}).get('summary_image') %}
                     <div class="col-12 mb-4">
                         <div class="card bg-dark">
                             <div class="card-header bg-dark text-light">Form Analysis Summary</div>
