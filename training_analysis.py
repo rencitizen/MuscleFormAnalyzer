@@ -812,27 +812,61 @@ class TrainingAnalyzer:
                             h, w = resized_frame.shape[:2]
                             adjusted_ideal = self._align_ideal_landmarks(ideal_landmarks, landmarks_data[frame_idx], (w, h))
                             
-                            # 理想の軌道を描画
+                            # 理想の軌道を描画し、実際のフォームとの比較
                             for joint_id in key_joints:
                                 # 辞書アクセス方法を調整
                                 ideal_joint = None
-                                # 直接アクセスを試みる
+                                actual_joint = None
+                                
+                                # 理想的なジョイントを取得
                                 if joint_id in adjusted_ideal:
                                     ideal_joint = adjusted_ideal[joint_id]
-                                # 文字列キーを試す前に辞書に含まれるか確認
                                 elif isinstance(adjusted_ideal, dict) and str(joint_id) in adjusted_ideal:
-                                    # 回避策: キーに直接アクセス
                                     try:
                                         ideal_joint = adjusted_ideal[str(joint_id)]
                                     except:
                                         pass
+                                
+                                # 実際のジョイントを取得
+                                if joint_id in landmarks_data[frame_idx]:
+                                    actual_joint = landmarks_data[frame_idx][joint_id]
+                                elif str(joint_id) in landmarks_data[frame_idx]:
+                                    try:
+                                        actual_joint = landmarks_data[frame_idx][str(joint_id)]
+                                    except:
+                                        pass
                                     
-                                if ideal_joint:
+                                if ideal_joint and actual_joint:
                                     ideal_x = int(ideal_joint["x"])
                                     ideal_y = int(ideal_joint["y"])
+                                    actual_x = int(actual_joint["x"])
+                                    actual_y = int(actual_joint["y"])
+                                    
+                                    # 距離を計算して色を決定（近ければ緑、遠ければ赤）
+                                    distance = math.sqrt((ideal_x - actual_x)**2 + (ideal_y - actual_y)**2)
+                                    threshold = 30  # ピクセル単位のしきい値
+                                    
+                                    if distance < threshold:
+                                        # 良いフォーム - 緑色
+                                        color = (0, 255, 0)
+                                    else:
+                                        # 修正が必要 - 赤色
+                                        color = (0, 0, 255)
                                     
                                     # 理想の軌道点を描画（大きめの点で）
-                                    cv2.circle(resized_frame, (ideal_x, ideal_y), 4, ideal_joint_colors[joint_id], -1)
+                                    cv2.circle(resized_frame, (ideal_x, ideal_y), 4, color, -1)
+                                    
+                                    # 差分を示す線を描画
+                                    if distance > threshold / 2:
+                                        # 差が大きい場合のみ線を描画
+                                        cv2.line(resized_frame, (actual_x, actual_y), (ideal_x, ideal_y), 
+                                                (0, 165, 255), 1, cv2.LINE_AA)  # オレンジ色の線
+                                
+                                elif ideal_joint:
+                                    # 実際のジョイントが検出されていない場合
+                                    ideal_x = int(ideal_joint["x"])
+                                    ideal_y = int(ideal_joint["y"])
+                                    cv2.circle(resized_frame, (ideal_x, ideal_y), 4, (0, 255, 255), -1)  # 黄色
                     
                     # フレーム情報を追加
                     cv2.putText(
