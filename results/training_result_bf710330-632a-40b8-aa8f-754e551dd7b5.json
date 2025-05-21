@@ -1,0 +1,61 @@
+{
+  "exercise_type": "squat",
+  "exercise_name": "スクワット",
+  "form_score": 88.7906775996035,
+  "depth_score": 85,
+  "tempo_score": 80,
+  "balance_score": 92.581355199207,
+  "stability_score": 75,
+  "issues": [
+    "特に問題は見られません"
+  ],
+  "strengths": [
+    "適切な深さでスクワットできている",
+    "左右のバランスが取れている"
+  ],
+  "rep_count": 5,
+  "max_depth": 6.756824694519835,
+  "advice": [
+    "このまま継続しましょう"
+  ],
+  "visualizations": {
+    "animation_frames": [
+      "/static/analysis_results/frame_squat_000.jpg",
+      "/static/analysis_results/frame_squat_001.jpg",
+      "/static/analysis_results/frame_squat_002.jpg",
+      "/static/analysis_results/frame_squat_003.jpg",
+      "/static/analysis_results/frame_squat_004.jpg",
+      "/static/analysis_results/frame_squat_005.jpg",
+      "/static/analysis_results/frame_squat_006.jpg",
+      "/static/analysis_results/frame_squat_007.jpg",
+      "/static/analysis_results/frame_squat_008.jpg",
+      "/static/analysis_results/frame_squat_009.jpg",
+      "/static/analysis_results/frame_squat_010.jpg",
+      "/static/analysis_results/frame_squat_011.jpg",
+      "/static/analysis_results/frame_squat_012.jpg",
+      "/static/analysis_results/frame_squat_013.jpg",
+      "/static/analysis_results/frame_squat_014.jpg",
+      "/static/analysis_results/frame_squat_015.jpg",
+      "/static/analysis_results/frame_squat_016.jpg",
+      "/static/analysis_results/frame_squat_017.jpg",
+      "/static/analysis_results/frame_squat_018.jpg",
+      "/static/analysis_results/frame_squat_019.jpg"
+    ],
+    "frame_sequence": [
+      "/static/analysis_results/frame_squat_0.jpg",
+      "/static/analysis_results/frame_squat_1.jpg",
+      "/static/analysis_results/frame_squat_2.jpg",
+      "/static/analysis_results/frame_squat_3.jpg",
+      "/static/analysis_results/frame_squat_4.jpg",
+      "/static/analysis_results/frame_squat_5.jpg"
+    ],
+    "summary_image": "/static/analysis_results/analysis_squat_summary.jpg",
+    "start_phase_image": "/static/analysis_results/pose_squat_start_0.jpg",
+    "middle_phase_image": "/static/analysis_results/pose_squat_middle_775.jpg",
+    "end_phase_image": "/static/analysis_results/pose_squat_end_1457.jpg",
+    "trajectory_image": "/static/analysis_results/trajectory_squat.jpg"
+  },
+  "user_data": {
+    "height_cm": 170.0
+  }
+}
