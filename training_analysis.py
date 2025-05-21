@@ -1492,6 +1492,7 @@ class TrainingAnalyzer:
                                     exercise_type: str) -> Dict[int, Dict[str, float]]:
         """
         各種目に特化した理想フォームの調整
+        現在のポーズに基づいて関節の角度を計算し、理想フォームを直接調整
         
         Args:
             ideal_landmarks: 理想的なランドマーク
@@ -1506,221 +1507,167 @@ class TrainingAnalyzer:
         try:
             # 種目ごとに異なる調整を適用
             if exercise_type == 'squat':
-                # 膝の角度を計算し、スクワットの深さを推定
-                right_knee_angle = 180
-                left_knee_angle = 180
+                # 膝と股関節の角度を取得
+                right_knee_angle = self._get_joint_angle(
+                    actual_landmarks_dict.get('right_hip'), 
+                    actual_landmarks_dict.get('right_knee'), 
+                    actual_landmarks_dict.get('right_ankle')
+                )
                 
-                if all(key in actual_landmarks_dict for key in ['right_hip', 'right_knee', 'right_ankle']):
-                    right_knee_angle = self._calculate_joint_angle(
-                        actual_landmarks_dict['right_hip'], 
-                        actual_landmarks_dict['right_knee'], 
-                        actual_landmarks_dict['right_ankle']
-                    )
+                left_knee_angle = self._get_joint_angle(
+                    actual_landmarks_dict.get('left_hip'), 
+                    actual_landmarks_dict.get('left_knee'), 
+                    actual_landmarks_dict.get('left_ankle')
+                )
                 
-                if all(key in actual_landmarks_dict for key in ['left_hip', 'left_knee', 'left_ankle']):
-                    left_knee_angle = self._calculate_joint_angle(
-                        actual_landmarks_dict['left_hip'], 
-                        actual_landmarks_dict['left_knee'], 
-                        actual_landmarks_dict['left_ankle']
-                    )
+                # 平均膝角度
+                avg_knee_angle = (right_knee_angle + left_knee_angle) / 2 if right_knee_angle and left_knee_angle else 180
                 
-                # 平均膝角度を計算
-                avg_knee_angle = (right_knee_angle + left_knee_angle) / 2
-                
-                # スクワットの段階に応じて理想フォームを調整
+                # スクワットの深さに応じて股関節と膝の位置を調整
+                depth_ratio = 1.0
                 if avg_knee_angle < 110:  # 深いスクワット
-                    # 深いスクワットの理想的なポーズを生成
-                    w, h = 640, 480  # 仮のフレームサイズ
-                    deep_squat = self._get_squat_bottom_pose(w, h)
+                    depth_ratio = 0.3
+                elif avg_knee_angle < 150:  # 中程度のスクワット 
+                    depth_ratio = 0.3 + (150 - avg_knee_angle) / 40 * 0.7  # 110度→0.3、150度→1.0
+                else:  # 浅いスクワット
+                    depth_ratio = 1.0
+                
+                # 現在のフォームから理想的なフォームを直接調整
+                if 23 in adjusted and 24 in adjusted:  # 股関節
+                    # 股関節の位置を調整（スクワットの深さに応じて）
+                    hip_y_offset = (1.0 - depth_ratio) * 60  # 最大60ピクセル下げる
+                    adjusted[23]['y'] += hip_y_offset
+                    adjusted[24]['y'] += hip_y_offset
+                
+                if 25 in adjusted and 26 in adjusted:  # 膝
+                    # 膝の位置も調整（スクワットの深さに応じて）
+                    knee_y_offset = (1.0 - depth_ratio) * 30  # 最大30ピクセル下げる
+                    knee_x_spread = (1.0 - depth_ratio) * 15  # 膝を少し横に広げる
                     
-                    # 深いスクワットのポーズを使用
-                    adjusted = deep_squat.copy()
-                elif avg_knee_angle < 150:  # 中程度のスクワット
-                    # 膝の角度に応じて、直立と深いスクワットの間を補間
-                    # 補間比率の計算 (0=直立、1=深いスクワット)
-                    ratio = (170 - avg_knee_angle) / 60  # 170度→0、110度→1
-                    ratio = max(0, min(1, ratio))  # 0～1に制限
+                    adjusted[25]['y'] += knee_y_offset
+                    adjusted[26]['y'] += knee_y_offset
+                    adjusted[25]['x'] -= knee_x_spread
+                    adjusted[26]['x'] += knee_x_spread
+                
+                # 上半身の前傾も調整
+                if 0 in adjusted and 11 in adjusted and 12 in adjusted:  # 頭部と肩
+                    head_y_offset = (1.0 - depth_ratio) * 80  # 頭部を下げる
+                    shoulder_y_offset = (1.0 - depth_ratio) * 70  # 肩を下げる
                     
-                    w, h = 640, 480  # 仮のフレームサイズ
-                    top_pose = self._get_squat_top_pose(w, h)
-                    bottom_pose = self._get_squat_bottom_pose(w, h)
-                    
-                    # ポーズを補間
-                    adjusted = self._interpolate_poses(top_pose, bottom_pose, ratio)
+                    adjusted[0]['y'] += head_y_offset
+                    adjusted[11]['y'] += shoulder_y_offset
+                    adjusted[12]['y'] += shoulder_y_offset
             
             elif exercise_type == 'bench_press':
-                # 肘の角度を計算
-                right_elbow_angle = 180
-                left_elbow_angle = 180
+                # 肘の角度を取得
+                right_elbow_angle = self._get_joint_angle(
+                    actual_landmarks_dict.get('right_shoulder'),
+                    actual_landmarks_dict.get('right_elbow'),
+                    self._get_landmark_safely(15, actual_landmarks_dict)  # 右手首
+                )
                 
-                if all(key in actual_landmarks_dict for key in ['right_shoulder', 'right_elbow']) and 15 in actual_landmarks_dict:
-                    right_wrist = self._get_landmark_safely(15, actual_landmarks_dict)
-                    if right_wrist:
-                        right_elbow_angle = self._calculate_joint_angle(
-                            actual_landmarks_dict['right_shoulder'],
-                            actual_landmarks_dict['right_elbow'],
-                            right_wrist
-                        )
-                
-                if all(key in actual_landmarks_dict for key in ['left_shoulder', 'left_elbow']) and 16 in actual_landmarks_dict:
-                    left_wrist = self._get_landmark_safely(16, actual_landmarks_dict)
-                    if left_wrist:
-                        left_elbow_angle = self._calculate_joint_angle(
-                            actual_landmarks_dict['left_shoulder'],
-                            actual_landmarks_dict['left_elbow'],
-                            left_wrist
-                        )
+                left_elbow_angle = self._get_joint_angle(
+                    actual_landmarks_dict.get('left_shoulder'),
+                    actual_landmarks_dict.get('left_elbow'),
+                    self._get_landmark_safely(16, actual_landmarks_dict)  # 左手首
+                )
                 
                 # 平均肘角度
-                avg_elbow_angle = (right_elbow_angle + left_elbow_angle) / 2
+                avg_elbow_angle = (right_elbow_angle + left_elbow_angle) / 2 if right_elbow_angle and left_elbow_angle else 180
                 
-                # 肘の角度に基づいてバーの位置を調整
+                # 肘の角度に基づいて手首（バーの位置）を調整
+                wrist_offset = 0
                 if avg_elbow_angle < 100:  # 肘が深く曲がっている（バーが下がっている）
-                    # 手首の位置を調整（バーの位置）
-                    if all(idx in adjusted for idx in [15, 16]):
-                        # バーを胸に近づける
-                        for idx in [15, 16]:
-                            adjusted[idx]['y'] += 40  # 下方向に移動（胸の位置へ）
-                elif avg_elbow_angle > 160:  # 肘がほぼ伸びている（バーが上がっている）
-                    # 手首の位置を調整
-                    if all(idx in adjusted for idx in [15, 16]):
-                        # バーを上げる
-                        for idx in [15, 16]:
-                            adjusted[idx]['y'] -= 30  # 上方向に移動
+                    wrist_offset = 40  # バーを下げる（胸に近づける）
+                elif avg_elbow_angle < 140:  # 中程度に曲がっている
+                    wrist_offset = 40 - (avg_elbow_angle - 100) / 40 * 40  # 100度→40、140度→0
+                # 肘が伸びている場合は調整しない（wrist_offset = 0）
+                
+                # 手首（バーの位置）を調整
+                if 15 in adjusted and 16 in adjusted:
+                    adjusted[15]['y'] += wrist_offset
+                    adjusted[16]['y'] += wrist_offset
+                
+                # 肘の位置も調整
+                if 13 in adjusted and 14 in adjusted:
+                    elbow_y_offset = wrist_offset * 0.7  # 手首ほどではないが同じ方向に移動
+                    adjusted[13]['y'] += elbow_y_offset
+                    adjusted[14]['y'] += elbow_y_offset
             
             elif exercise_type == 'deadlift':
-                # 背中の角度を計算
-                if all(key in actual_landmarks_dict for key in ['right_shoulder', 'right_hip', 'right_knee']):
-                    # 肩-腰-膝の角度で体の前傾を判断
-                    torso_angle = self._calculate_joint_angle(
-                        actual_landmarks_dict['right_shoulder'],
-                        actual_landmarks_dict['right_hip'],
-                        actual_landmarks_dict['right_knee']
-                    )
+                # 背中の角度を計算（肩-腰-膝の角度）
+                back_angle = self._get_joint_angle(
+                    actual_landmarks_dict.get('right_shoulder'),
+                    actual_landmarks_dict.get('right_hip'),
+                    actual_landmarks_dict.get('right_knee')
+                )
+                
+                if back_angle:
+                    # デッドリフトのフェーズに応じた調整
+                    if back_angle < 120:  # 前傾姿勢（セットアップまたはリフトオフ）
+                        # 肩を前方に
+                        shoulder_x_offset = 20
+                        hip_y_offset = -20  # 腰を上げる
+                        
+                        if 11 in adjusted and 12 in adjusted:
+                            adjusted[11]['x'] += shoulder_x_offset
+                            adjusted[12]['x'] -= shoulder_x_offset
+                        
+                        if 23 in adjusted and 24 in adjusted:
+                            adjusted[23]['y'] += hip_y_offset
+                            adjusted[24]['y'] += hip_y_offset
                     
-                    # デッドリフトの段階に応じた調整
-                    if torso_angle < 100:  # 前傾姿勢（セットアップ/リフトオフ）
-                        # 肩の位置を前方に調整
-                        if all(idx in adjusted for idx in [11, 12]):
-                            # 肩を前方へ
-                            adjusted[11]['x'] += 20
-                            adjusted[12]['x'] -= 20
-                    elif torso_angle > 160:  # ほぼ直立（ロックアウト）
-                        # 肩の位置を後方に
-                        if all(idx in adjusted for idx in [11, 12]):
-                            adjusted[11]['x'] -= 10
-                            adjusted[12]['x'] += 10
+                    elif back_angle > 160:  # 直立姿勢（ロックアウト）
+                        # 肩を後方に
+                        shoulder_x_offset = -15
+                        
+                        if 11 in adjusted and 12 in adjusted:
+                            adjusted[11]['x'] += shoulder_x_offset
+                            adjusted[12]['x'] -= shoulder_x_offset
+                    
+                    else:  # 中間姿勢（デッドリフト途中）
+                        # 補間比率の計算
+                        ratio = (back_angle - 120) / 40  # 120度→0、160度→1
+                        ratio = max(0, min(1, ratio))
+                        
+                        # 肩の位置を補間
+                        shoulder_x_offset = 20 - ratio * 35  # 120度→20、160度→-15
+                        
+                        if 11 in adjusted and 12 in adjusted:
+                            adjusted[11]['x'] += shoulder_x_offset
+                            adjusted[12]['x'] -= shoulder_x_offset
+                        
+                        # 腰の位置も補間
+                        hip_y_offset = -20 + ratio * 20  # 120度→-20、160度→0
+                        
+                        if 23 in adjusted and 24 in adjusted:
+                            adjusted[23]['y'] += hip_y_offset
+                            adjusted[24]['y'] += hip_y_offset
             
         except Exception as e:
             logger.error(f"種目別調整中にエラー: {e}")
         
         return adjusted
-    
-    def _get_squat_top_pose(self, w: int, h: int) -> Dict[int, Dict[str, float]]:
-        """立ち姿勢のスクワットの理想フォーム"""
-        center_x = w / 2
-        center_y = h / 2
         
-        return {
-            # 頭部
-            0: {'x': center_x, 'y': center_y - 170, 'z': 0, 'visibility': 1.0},
-            
-            # 肩
-            11: {'x': center_x - 90, 'y': center_y - 100, 'z': 0, 'visibility': 1.0},
-            12: {'x': center_x + 90, 'y': center_y - 100, 'z': 0, 'visibility': 1.0},
-            
-            # 肘
-            13: {'x': center_x - 130, 'y': center_y - 50, 'z': 0, 'visibility': 1.0},
-            14: {'x': center_x + 130, 'y': center_y - 50, 'z': 0, 'visibility': 1.0},
-            
-            # 手首
-            15: {'x': center_x - 160, 'y': center_y - 10, 'z': 0, 'visibility': 1.0},
-            16: {'x': center_x + 160, 'y': center_y - 10, 'z': 0, 'visibility': 1.0},
-            
-            # 腰/股関節
-            23: {'x': center_x - 45, 'y': center_y + 50, 'z': 0, 'visibility': 1.0},
-            24: {'x': center_x + 45, 'y': center_y + 50, 'z': 0, 'visibility': 1.0},
-            
-            # 膝
-            25: {'x': center_x - 45, 'y': center_y + 150, 'z': 0, 'visibility': 1.0},
-            26: {'x': center_x + 45, 'y': center_y + 150, 'z': 0, 'visibility': 1.0},
-            
-            # 足首
-            27: {'x': center_x - 55, 'y': center_y + 250, 'z': 0, 'visibility': 1.0},
-            28: {'x': center_x + 55, 'y': center_y + 250, 'z': 0, 'visibility': 1.0},
-            
-            # つま先
-            31: {'x': center_x - 70, 'y': center_y + 280, 'z': 0, 'visibility': 1.0},
-            32: {'x': center_x + 70, 'y': center_y + 280, 'z': 0, 'visibility': 1.0},
-        }
-    
-    def _get_squat_bottom_pose(self, w: int, h: int) -> Dict[int, Dict[str, float]]:
-        """スクワットのボトムポジションの理想フォーム"""
-        center_x = w / 2
-        center_y = h / 2
-        
-        return {
-            # 頭部
-            0: {'x': center_x, 'y': center_y - 60, 'z': 0, 'visibility': 1.0},
-            
-            # 肩
-            11: {'x': center_x - 90, 'y': center_y - 10, 'z': 0, 'visibility': 1.0},
-            12: {'x': center_x + 90, 'y': center_y - 10, 'z': 0, 'visibility': 1.0},
-            
-            # 肘
-            13: {'x': center_x - 130, 'y': center_y + 40, 'z': 0, 'visibility': 1.0},
-            14: {'x': center_x + 130, 'y': center_y + 40, 'z': 0, 'visibility': 1.0},
-            
-            # 手首
-            15: {'x': center_x - 160, 'y': center_y + 80, 'z': 0, 'visibility': 1.0},
-            16: {'x': center_x + 160, 'y': center_y + 80, 'z': 0, 'visibility': 1.0},
-            
-            # 腰/股関節
-            23: {'x': center_x - 45, 'y': center_y + 120, 'z': 0, 'visibility': 1.0},
-            24: {'x': center_x + 45, 'y': center_y + 120, 'z': 0, 'visibility': 1.0},
-            
-            # 膝
-            25: {'x': center_x - 65, 'y': center_y + 180, 'z': 0, 'visibility': 1.0},
-            26: {'x': center_x + 65, 'y': center_y + 180, 'z': 0, 'visibility': 1.0},
-            
-            # 足首
-            27: {'x': center_x - 55, 'y': center_y + 250, 'z': 0, 'visibility': 1.0},
-            28: {'x': center_x + 55, 'y': center_y + 250, 'z': 0, 'visibility': 1.0},
-            
-            # つま先
-            31: {'x': center_x - 70, 'y': center_y + 280, 'z': 0, 'visibility': 1.0},
-            32: {'x': center_x + 70, 'y': center_y + 280, 'z': 0, 'visibility': 1.0},
-        }
-    
-    def _interpolate_poses(self, pose1: Dict[int, Dict[str, float]], 
-                          pose2: Dict[int, Dict[str, float]], 
-                          ratio: float) -> Dict[int, Dict[str, float]]:
+    def _get_joint_angle(self, p1: Optional[Dict[str, float]], 
+                        p2: Optional[Dict[str, float]], 
+                        p3: Optional[Dict[str, float]]) -> Optional[float]:
         """
-        2つのポーズ間を補間する
+        3点による関節角度を計算（p2が頂点）、ポイントがNoneの場合はNoneを返す
         
         Args:
-            pose1: 開始ポーズ
-            pose2: 終了ポーズ
-            ratio: 補間比率（0.0=pose1、1.0=pose2）
+            p1, p2, p3: 3つの点（p2が角度の頂点）
             
         Returns:
-            補間されたポーズ
+            角度（度）またはNone
         """
-        result = {}
-        
-        # 両方のポーズに存在するキーポイントのみを処理
-        common_keys = set(pose1.keys()).intersection(set(pose2.keys()))
-        
-        for key in common_keys:
-            # 線形補間
-            result[key] = {
-                'x': pose1[key]['x'] * (1 - ratio) + pose2[key]['x'] * ratio,
-                'y': pose1[key]['y'] * (1 - ratio) + pose2[key]['y'] * ratio,
-                'z': pose1[key].get('z', 0) * (1 - ratio) + pose2[key].get('z', 0) * ratio,
-                'visibility': max(pose1[key].get('visibility', 0), pose2[key].get('visibility', 0))
-            }
-        
-        return result
+        if not (p1 and p2 and p3):
+            return None
+            
+        try:
+            return self._calculate_joint_angle(p1, p2, p3)
+        except:
+            return None
     
     def _generate_trajectory_visualization(self, landmarks_data: Dict[int, Dict[int, Dict[str, float]]], video_path: str) -> Optional[str]:
         """
