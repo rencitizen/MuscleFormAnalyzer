@@ -68,8 +68,21 @@ def training_results():
     """
     トレーニング分析ページ (簡易版に置き換え)
     """
-    # シンプル版にリダイレクト
-    return redirect('/simple_training?mode=sample')
+    # パラメータを取得
+    mode = request.args.get('mode', 'sample')
+    exercise_type = request.args.get('exercise_type', 'squat')
+    result_file = request.args.get('result_file')
+    
+    # パラメータを引き継いでシンプル版にリダイレクト
+    redirect_url = f'/simple_training?mode={mode}'
+    
+    if exercise_type:
+        redirect_url += f'&exercise_type={exercise_type}'
+        
+    if result_file:
+        redirect_url += f'&result_file={result_file}'
+        
+    return redirect(redirect_url)
 
 @app.route('/exercise_results')
 def exercise_results():
@@ -175,19 +188,63 @@ def test_route():
 def simple_training():
     """シンプルなトレーニング分析ページ"""
     mode = request.args.get('mode', 'sample')
+    exercise_type = request.args.get('exercise_type', 'squat')
+    result_file = request.args.get('result_file', '')
     
-    if mode == 'sample':
-        # サンプルデータを読み込む
-        sample_file = os.path.join(RESULTS_DIR, 'sample_training.json')
-        if os.path.exists(sample_file):
-            with open(sample_file, 'r', encoding='utf-8') as f:
+    if mode == 'processed' and result_file and os.path.exists(os.path.join(RESULTS_DIR, result_file)):
+        # 処理済みファイルを読み込む
+        try:
+            with open(os.path.join(RESULTS_DIR, result_file), 'r', encoding='utf-8') as f:
                 data = json.load(f)
+                logger.info(f"Loaded processed data: {result_file}")
+        except Exception as e:
+            logger.error(f"Error loading processed file: {e}")
+            data = {}
+    elif mode == 'sample':
+        # 選択されたトレーニング種目に対応するサンプルを読み込む
+        exercise_files = {
+            'squat': 'sample_training_squat.json',
+            'bench_press': 'sample_training_bench.json',
+            'deadlift': 'sample_training_deadlift.json',
+            'overhead_press': 'sample_training_overhead.json'
+        }
+        
+        # 対応するサンプルファイルを検索
+        sample_file = os.path.join(RESULTS_DIR, exercise_files.get(exercise_type, 'sample_training.json'))
+        
+        # ファイルが存在しない場合はデフォルトのサンプルファイルを使用
+        if not os.path.exists(sample_file):
+            sample_file = os.path.join(RESULTS_DIR, 'sample_training.json')
+            
+        # サンプルファイルを読み込む
+        if os.path.exists(sample_file):
+            try:
+                with open(sample_file, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    logger.info(f"Loaded sample data: {sample_file}")
+            except Exception as e:
+                logger.error(f"Error loading sample file: {e}")
+                data = {}
         else:
-            # サンプルデータがない場合は基本的なデータを作成
+            # サンプルデータがない場合は種目に基づいた基本データを作成
+            exercise_names = {
+                'squat': 'スクワット',
+                'bench_press': 'ベンチプレス',
+                'deadlift': 'デッドリフト',
+                'overhead_press': 'オーバーヘッドプレス'
+            }
             data = {
-                "exercise_type": "スクワット",
-                "repetitions": 10,
+                "exercise_type": exercise_type,
+                "exercise_name": exercise_names.get(exercise_type, "不明なエクササイズ"),
+                "rep_count": 8,
                 "form_score": 85,
+                "depth_score": 80,
+                "tempo_score": 75,
+                "balance_score": 82,
+                "stability_score": 78,
+                "issues": ["膝が内側に入る", "背中が丸まる"],
+                "strengths": ["姿勢が安定している"],
+                "advice": ["膝をつま先と同じ方向に向けましょう", "背中をまっすぐに保ちましょう"],
                 "body_metrics": {
                     "height_cm": 170,
                     "left_arm_cm": 62.5,
@@ -197,14 +254,10 @@ def simple_training():
     else:
         # それ以外のモードの場合は基本的なデータを返す
         data = {
-            "exercise_type": "スクワット",
-            "repetitions": 10,
-            "form_score": 85,
-            "body_metrics": {
-                "height_cm": 170,
-                "left_arm_cm": 62.5,
-                "right_arm_cm": 62.8
-            }
+            "exercise_type": exercise_type,
+            "exercise_name": "分析データなし",
+            "rep_count": 0,
+            "form_score": 0
         }
     
     return render_template('simple_training.html', training=data)
