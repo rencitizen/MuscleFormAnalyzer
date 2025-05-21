@@ -17,15 +17,50 @@
                 <div class="row">
                     <div class="col-md-6">
                         <h4>基本情報</h4>
-                        <p>種目: {{ training.exercise_type }}</p>
-                        <p>レップ数: {{ training.repetitions }}</p>
-                        <p>フォームスコア: {{ training.form_score }}</p>
+                        <p>種目: {{ training.get('exercise_name', training.get('exercise_type', '不明')) }}</p>
+                        <p>レップ数: {{ training.get('rep_count', training.get('repetitions', 0)) }}</p>
+                        <p>フォームスコア: {{ training.get('form_score', 0) }}</p>
+                        
+                        {% if training.get('depth_score') %}
+                        <p>深さスコア: {{ training.get('depth_score', 0) }}</p>
+                        {% endif %}
+                        
+                        {% if training.get('balance_score') %}
+                        <p>バランススコア: {{ training.get('balance_score', 0) }}</p>
+                        {% endif %}
+                        
+                        {% if training.get('tempo_score') %}
+                        <p>テンポスコア: {{ training.get('tempo_score', 0) }}</p>
+                        {% endif %}
                     </div>
                     <div class="col-md-6">
+                        {% if training.get('body_metrics') %}
                         <h4>身体メトリクス</h4>
-                        <p>身長: {{ training.body_metrics.height_cm }}cm</p>
-                        <p>左腕長: {{ training.body_metrics.left_arm_cm }}cm</p>
-                        <p>右腕長: {{ training.body_metrics.right_arm_cm }}cm</p>
+                        <p>身長: {{ training.get('body_metrics', {}).get('height_cm', 0) }}cm</p>
+                        <p>左腕長: {{ training.get('body_metrics', {}).get('left_arm_cm', 0) }}cm</p>
+                        <p>右腕長: {{ training.get('body_metrics', {}).get('right_arm_cm', 0) }}cm</p>
+                        {% endif %}
+                        
+                        {% if training.get('issues') or training.get('strengths') %}
+                        <h4>フォーム評価</h4>
+                        {% if training.get('issues') %}
+                        <p>改善点:</p>
+                        <ul>
+                            {% for issue in training.get('issues', []) %}
+                            <li>{{ issue }}</li>
+                            {% endfor %}
+                        </ul>
+                        {% endif %}
+                        
+                        {% if training.get('strengths') %}
+                        <p>良い点:</p>
+                        <ul>
+                            {% for strength in training.get('strengths', []) %}
+                            <li>{{ strength }}</li>
+                            {% endfor %}
+                        </ul>
+                        {% endif %}
+                        {% endif %}
                     </div>
                 </div>
             </div>
