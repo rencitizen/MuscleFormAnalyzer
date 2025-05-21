@@ -611,76 +611,103 @@ class TrainingAnalyzer:
         try:
             # 動画キャプチャを開く
             cap = cv2.VideoCapture(video_path)
+            fps = cap.get(cv2.CAP_PROP_FPS)
+            frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+            frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
             
-            # 理想的なフォームのランドマークを取得（もしあれば）
-            ideal_landmarks = self._get_ideal_landmarks()
+            # 理想的なフォームのランドマークを生成
+            ideal_landmarks = self._create_default_ideal_landmarks(self.exercise_type)
             
-            # 代表的なフレームを選択（動作の中間点など）
+            # 動画出力の設定
+            output_filename = f"analysis_{self.exercise_type}.mp4"
+            output_path = os.path.join(VISUALIZATION_PATH, output_filename)
+            
+            # 動画ライターを初期化
+            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+            out = cv2.VideoWriter(output_path, fourcc, fps, (frame_width, frame_height))
+            
+            frame_indices = sorted(landmarks_data.keys())
+            
+            # 代表的なフレームを選択（スナップショット用）
             key_frames = self._select_key_frames(landmarks_data)
+            snapshot_paths = {}
             
-            for frame_idx in key_frames:
-                if frame_idx not in landmarks_data:
-                    continue
-                    
-                # そのフレームに動画をシーク
-                cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
+            # すべてのフレームを処理
+            frame_idx = 0
+            while cap.isOpened():
                 success, image = cap.read()
-                
                 if not success:
-                    continue
+                    break
                 
-                # 画像の寸法
-                h, w, _ = image.shape
+                # ランドマークがあるフレームのみ処理
+                if frame_idx in landmarks_data:
+                    # 実際のポーズを描画（赤色）
+                    annotated_image = image.copy()
+                    annotated_image = self._draw_pose_landmarks(annotated_image, landmarks_data[frame_idx], color=(0, 0, 255))
+                    
+                    # 理想的なフォームを描画（緑色）
+                    if ideal_landmarks:
+                        # フレームの寸法
+                        h, w, _ = image.shape
+                        
+                        # 理想のランドマークを現在のフレームに合わせて調整
+                        adjusted_ideal = self._align_ideal_landmarks(ideal_landmarks, landmarks_data[frame_idx], (w, h))
+                        annotated_image = self._draw_pose_landmarks(annotated_image, adjusted_ideal, color=(0, 255, 0))
+                    
+                    # フォントの設定
+                    font = cv2.FONT_HERSHEY_SIMPLEX
+                    
+                    # 画像上部に英語でテキスト追加（文字化け防止）
+                    cv2.putText(
+                        annotated_image, 
+                        f"{EXERCISE_NAMES.get(self.exercise_type, 'Unknown')} Analysis", 
+                        (10, 30), 
+                        font, 
+                        1, 
+                        (255, 255, 255), 
+                        2
+                    )
+                    
+                    # 凡例を追加（英語で）
+                    cv2.putText(
+                        annotated_image, 
+                        "Red: Your Form  Green: Ideal Form", 
+                        (10, 70), 
+                        font, 
+                        0.7, 
+                        (255, 255, 255), 
+                        2
+                    )
+                    
+                    # 動画に書き込む
+                    out.write(annotated_image)
+                    
+                    # キーフレームのスナップショットを保存
+                    if frame_idx in key_frames:
+                        phase_idx = key_frames.index(frame_idx)
+                        phases = ["start", "middle", "end"]
+                        if phase_idx < len(phases):
+                            phase = phases[phase_idx]
+                            snapshot_filename = f"pose_{self.exercise_type}_{phase}_{frame_idx}.jpg"
+                            snapshot_path = os.path.join(VISUALIZATION_PATH, snapshot_filename)
+                            cv2.imwrite(snapshot_path, annotated_image)
+                            snapshot_paths[f"{phase}_phase_image"] = f"/static/analysis_results/{snapshot_filename}"
                 
-                # 実際のポーズを描画（赤色）
-                image = self._draw_pose_landmarks(image, landmarks_data[frame_idx], color=(0, 0, 255))
+                else:
+                    # ランドマークがないフレームはそのまま書き込む
+                    out.write(image)
                 
-                # 理想的なフォームを描画（緑色）
-                if ideal_landmarks:
-                    # 理想のランドマークを現在のフレームに合わせて調整
-                    adjusted_ideal = self._align_ideal_landmarks(ideal_landmarks, landmarks_data[frame_idx], (w, h))
-                    image = self._draw_pose_landmarks(image, adjusted_ideal, color=(0, 255, 0))
-                
-                # 分析情報を画像に追加
-                phase = "不明"
-                if frame_idx in key_frames:
-                    phase_idx = key_frames.index(frame_idx)
-                    phases = ["開始", "中間", "終了"]
-                    if phase_idx < len(phases):
-                        phase = phases[phase_idx]
-                
-                # 画像上部に情報を追加
-                cv2.putText(
-                    image, 
-                    f"{self._get_exercise_name()} - {phase}フェーズ", 
-                    (10, 30), 
-                    cv2.FONT_HERSHEY_SIMPLEX, 
-                    1, 
-                    (255, 255, 255), 
-                    2
-                )
-                
-                # 凡例を追加
-                cv2.putText(
-                    image, 
-                    "赤: あなたのフォーム  緑: 理想的なフォーム", 
-                    (10, 70), 
-                    cv2.FONT_HERSHEY_SIMPLEX, 
-                    0.7, 
-                    (255, 255, 255), 
-                    2
-                )
-                
-                # 画像を保存
-                output_filename = f"pose_{self.exercise_type}_{phase}_{frame_idx}.jpg"
-                output_path = os.path.join(VISUALIZATION_PATH, output_filename)
-                cv2.imwrite(output_path, image)
-                
-                # 結果に追加
-                phase_key = f"{phase.lower()}_phase_image"
-                visualization_paths[phase_key] = f"/static/analysis_results/{output_filename}"
+                frame_idx += 1
             
+            # 後片付け
             cap.release()
+            out.release()
+            
+            # 動画のパスを結果に追加
+            visualization_paths["analysis_video"] = f"/static/analysis_results/{output_filename}"
+            
+            # スナップショットも追加
+            visualization_paths.update(snapshot_paths)
             
             # 動画から軌跡を生成
             trajectory_path = self._generate_trajectory_visualization(landmarks_data, video_path)
@@ -688,7 +715,7 @@ class TrainingAnalyzer:
                 visualization_paths["trajectory_image"] = trajectory_path
             
             return visualization_paths
-            
+        
         except Exception as e:
             logger.error(f"Error generating visualizations: {e}")
             return {}
@@ -818,10 +845,195 @@ class TrainingAnalyzer:
             if os.path.exists(ideal_path):
                 with open(ideal_path, 'r', encoding='utf-8') as f:
                     return json.load(f)
-            return None
+            # ファイルが存在しない場合はデフォルトの理想的なランドマークを生成
+            return self._create_default_ideal_landmarks(self.exercise_type)
         except Exception as e:
             logger.error(f"Error loading ideal landmarks: {e}")
             return None
+            
+    def _create_default_ideal_landmarks(self, exercise_type: str) -> Dict[int, Dict[str, float]]:
+        """
+        各種目に対するデフォルトの理想的なランドマークを生成
+        
+        Args:
+            exercise_type: トレーニング種目
+            
+        Returns:
+            理想的なランドマークデータ
+        """
+        # 標準的な体型の理想的なランドマーク（画面中央に配置）
+        ideal_landmarks = {}
+        
+        # 画面サイズを仮定（後で実際のフレームサイズに合わせて調整される）
+        frame_width = 640
+        frame_height = 480
+        center_x = frame_width / 2
+        center_y = frame_height / 2
+        
+        if exercise_type == 'squat':
+            # スクワットの理想的なフォーム
+            # 立ち姿勢（開始/終了位置）
+            standing_landmarks = {
+                # 肩
+                11: {'x': center_x - 80, 'y': center_y - 100, 'z': 0, 'visibility': 1.0},  # 右肩
+                12: {'x': center_x + 80, 'y': center_y - 100, 'z': 0, 'visibility': 1.0},  # 左肩
+                
+                # 肘
+                13: {'x': center_x - 120, 'y': center_y - 50, 'z': 0, 'visibility': 1.0},  # 右肘
+                14: {'x': center_x + 120, 'y': center_y - 50, 'z': 0, 'visibility': 1.0},  # 左肘
+                
+                # 手首
+                15: {'x': center_x - 140, 'y': center_y, 'z': 0, 'visibility': 1.0},       # 右手首
+                16: {'x': center_x + 140, 'y': center_y, 'z': 0, 'visibility': 1.0},       # 左手首
+                
+                # 股関節
+                23: {'x': center_x - 40, 'y': center_y + 50, 'z': 0, 'visibility': 1.0},   # 右股関節
+                24: {'x': center_x + 40, 'y': center_y + 50, 'z': 0, 'visibility': 1.0},   # 左股関節
+                
+                # 膝
+                25: {'x': center_x - 40, 'y': center_y + 150, 'z': 0, 'visibility': 1.0},  # 右膝
+                26: {'x': center_x + 40, 'y': center_y + 150, 'z': 0, 'visibility': 1.0},  # 左膝
+                
+                # 足首
+                27: {'x': center_x - 40, 'y': center_y + 250, 'z': 0, 'visibility': 1.0},  # 右足首
+                28: {'x': center_x + 40, 'y': center_y + 250, 'z': 0, 'visibility': 1.0},  # 左足首
+                
+                # つま先
+                31: {'x': center_x - 40, 'y': center_y + 280, 'z': 0, 'visibility': 1.0},  # 右つま先
+                32: {'x': center_x + 40, 'y': center_y + 280, 'z': 0, 'visibility': 1.0},  # 左つま先
+            }
+            
+            # スクワット中の姿勢（底部）
+            squatting_landmarks = {
+                # 肩
+                11: {'x': center_x - 80, 'y': center_y - 20, 'z': 0, 'visibility': 1.0},   # 右肩
+                12: {'x': center_x + 80, 'y': center_y - 20, 'z': 0, 'visibility': 1.0},   # 左肩
+                
+                # 肘
+                13: {'x': center_x - 120, 'y': center_y + 30, 'z': 0, 'visibility': 1.0},  # 右肘
+                14: {'x': center_x + 120, 'y': center_y + 30, 'z': 0, 'visibility': 1.0},  # 左肘
+                
+                # 手首
+                15: {'x': center_x - 140, 'y': center_y + 80, 'z': 0, 'visibility': 1.0},  # 右手首
+                16: {'x': center_x + 140, 'y': center_y + 80, 'z': 0, 'visibility': 1.0},  # 左手首
+                
+                # 股関節
+                23: {'x': center_x - 40, 'y': center_y + 80, 'z': 0, 'visibility': 1.0},   # 右股関節
+                24: {'x': center_x + 40, 'y': center_y + 80, 'z': 0, 'visibility': 1.0},   # 左股関節
+                
+                # 膝
+                25: {'x': center_x - 40, 'y': center_y + 150, 'z': 0, 'visibility': 1.0},  # 右膝
+                26: {'x': center_x + 40, 'y': center_y + 150, 'z': 0, 'visibility': 1.0},  # 左膝
+                
+                # 足首
+                27: {'x': center_x - 60, 'y': center_y + 230, 'z': 0, 'visibility': 1.0},  # 右足首
+                28: {'x': center_x + 60, 'y': center_y + 230, 'z': 0, 'visibility': 1.0},  # 左足首
+                
+                # つま先
+                31: {'x': center_x - 80, 'y': center_y + 250, 'z': 0, 'visibility': 1.0},  # 右つま先
+                32: {'x': center_x + 80, 'y': center_y + 250, 'z': 0, 'visibility': 1.0},  # 左つま先
+            }
+            
+            # 運動段階に応じて適切なランドマークを返す
+            ideal_landmarks = standing_landmarks  # デフォルトは立ち姿勢
+            
+        elif exercise_type == 'bench_press':
+            # ベンチプレスの理想的なフォーム
+            ideal_landmarks = {
+                # 肩
+                11: {'x': center_x - 80, 'y': center_y + 30, 'z': 0, 'visibility': 1.0},  # 右肩
+                12: {'x': center_x + 80, 'y': center_y + 30, 'z': 0, 'visibility': 1.0},  # 左肩
+                
+                # 肘（下げた位置）
+                13: {'x': center_x - 150, 'y': center_y + 30, 'z': 0, 'visibility': 1.0},  # 右肘
+                14: {'x': center_x + 150, 'y': center_y + 30, 'z': 0, 'visibility': 1.0},  # 左肘
+                
+                # 手首
+                15: {'x': center_x - 180, 'y': center_y - 30, 'z': 0, 'visibility': 1.0},  # 右手首
+                16: {'x': center_x + 180, 'y': center_y - 30, 'z': 0, 'visibility': 1.0},  # 左手首
+            }
+            
+        elif exercise_type == 'deadlift':
+            # デッドリフトの理想的なフォーム
+            ideal_landmarks = {
+                # 肩
+                11: {'x': center_x - 80, 'y': center_y - 50, 'z': 0, 'visibility': 1.0},  # 右肩
+                12: {'x': center_x + 80, 'y': center_y - 50, 'z': 0, 'visibility': 1.0},  # 左肩
+                
+                # 肘
+                13: {'x': center_x - 100, 'y': center_y - 10, 'z': 0, 'visibility': 1.0},  # 右肘
+                14: {'x': center_x + 100, 'y': center_y - 10, 'z': 0, 'visibility': 1.0},  # 左肘
+                
+                # 手首
+                15: {'x': center_x - 120, 'y': center_y + 30, 'z': 0, 'visibility': 1.0},  # 右手首
+                16: {'x': center_x + 120, 'y': center_y + 30, 'z': 0, 'visibility': 1.0},  # 左手首
+                
+                # 股関節
+                23: {'x': center_x - 40, 'y': center_y + 50, 'z': 0, 'visibility': 1.0},   # 右股関節
+                24: {'x': center_x + 40, 'y': center_y + 50, 'z': 0, 'visibility': 1.0},   # 左股関節
+                
+                # 膝
+                25: {'x': center_x - 40, 'y': center_y + 150, 'z': 0, 'visibility': 1.0},  # 右膝
+                26: {'x': center_x + 40, 'y': center_y + 150, 'z': 0, 'visibility': 1.0},  # 左膝
+                
+                # 足首
+                27: {'x': center_x - 40, 'y': center_y + 250, 'z': 0, 'visibility': 1.0},  # 右足首
+                28: {'x': center_x + 40, 'y': center_y + 250, 'z': 0, 'visibility': 1.0},  # 左足首
+            }
+            
+        elif exercise_type == 'overhead_press':
+            # オーバーヘッドプレスの理想的なフォーム
+            ideal_landmarks = {
+                # 肩
+                11: {'x': center_x - 80, 'y': center_y - 50, 'z': 0, 'visibility': 1.0},  # 右肩
+                12: {'x': center_x + 80, 'y': center_y - 50, 'z': 0, 'visibility': 1.0},  # 左肩
+                
+                # 肘（挙げた位置）
+                13: {'x': center_x - 100, 'y': center_y - 120, 'z': 0, 'visibility': 1.0},  # 右肘
+                14: {'x': center_x + 100, 'y': center_y - 120, 'z': 0, 'visibility': 1.0},  # 左肘
+                
+                # 手首
+                15: {'x': center_x - 60, 'y': center_y - 180, 'z': 0, 'visibility': 1.0},  # 右手首
+                16: {'x': center_x + 60, 'y': center_y - 180, 'z': 0, 'visibility': 1.0},  # 左手首
+            }
+        
+        else:
+            # デフォルトのランドマーク（基本的な立ち姿勢）
+            ideal_landmarks = {
+                # 肩
+                11: {'x': center_x - 80, 'y': center_y - 100, 'z': 0, 'visibility': 1.0},  # 右肩
+                12: {'x': center_x + 80, 'y': center_y - 100, 'z': 0, 'visibility': 1.0},  # 左肩
+                
+                # 肘
+                13: {'x': center_x - 120, 'y': center_y - 50, 'z': 0, 'visibility': 1.0},  # 右肘
+                14: {'x': center_x + 120, 'y': center_y - 50, 'z': 0, 'visibility': 1.0},  # 左肘
+                
+                # 手首
+                15: {'x': center_x - 140, 'y': center_y, 'z': 0, 'visibility': 1.0},       # 右手首
+                16: {'x': center_x + 140, 'y': center_y, 'z': 0, 'visibility': 1.0},       # 左手首
+                
+                # 股関節
+                23: {'x': center_x - 40, 'y': center_y + 50, 'z': 0, 'visibility': 1.0},   # 右股関節
+                24: {'x': center_x + 40, 'y': center_y + 50, 'z': 0, 'visibility': 1.0},   # 左股関節
+                
+                # 膝
+                25: {'x': center_x - 40, 'y': center_y + 150, 'z': 0, 'visibility': 1.0},  # 右膝
+                26: {'x': center_x + 40, 'y': center_y + 150, 'z': 0, 'visibility': 1.0},  # 左膝
+                
+                # 足首
+                27: {'x': center_x - 40, 'y': center_y + 250, 'z': 0, 'visibility': 1.0},  # 右足首
+                28: {'x': center_x + 40, 'y': center_y + 250, 'z': 0, 'visibility': 1.0},  # 左足首
+            }
+        
+        # ファイルに保存（後で使用できるように）
+        try:
+            os.makedirs(IDEAL_FORMS_PATH, exist_ok=True)
+            with open(os.path.join(IDEAL_FORMS_PATH, f"{exercise_type}_landmarks.json"), 'w', encoding='utf-8') as f:
+                json.dump(ideal_landmarks, f, indent=2)
+        except Exception as e:
+            logger.warning(f"Could not save ideal landmarks: {e}")
+        
+        return ideal_landmarks
     
     def _align_ideal_landmarks(self, ideal_landmarks: Dict[int, Dict[str, float]], 
                              actual_landmarks: Dict[int, Dict[str, float]], 

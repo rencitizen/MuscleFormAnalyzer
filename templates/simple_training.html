@@ -80,32 +80,54 @@
                         <h4 class="text-center mb-3">ポーズ分析の視覚化</h4>
                     </div>
                     
+                    <!-- 分析動画 -->
+                    {% if training.get('visualizations', {}).get('analysis_video') %}
+                    <div class="col-12 mb-4">
+                        <div class="card bg-dark">
+                            <div class="card-header bg-dark text-light">フォーム分析動画</div>
+                            <div class="card-body p-0">
+                                <video controls class="w-100">
+                                    <source src="{{ training.get('visualizations', {}).get('analysis_video') }}" type="video/mp4">
+                                    お使いのブラウザは動画再生をサポートしていません。
+                                </video>
+                            </div>
+                            <div class="card-footer bg-dark text-light">
+                                <small>赤色: あなたのフォーム / 緑色: 理想的なフォーム</small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="col-12">
+                        <h5 class="text-center mb-3">キーポイント分析</h5>
+                    </div>
+                    
                     <!-- 開始フェーズ画像 -->
-                    {% if training.get('visualizations', {}).get('開始_phase_image') %}
+                    {% if training.get('visualizations', {}).get('start_phase_image') %}
                     <div class="col-md-4 mb-3">
                         <div class="card bg-dark">
                             <div class="card-header bg-dark text-light">開始フェーズ</div>
-                            <img src="{{ training.get('visualizations', {}).get('開始_phase_image') }}" alt="開始ポーズ" class="img-fluid">
+                            <img src="{{ training.get('visualizations', {}).get('start_phase_image') }}" alt="開始ポーズ" class="img-fluid">
                         </div>
                     </div>
                     {% endif %}
                     
                     <!-- 中間フェーズ画像 -->
-                    {% if training.get('visualizations', {}).get('中間_phase_image') %}
+                    {% if training.get('visualizations', {}).get('middle_phase_image') %}
                     <div class="col-md-4 mb-3">
                         <div class="card bg-dark">
                             <div class="card-header bg-dark text-light">中間フェーズ</div>
-                            <img src="{{ training.get('visualizations', {}).get('中間_phase_image') }}" alt="中間ポーズ" class="img-fluid">
+                            <img src="{{ training.get('visualizations', {}).get('middle_phase_image') }}" alt="中間ポーズ" class="img-fluid">
                         </div>
                     </div>
                     {% endif %}
                     
                     <!-- 終了フェーズ画像 -->
-                    {% if training.get('visualizations', {}).get('終了_phase_image') %}
+                    {% if training.get('visualizations', {}).get('end_phase_image') %}
                     <div class="col-md-4 mb-3">
                         <div class="card bg-dark">
                             <div class="card-header bg-dark text-light">終了フェーズ</div>
-                            <img src="{{ training.get('visualizations', {}).get('終了_phase_image') }}" alt="終了ポーズ" class="img-fluid">
+                            <img src="{{ training.get('visualizations', {}).get('end_phase_image') }}" alt="終了ポーズ" class="img-fluid">
                         </div>
                     </div>
                     {% endif %}

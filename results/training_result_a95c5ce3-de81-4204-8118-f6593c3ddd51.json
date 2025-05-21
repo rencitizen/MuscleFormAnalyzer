@@ -1,0 +1,29 @@
+{
+  "exercise_type": "squat",
+  "exercise_name": "スクワット",
+  "form_score": 57.91071411142933,
+  "depth_score": 60,
+  "tempo_score": 80,
+  "balance_score": 55.82142822285866,
+  "stability_score": 75,
+  "issues": [
+    "スクワットの深さが足りない"
+  ],
+  "strengths": [
+    "左右のバランスが取れている"
+  ],
+  "rep_count": 9,
+  "max_depth": -23.29379186926215,
+  "advice": [
+    "膝をもう少し曲げて深くスクワットしましょう"
+  ],
+  "visualizations": {
+    "開始_phase_image": "/static/analysis_results/pose_squat_開始_0.jpg",
+    "中間_phase_image": "/static/analysis_results/pose_squat_中間_104.jpg",
+    "終了_phase_image": "/static/analysis_results/pose_squat_終了_204.jpg",
+    "trajectory_image": "/static/analysis_results/trajectory_squat.jpg"
+  },
+  "user_data": {
+    "height_cm": 170.0
+  }
+}
