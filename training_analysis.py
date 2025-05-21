@@ -618,13 +618,12 @@ class TrainingAnalyzer:
             # 理想的なフォームのランドマークを生成
             ideal_landmarks = self._create_default_ideal_landmarks(self.exercise_type)
             
-            # 動画出力の設定
-            output_filename = f"analysis_{self.exercise_type}.avi"
+            # 動画ではなくGIFアニメーションとして出力（ブラウザ互換性のため）
+            output_filename = f"analysis_{self.exercise_type}.gif"
             output_path = os.path.join(VISUALIZATION_PATH, output_filename)
             
-            # 動画ライターを初期化（AVIフォーマットはほとんどの環境で確実に動作）
-            fourcc = cv2.VideoWriter_fourcc('M','J','P','G')
-            out = cv2.VideoWriter(output_path, fourcc, fps, (frame_width, frame_height))
+            # フレームを保存するリスト
+            frames = []
             
             frame_indices = sorted(landmarks_data.keys())
             
@@ -679,8 +678,8 @@ class TrainingAnalyzer:
                         2
                     )
                     
-                    # 動画に書き込む
-                    out.write(annotated_image)
+                    # フレームをリストに追加（GIF用）
+                    frames.append(annotated_image)
                     
                     # キーフレームのスナップショットを保存
                     if frame_idx in key_frames:
@@ -694,17 +693,49 @@ class TrainingAnalyzer:
                             snapshot_paths[f"{phase}_phase_image"] = f"/static/analysis_results/{snapshot_filename}"
                 
                 else:
-                    # ランドマークがないフレームはそのまま書き込む
-                    out.write(image)
+                    # ランドマークがないフレームもそのまま追加
+                    frames.append(image)
                 
                 frame_idx += 1
             
+            # 連続フレーム画像を保存（動画の代わり）
+            try:
+                # どのフレームを保存するか選択（最大6フレーム）
+                if len(frames) > 0:
+                    frame_count = len(frames)
+                    # 均等に分布したフレームを選択
+                    if frame_count >= 6:
+                        selected_indices = [int(i * frame_count / 6) for i in range(6)]
+                    else:
+                        selected_indices = range(frame_count)
+                    
+                    # フレーム画像を保存
+                    frame_paths = []
+                    for i, idx in enumerate(selected_indices):
+                        if idx < len(frames):
+                            frame_filename = f"frame_{self.exercise_type}_{i}.jpg"
+                            frame_path = os.path.join(VISUALIZATION_PATH, frame_filename)
+                            cv2.imwrite(frame_path, frames[idx])
+                            frame_paths.append(f"/static/analysis_results/{frame_filename}")
+                    
+                    # 結果に追加
+                    visualization_paths["frame_sequence"] = frame_paths
+                
+                # サマリー画像も生成
+                if len(frames) > 0:
+                    middle_idx = len(frames) // 2
+                    summary_filename = f"analysis_{self.exercise_type}_summary.jpg"
+                    summary_path = os.path.join(VISUALIZATION_PATH, summary_filename)
+                    cv2.imwrite(summary_path, frames[middle_idx])
+                    visualization_paths["summary_image"] = f"/static/analysis_results/{summary_filename}"
+                
+            except Exception as e:
+                logger.error(f"Error creating frame sequence: {e}")
+                
             # 後片付け
             cap.release()
-            out.release()
             
-            # 動画のパスを結果に追加
-            visualization_paths["analysis_video"] = f"/static/analysis_results/{output_filename}"
+            # もう使用しない動画パスは削除
             
             # スナップショットも追加
             visualization_paths.update(snapshot_paths)

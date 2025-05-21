@@ -80,16 +80,34 @@
                         <h4 class="text-center mb-3">Pose Analysis Visualization</h4>
                     </div>
                     
-                    <!-- 分析動画 -->
-                    {% if training.get('visualizations', {}).get('analysis_video') %}
+                    <!-- サマリー画像 -->
+                    {% if training.get('visualizations', {}).get('summary_image') %}
                     <div class="col-12 mb-4">
                         <div class="card bg-dark">
-                            <div class="card-header bg-dark text-light">Form Analysis Video</div>
+                            <div class="card-header bg-dark text-light">Form Analysis Summary</div>
                             <div class="card-body p-0">
-                                <video controls class="w-100">
-                                    <source src="{{ training.get('visualizations', {}).get('analysis_video') }}" type="video/avi">
-                                    Your browser does not support video playback.
-                                </video>
+                                <img src="{{ training.get('visualizations', {}).get('summary_image') }}" alt="Form Analysis Summary" class="img-fluid w-100">
+                            </div>
+                            <div class="card-footer bg-dark text-light">
+                                <small>Red: Your Form / Green: Ideal Form</small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- フレームシーケンス -->
+                    {% if training.get('visualizations', {}).get('frame_sequence') %}
+                    <div class="col-12 mb-4">
+                        <div class="card bg-dark">
+                            <div class="card-header bg-dark text-light">Movement Sequence</div>
+                            <div class="card-body">
+                                <div class="row">
+                                    {% for frame_path in training.get('visualizations', {}).get('frame_sequence', []) %}
+                                    <div class="col-md-4 col-sm-6 mb-3">
+                                        <img src="{{ frame_path }}" alt="Movement Frame" class="img-fluid border border-secondary">
+                                    </div>
+                                    {% endfor %}
+                                </div>
                             </div>
                             <div class="card-footer bg-dark text-light">
                                 <small>Red: Your Form / Green: Ideal Form</small>
