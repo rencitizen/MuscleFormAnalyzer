@@ -5,6 +5,42 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>シンプルトレーニング分析結果</title>
     <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function toggleAnimation() {
+            var carousel = document.getElementById('poseAnimation');
+            var button = document.getElementById('playPauseBtn');
+            
+            if (carousel.getAttribute('data-bs-interval') === 'false') {
+                // 再生開始
+                var carouselInstance = bootstrap.Carousel.getOrCreateInstance(carousel);
+                carousel.setAttribute('data-bs-interval', '300');
+                button.innerHTML = '<i class="bi bi-pause-fill"></i> Pause Animation';
+                carouselInstance.cycle();
+            } else {
+                // 一時停止
+                var carouselInstance = bootstrap.Carousel.getOrCreateInstance(carousel);
+                carousel.setAttribute('data-bs-interval', 'false');
+                button.innerHTML = '<i class="bi bi-play-fill"></i> Play Animation';
+                carouselInstance.pause();
+            }
+        }
+        
+        // ページ読み込み時にアニメーションを開始
+        document.addEventListener('DOMContentLoaded', function() {
+            var carousel = document.getElementById('poseAnimation');
+            if (carousel) {
+                setTimeout(function() {
+                    var carouselInstance = bootstrap.Carousel.getOrCreateInstance(carousel, {
+                        interval: 300
+                    });
+                    document.getElementById('playPauseBtn').innerHTML = '<i class="bi bi-pause-fill"></i> Pause Animation';
+                    carouselInstance.cycle();
+                }, 1000);
+            }
+        });
+    </script>
 </head>
 <body class="bg-dark text-light">
     <div class="container py-5">
@@ -80,35 +116,42 @@
                         <h4 class="text-center mb-3">Pose Analysis Visualization</h4>
                     </div>
                     
-                    <!-- MP4動画再生 -->
-                    {% if training.get('visualizations', {}).get('mp4_video') %}
+                    <!-- アニメーションフレーム (画像シーケンス) -->
+                    {% if training.get('visualizations', {}).get('animation_frames') %}
                     <div class="col-12 mb-4">
                         <div class="card bg-dark">
-                            <div class="card-header bg-dark text-light">Form Analysis Video</div>
-                            <div class="card-body p-0">
-                                <video controls class="w-100">
-                                    <source src="{{ training.get('visualizations', {}).get('mp4_video') }}" type="video/mp4">
-                                    <!-- AVIフォールバック -->
-                                    {% if training.get('visualizations', {}).get('avi_video') %}
-                                    <source src="{{ training.get('visualizations', {}).get('avi_video') }}" type="video/avi">
-                                    {% endif %}
-                                    Your browser does not support video playback.
-                                </video>
-                            </div>
-                            <div class="card-footer bg-dark text-light">
-                                <small>Red: Your Form / Green: Ideal Form</small>
-                            </div>
-                        </div>
-                    </div>
-                    {% elif training.get('visualizations', {}).get('avi_video') %}
-                    <div class="col-12 mb-4">
-                        <div class="card bg-dark">
-                            <div class="card-header bg-dark text-light">Form Analysis Video</div>
-                            <div class="card-body p-0">
-                                <video controls class="w-100">
-                                    <source src="{{ training.get('visualizations', {}).get('avi_video') }}" type="video/avi">
-                                    Your browser does not support video playback.
-                                </video>
+                            <div class="card-header bg-dark text-light">Form Analysis Animation</div>
+                            <div class="card-body">
+                                <div id="poseAnimation" class="carousel slide" data-bs-ride="carousel">
+                                    <div class="carousel-inner">
+                                        {% for frame_path in training.get('visualizations', {}).get('animation_frames', []) %}
+                                        <div class="carousel-item {% if loop.first %}active{% endif %}">
+                                            <img src="{{ frame_path }}" class="d-block w-100" alt="Movement Frame">
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                    <button class="carousel-control-prev" type="button" data-bs-target="#poseAnimation" data-bs-slide="prev">
+                                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                                        <span class="visually-hidden">Previous</span>
+                                    </button>
+                                    <button class="carousel-control-next" type="button" data-bs-target="#poseAnimation" data-bs-slide="next">
+                                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                                        <span class="visually-hidden">Next</span>
+                                    </button>
+                                    <div class="d-flex justify-content-center mt-2">
+                                        <div class="btn-group" role="group">
+                                            <button id="playPauseBtn" class="btn btn-sm btn-outline-light" onclick="toggleAnimation()">
+                                                <i class="bi bi-play-fill"></i> Play Animation
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-light" onclick="document.getElementById('poseAnimation').querySelector('.carousel-control-prev').click()">
+                                                <i class="bi bi-arrow-left"></i> Previous
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-light" onclick="document.getElementById('poseAnimation').querySelector('.carousel-control-next').click()">
+                                                <i class="bi bi-arrow-right"></i> Next
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                             <div class="card-footer bg-dark text-light">
                                 <small>Red: Your Form / Green: Ideal Form</small>

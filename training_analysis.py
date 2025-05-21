@@ -704,39 +704,32 @@ class TrainingAnalyzer:
                 output_filename = f"analysis_{self.exercise_type}.mp4"
                 output_path = os.path.join(VISUALIZATION_PATH, output_filename)
                 
-                # 動画ライターの初期化 (H.264コーデックを使用)
-                # 'avc1'はほとんどのブラウザで対応している
-                try:
-                    fourcc = cv2.VideoWriter_fourcc(*'avc1')
-                    out = cv2.VideoWriter(output_path, fourcc, 10.0, (frame_width, frame_height))
-                    
-                    # フレームを書き込む
-                    for frame in frames:
-                        out.write(frame)
-                    
-                    # リソース解放
-                    out.release()
-                    logger.info(f"MP4 video saved successfully to {output_path}")
-                    
-                    # 動画へのパスを追加
-                    visualization_paths["mp4_video"] = f"/static/analysis_results/{output_filename}"
-                    
-                except Exception as codec_error:
-                    logger.error(f"Error with avc1 codec: {codec_error}, trying fallback codec")
-                    
-                    # フォールバック: MJPG codec + AVI format (ほぼすべての環境で動作)
-                    avi_filename = f"analysis_{self.exercise_type}.avi"
-                    avi_path = os.path.join(VISUALIZATION_PATH, avi_filename)
-                    
-                    fourcc = cv2.VideoWriter_fourcc(*'MJPG')
-                    out = cv2.VideoWriter(avi_path, fourcc, 10.0, (frame_width, frame_height))
-                    
-                    for frame in frames:
-                        out.write(frame)
-                    
-                    out.release()
-                    logger.info(f"AVI video saved successfully to {avi_path}")
-                    visualization_paths["avi_video"] = f"/static/analysis_results/{avi_filename}"
+                # より単純なアプローチ：連番のJPEG画像を生成
+                # レスポンシブHTMLでのアニメーション表示に切り替える
+                
+                # サンプリングレートを調整（全フレームの処理は重すぎる）
+                max_frames = 20  # 最大フレーム数
+                if len(frames) > max_frames:
+                    step = len(frames) // max_frames
+                    sampled_frames = frames[::step]
+                    if len(sampled_frames) > max_frames:
+                        sampled_frames = sampled_frames[:max_frames]
+                else:
+                    sampled_frames = frames
+                
+                # 連番の画像として保存
+                animation_frames = []
+                for i, frame in enumerate(sampled_frames):
+                    # サイズを縮小して処理を軽く
+                    resized_frame = cv2.resize(frame, (640, 360))
+                    frame_filename = f"frame_{self.exercise_type}_{i:03d}.jpg"
+                    frame_path = os.path.join(VISUALIZATION_PATH, frame_filename)
+                    cv2.imwrite(frame_path, resized_frame)
+                    animation_frames.append(f"/static/analysis_results/{frame_filename}")
+                
+                # 結果に追加
+                visualization_paths["animation_frames"] = animation_frames
+                logger.info(f"Generated {len(animation_frames)} animation frames")
                 
                 # どのフレームを保存するか選択（最大6フレーム）- バックアップとして
                 if len(frames) > 0:

@@ -1,0 +1,39 @@
+{
+  "exercise_type": "bench_press",
+  "exercise_name": "ベンチプレス",
+  "form_score": 70.41071411142933,
+  "depth_score": 85,
+  "tempo_score": 80,
+  "balance_score": 55.82142822285866,
+  "stability_score": 75,
+  "issues": [
+    "特に問題は見られません"
+  ],
+  "strengths": [
+    "適切な可動域でベンチプレスができている"
+  ],
+  "rep_count": 4,
+  "max_depth": 0.0,
+  "advice": [
+    "このまま継続しましょう"
+  ],
+  "visualizations": {
+    "mp4_video": "/static/analysis_results/analysis_bench_press.mp4",
+    "frame_sequence": [
+      "/static/analysis_results/frame_bench_press_0.jpg",
+      "/static/analysis_results/frame_bench_press_1.jpg",
+      "/static/analysis_results/frame_bench_press_2.jpg",
+      "/static/analysis_results/frame_bench_press_3.jpg",
+      "/static/analysis_results/frame_bench_press_4.jpg",
+      "/static/analysis_results/frame_bench_press_5.jpg"
+    ],
+    "summary_image": "/static/analysis_results/analysis_bench_press_summary.jpg",
+    "start_phase_image": "/static/analysis_results/pose_bench_press_start_0.jpg",
+    "middle_phase_image": "/static/analysis_results/pose_bench_press_middle_104.jpg",
+    "end_phase_image": "/static/analysis_results/pose_bench_press_end_204.jpg",
+    "trajectory_image": "/static/analysis_results/trajectory_bench_press.jpg"
+  },
+  "user_data": {
+    "height_cm": 170.0
+  }
+}
