@@ -61,8 +61,66 @@
                         </ul>
                         {% endif %}
                         {% endif %}
+                        
+                        {% if training.get('advice') %}
+                        <h4>アドバイス</h4>
+                        <ul>
+                            {% for advice in training.get('advice', []) %}
+                            <li>{{ advice }}</li>
+                            {% endfor %}
+                        </ul>
+                        {% endif %}
                     </div>
                 </div>
+                
+                <!-- 視覚的分析結果の表示 -->
+                {% if training.get('visualizations') %}
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <h4 class="text-center mb-3">ポーズ分析の視覚化</h4>
+                    </div>
+                    
+                    <!-- 開始フェーズ画像 -->
+                    {% if training.get('visualizations', {}).get('開始_phase_image') %}
+                    <div class="col-md-4 mb-3">
+                        <div class="card bg-dark">
+                            <div class="card-header bg-dark text-light">開始フェーズ</div>
+                            <img src="{{ training.get('visualizations', {}).get('開始_phase_image') }}" alt="開始ポーズ" class="img-fluid">
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- 中間フェーズ画像 -->
+                    {% if training.get('visualizations', {}).get('中間_phase_image') %}
+                    <div class="col-md-4 mb-3">
+                        <div class="card bg-dark">
+                            <div class="card-header bg-dark text-light">中間フェーズ</div>
+                            <img src="{{ training.get('visualizations', {}).get('中間_phase_image') }}" alt="中間ポーズ" class="img-fluid">
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- 終了フェーズ画像 -->
+                    {% if training.get('visualizations', {}).get('終了_phase_image') %}
+                    <div class="col-md-4 mb-3">
+                        <div class="card bg-dark">
+                            <div class="card-header bg-dark text-light">終了フェーズ</div>
+                            <img src="{{ training.get('visualizations', {}).get('終了_phase_image') }}" alt="終了ポーズ" class="img-fluid">
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- 軌跡分析画像 -->
+                    {% if training.get('visualizations', {}).get('trajectory_image') %}
+                    <div class="col-12 mt-3">
+                        <div class="card bg-dark">
+                            <div class="card-header bg-dark text-light">動きの軌跡分析</div>
+                            <img src="{{ training.get('visualizations', {}).get('trajectory_image') }}" alt="軌跡分析" class="img-fluid">
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
             </div>
         </div>
         
