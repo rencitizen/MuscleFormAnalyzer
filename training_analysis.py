@@ -47,16 +47,75 @@ class TrainingAnalyzer:
 
     def _generate_sample_analysis(self) -> Dict[str, Any]:
         metrics = self._load_body_metrics()
-        analysis = {
-            'form_score': 82,
-            'depth_score': 75,
-            'tempo_score': 85,
-            'issues': ['膝が内側に入る', '背中が丸まる'],
-            'strengths': ['姿勢が安定している'],
-            'rep_count': 8,
-            'body_metrics': metrics,
-            'advice': self._generate_advice(['膝が内側に入る', '背中が丸まる'], 85)
-        }
+        
+        # エクササイズタイプに応じて異なる分析結果を返す
+        if self.exercise_type == 'squat':
+            analysis = {
+                'exercise_type': 'squat',
+                'exercise_name': 'スクワット',
+                'form_score': 82,
+                'depth_score': 75,
+                'tempo_score': 85,
+                'issues': ['膝が内側に入る', '背中が丸まる'],
+                'strengths': ['姿勢が安定している'],
+                'rep_count': 8,
+                'body_metrics': metrics,
+                'advice': self._generate_advice(['膝が内側に入る', '背中が丸まる'], 85)
+            }
+        elif self.exercise_type == 'bench_press':
+            analysis = {
+                'exercise_type': 'bench_press',
+                'exercise_name': 'ベンチプレス',
+                'form_score': 78,
+                'depth_score': 80,
+                'tempo_score': 72,
+                'issues': ['手首が曲がっている', 'バーの軌道が一定でない'],
+                'strengths': ['肘の角度が適切'],
+                'rep_count': 6,
+                'body_metrics': metrics,
+                'advice': ['手首をまっすぐに保ちましょう', 'バーの軌道を胸の上で一定に保ちましょう']
+            }
+        elif self.exercise_type == 'deadlift':
+            analysis = {
+                'exercise_type': 'deadlift',
+                'exercise_name': 'デッドリフト',
+                'form_score': 75,
+                'depth_score': 88,
+                'tempo_score': 79,
+                'issues': ['背中が丸まる', '頭の位置が低い'],
+                'strengths': ['重心が安定している'],
+                'rep_count': 5,
+                'body_metrics': metrics,
+                'advice': ['背中をまっすぐに保ちましょう', '前方を見て頭を適切な位置に保ちましょう']
+            }
+        elif self.exercise_type == 'overhead_press':
+            analysis = {
+                'exercise_type': 'overhead_press',
+                'exercise_name': 'オーバーヘッドプレス',
+                'form_score': 85,
+                'depth_score': 82,
+                'tempo_score': 80,
+                'issues': ['腰が反りすぎている', 'バーの軌道がぶれる'],
+                'strengths': ['肩の可動域が良好'],
+                'rep_count': 7,
+                'body_metrics': metrics,
+                'advice': ['腹筋に力を入れて腰の反りを抑えましょう', 'バーは顔の前でまっすぐ上に押し上げましょう']
+            }
+        else:
+            # デフォルト（不明なエクササイズタイプの場合）
+            analysis = {
+                'exercise_type': self.exercise_type,
+                'exercise_name': '不明なエクササイズ',
+                'form_score': 70,
+                'depth_score': 70,
+                'tempo_score': 70,
+                'issues': ['姿勢に問題あり'],
+                'strengths': ['基本的な動作が安定している'],
+                'rep_count': 6,
+                'body_metrics': metrics,
+                'advice': ['正しいフォームを学習しましょう']
+            }
+        
         return analysis
 
     def _load_body_metrics(self) -> Dict[str, Any]:
