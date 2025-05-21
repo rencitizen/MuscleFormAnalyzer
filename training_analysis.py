@@ -619,11 +619,11 @@ class TrainingAnalyzer:
             ideal_landmarks = self._create_default_ideal_landmarks(self.exercise_type)
             
             # 動画出力の設定
-            output_filename = f"analysis_{self.exercise_type}.mp4"
+            output_filename = f"analysis_{self.exercise_type}.avi"
             output_path = os.path.join(VISUALIZATION_PATH, output_filename)
             
-            # 動画ライターを初期化
-            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+            # 動画ライターを初期化（AVIフォーマットはほとんどの環境で確実に動作）
+            fourcc = cv2.VideoWriter_fourcc('M','J','P','G')
             out = cv2.VideoWriter(output_path, fourcc, fps, (frame_width, frame_height))
             
             frame_indices = sorted(landmarks_data.keys())
