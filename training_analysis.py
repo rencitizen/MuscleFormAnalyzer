@@ -1015,6 +1015,7 @@ class TrainingAnalyzer:
     def _create_default_ideal_landmarks(self, exercise_type: str) -> Dict[int, Dict[str, float]]:
         """
         各種目に対するデフォルトの理想的なランドマークを生成
+        解剖学と運動力学に基づいた正確な理想フォーム
         
         Args:
             exercise_type: トレーニング種目
@@ -1032,135 +1033,192 @@ class TrainingAnalyzer:
         center_y = frame_height / 2
         
         if exercise_type == 'squat':
-            # スクワットの理想的なフォーム
+            # スクワットの理想的なフォーム - 解剖学的ガイドラインに準拠
             # 立ち姿勢（開始/終了位置）
             standing_landmarks = {
-                # 肩
-                11: {'x': center_x - 80, 'y': center_y - 100, 'z': 0, 'visibility': 1.0},  # 右肩
-                12: {'x': center_x + 80, 'y': center_y - 100, 'z': 0, 'visibility': 1.0},  # 左肩
+                # 頭部/顔
+                0: {'x': center_x, 'y': center_y - 170, 'z': 0, 'visibility': 1.0},        # 鼻
                 
-                # 肘
-                13: {'x': center_x - 120, 'y': center_y - 50, 'z': 0, 'visibility': 1.0},  # 右肘
-                14: {'x': center_x + 120, 'y': center_y - 50, 'z': 0, 'visibility': 1.0},  # 左肘
+                # 肩 - 真っ直ぐ開いた状態
+                11: {'x': center_x - 90, 'y': center_y - 100, 'z': 0, 'visibility': 1.0},  # 右肩
+                12: {'x': center_x + 90, 'y': center_y - 100, 'z': 0, 'visibility': 1.0},  # 左肩
                 
-                # 手首
-                15: {'x': center_x - 140, 'y': center_y, 'z': 0, 'visibility': 1.0},       # 右手首
-                16: {'x': center_x + 140, 'y': center_y, 'z': 0, 'visibility': 1.0},       # 左手首
+                # 肘 - ハイバーポジションを仮定
+                13: {'x': center_x - 130, 'y': center_y - 50, 'z': 0, 'visibility': 1.0},  # 右肘
+                14: {'x': center_x + 130, 'y': center_y - 50, 'z': 0, 'visibility': 1.0},  # 左肘
                 
-                # 股関節
-                23: {'x': center_x - 40, 'y': center_y + 50, 'z': 0, 'visibility': 1.0},   # 右股関節
-                24: {'x': center_x + 40, 'y': center_y + 50, 'z': 0, 'visibility': 1.0},   # 左股関節
+                # 手首 - バーを保持
+                15: {'x': center_x - 160, 'y': center_y - 10, 'z': 0, 'visibility': 1.0},  # 右手首
+                16: {'x': center_x + 160, 'y': center_y - 10, 'z': 0, 'visibility': 1.0},  # 左手首
                 
-                # 膝
-                25: {'x': center_x - 40, 'y': center_y + 150, 'z': 0, 'visibility': 1.0},  # 右膝
-                26: {'x': center_x + 40, 'y': center_y + 150, 'z': 0, 'visibility': 1.0},  # 左膝
+                # 腰/股関節 - 自然なS字カーブを維持
+                23: {'x': center_x - 45, 'y': center_y + 50, 'z': 0, 'visibility': 1.0},   # 右股関節
+                24: {'x': center_x + 45, 'y': center_y + 50, 'z': 0, 'visibility': 1.0},   # 左股関節
                 
-                # 足首
-                27: {'x': center_x - 40, 'y': center_y + 250, 'z': 0, 'visibility': 1.0},  # 右足首
-                28: {'x': center_x + 40, 'y': center_y + 250, 'z': 0, 'visibility': 1.0},  # 左足首
+                # 膝 - 真っ直ぐ伸びた状態
+                25: {'x': center_x - 45, 'y': center_y + 150, 'z': 0, 'visibility': 1.0},  # 右膝
+                26: {'x': center_x + 45, 'y': center_y + 150, 'z': 0, 'visibility': 1.0},  # 左膝
                 
-                # つま先
-                31: {'x': center_x - 40, 'y': center_y + 280, 'z': 0, 'visibility': 1.0},  # 右つま先
-                32: {'x': center_x + 40, 'y': center_y + 280, 'z': 0, 'visibility': 1.0},  # 左つま先
+                # 足首 - 肩幅よりやや広め
+                27: {'x': center_x - 55, 'y': center_y + 250, 'z': 0, 'visibility': 1.0},  # 右足首
+                28: {'x': center_x + 55, 'y': center_y + 250, 'z': 0, 'visibility': 1.0},  # 左足首
+                
+                # つま先 - やや外向き(10-30度)
+                31: {'x': center_x - 70, 'y': center_y + 280, 'z': 0, 'visibility': 1.0},  # 右つま先
+                32: {'x': center_x + 70, 'y': center_y + 280, 'z': 0, 'visibility': 1.0},  # 左つま先
             }
             
-            # スクワット中の姿勢（底部）
+            # スクワット中の姿勢（パラレルスクワット - 太ももが地面と平行）
             squatting_landmarks = {
-                # 肩
-                11: {'x': center_x - 80, 'y': center_y - 20, 'z': 0, 'visibility': 1.0},   # 右肩
-                12: {'x': center_x + 80, 'y': center_y - 20, 'z': 0, 'visibility': 1.0},   # 左肩
+                # 頭部/顔 - 前方を向いたまま
+                0: {'x': center_x, 'y': center_y - 60, 'z': 0, 'visibility': 1.0},         # 鼻
                 
-                # 肘
-                13: {'x': center_x - 120, 'y': center_y + 30, 'z': 0, 'visibility': 1.0},  # 右肘
-                14: {'x': center_x + 120, 'y': center_y + 30, 'z': 0, 'visibility': 1.0},  # 左肘
+                # 肩 - 背中のS字カーブ維持
+                11: {'x': center_x - 90, 'y': center_y - 10, 'z': 0, 'visibility': 1.0},   # 右肩
+                12: {'x': center_x + 90, 'y': center_y - 10, 'z': 0, 'visibility': 1.0},   # 左肩
                 
-                # 手首
-                15: {'x': center_x - 140, 'y': center_y + 80, 'z': 0, 'visibility': 1.0},  # 右手首
-                16: {'x': center_x + 140, 'y': center_y + 80, 'z': 0, 'visibility': 1.0},  # 左手首
+                # 肘 - ハイバーポジション維持
+                13: {'x': center_x - 130, 'y': center_y + 40, 'z': 0, 'visibility': 1.0},  # 右肘
+                14: {'x': center_x + 130, 'y': center_y + 40, 'z': 0, 'visibility': 1.0},  # 左肘
                 
-                # 股関節
-                23: {'x': center_x - 40, 'y': center_y + 80, 'z': 0, 'visibility': 1.0},   # 右股関節
-                24: {'x': center_x + 40, 'y': center_y + 80, 'z': 0, 'visibility': 1.0},   # 左股関節
+                # 手首 - バーを保持
+                15: {'x': center_x - 160, 'y': center_y + 80, 'z': 0, 'visibility': 1.0},  # 右手首
+                16: {'x': center_x + 160, 'y': center_y + 80, 'z': 0, 'visibility': 1.0},  # 左手首
                 
-                # 膝
-                25: {'x': center_x - 40, 'y': center_y + 150, 'z': 0, 'visibility': 1.0},  # 右膝
-                26: {'x': center_x + 40, 'y': center_y + 150, 'z': 0, 'visibility': 1.0},  # 左膝
+                # 腰/股関節 - 後方に突き出す
+                23: {'x': center_x - 45, 'y': center_y + 100, 'z': 0, 'visibility': 1.0},  # 右股関節
+                24: {'x': center_x + 45, 'y': center_y + 100, 'z': 0, 'visibility': 1.0},  # 左股関節
                 
-                # 足首
-                27: {'x': center_x - 60, 'y': center_y + 230, 'z': 0, 'visibility': 1.0},  # 右足首
-                28: {'x': center_x + 60, 'y': center_y + 230, 'z': 0, 'visibility': 1.0},  # 左足首
+                # 膝 - つま先と同じ方向に開く、90度以上
+                25: {'x': center_x - 65, 'y': center_y + 180, 'z': 0, 'visibility': 1.0},  # 右膝
+                26: {'x': center_x + 65, 'y': center_y + 180, 'z': 0, 'visibility': 1.0},  # 左膝
                 
-                # つま先
-                31: {'x': center_x - 80, 'y': center_y + 250, 'z': 0, 'visibility': 1.0},  # 右つま先
-                32: {'x': center_x + 80, 'y': center_y + 250, 'z': 0, 'visibility': 1.0},  # 左つま先
+                # 足首 - 位置固定
+                27: {'x': center_x - 55, 'y': center_y + 250, 'z': 0, 'visibility': 1.0},  # 右足首
+                28: {'x': center_x + 55, 'y': center_y + 250, 'z': 0, 'visibility': 1.0},  # 左足首
+                
+                # つま先 - 外向き維持
+                31: {'x': center_x - 70, 'y': center_y + 280, 'z': 0, 'visibility': 1.0},  # 右つま先
+                32: {'x': center_x + 70, 'y': center_y + 280, 'z': 0, 'visibility': 1.0},  # 左つま先
             }
             
             # 運動段階に応じて適切なランドマークを返す
-            ideal_landmarks = standing_landmarks  # デフォルトは立ち姿勢
+            # 動画中の状態によってはボトムポジションかもしれないが、
+            # 現時点では単純化のためスタンディングポジションを返す
+            ideal_landmarks = standing_landmarks
             
         elif exercise_type == 'bench_press':
-            # ベンチプレスの理想的なフォーム
+            # ベンチプレスの理想的なフォーム - 解剖学的ガイドラインに準拠
             ideal_landmarks = {
-                # 肩
-                11: {'x': center_x - 80, 'y': center_y + 30, 'z': 0, 'visibility': 1.0},  # 右肩
-                12: {'x': center_x + 80, 'y': center_y + 30, 'z': 0, 'visibility': 1.0},  # 左肩
+                # 頭部/顔
+                0: {'x': center_x, 'y': center_y - 40, 'z': 0, 'visibility': 1.0},         # 鼻
                 
-                # 肘（下げた位置）
-                13: {'x': center_x - 150, 'y': center_y + 30, 'z': 0, 'visibility': 1.0},  # 右肘
-                14: {'x': center_x + 150, 'y': center_y + 30, 'z': 0, 'visibility': 1.0},  # 左肘
+                # 肩 - 肩甲骨を寄せて固定、安定した土台
+                11: {'x': center_x - 80, 'y': center_y - 10, 'z': 0, 'visibility': 1.0},   # 右肩
+                12: {'x': center_x + 80, 'y': center_y - 10, 'z': 0, 'visibility': 1.0},   # 左肩
                 
-                # 手首
-                15: {'x': center_x - 180, 'y': center_y - 30, 'z': 0, 'visibility': 1.0},  # 右手首
-                16: {'x': center_x + 180, 'y': center_y - 30, 'z': 0, 'visibility': 1.0},  # 左手首
-            }
-            
-        elif exercise_type == 'deadlift':
-            # デッドリフトの理想的なフォーム
-            ideal_landmarks = {
-                # 肩
-                11: {'x': center_x - 80, 'y': center_y - 50, 'z': 0, 'visibility': 1.0},  # 右肩
-                12: {'x': center_x + 80, 'y': center_y - 50, 'z': 0, 'visibility': 1.0},  # 左肩
+                # 肘 - 体幹に対して45-60度、広げすぎない
+                13: {'x': center_x - 140, 'y': center_y + 40, 'z': 0, 'visibility': 1.0},  # 右肘
+                14: {'x': center_x + 140, 'y': center_y + 40, 'z': 0, 'visibility': 1.0},  # 左肘
                 
-                # 肘
-                13: {'x': center_x - 100, 'y': center_y - 10, 'z': 0, 'visibility': 1.0},  # 右肘
-                14: {'x': center_x + 100, 'y': center_y - 10, 'z': 0, 'visibility': 1.0},  # 左肘
+                # 手首 - ニュートラル、バーの真下に位置
+                15: {'x': center_x - 120, 'y': center_y - 30, 'z': 0, 'visibility': 1.0},  # 右手首
+                16: {'x': center_x + 120, 'y': center_y - 30, 'z': 0, 'visibility': 1.0},  # 左手首
                 
-                # 手首
-                15: {'x': center_x - 120, 'y': center_y + 30, 'z': 0, 'visibility': 1.0},  # 右手首
-                16: {'x': center_x + 120, 'y': center_y + 30, 'z': 0, 'visibility': 1.0},  # 左手首
+                # 胸部 - 軽いアーチ
+                5: {'x': center_x, 'y': center_y + 10, 'z': 0, 'visibility': 1.0},         # 胸部中央
                 
-                # 股関節
-                23: {'x': center_x - 40, 'y': center_y + 50, 'z': 0, 'visibility': 1.0},   # 右股関節
-                24: {'x': center_x + 40, 'y': center_y + 50, 'z': 0, 'visibility': 1.0},   # 左股関節
+                # 腰/股関節 - 適切なアーチで安定
+                23: {'x': center_x - 40, 'y': center_y + 80, 'z': 0, 'visibility': 1.0},   # 右股関節
+                24: {'x': center_x + 40, 'y': center_y + 80, 'z': 0, 'visibility': 1.0},   # 左股関節
                 
-                # 膝
+                # 膝 - 床にしっかり接地
                 25: {'x': center_x - 40, 'y': center_y + 150, 'z': 0, 'visibility': 1.0},  # 右膝
                 26: {'x': center_x + 40, 'y': center_y + 150, 'z': 0, 'visibility': 1.0},  # 左膝
                 
-                # 足首
+                # 足首 - 床にしっかり接地
                 27: {'x': center_x - 40, 'y': center_y + 250, 'z': 0, 'visibility': 1.0},  # 右足首
                 28: {'x': center_x + 40, 'y': center_y + 250, 'z': 0, 'visibility': 1.0},  # 左足首
+            }
+            
+        elif exercise_type == 'deadlift':
+            # デッドリフトの理想的なフォーム - 解剖学的ガイドラインに準拠
+            ideal_landmarks = {
+                # 頭部/顔 - 2m先を見る姿勢
+                0: {'x': center_x, 'y': center_y - 70, 'z': 0, 'visibility': 1.0},         # 鼻
+                
+                # 肩 - バーの真上または少し前方
+                11: {'x': center_x - 70, 'y': center_y - 20, 'z': 0, 'visibility': 1.0},   # 右肩
+                12: {'x': center_x + 70, 'y': center_y - 20, 'z': 0, 'visibility': 1.0},   # 左肩
+                
+                # 肘 - 真っ直ぐ下に、リラックス状態
+                13: {'x': center_x - 90, 'y': center_y + 40, 'z': 0, 'visibility': 1.0},   # 右肘
+                14: {'x': center_x + 90, 'y': center_y + 40, 'z': 0, 'visibility': 1.0},   # 左肘
+                
+                # 手首 - バーを握る
+                15: {'x': center_x - 110, 'y': center_y + 100, 'z': 0, 'visibility': 1.0}, # 右手首
+                16: {'x': center_x + 110, 'y': center_y + 100, 'z': 0, 'visibility': 1.0}, # 左手首
+                
+                # 胸部 - 胸を張る
+                5: {'x': center_x, 'y': center_y, 'z': 0, 'visibility': 1.0},              # 胸部中央
+                
+                # 腰/股関節 - 膝より高め、自然なS字カーブ
+                23: {'x': center_x - 40, 'y': center_y + 60, 'z': 0, 'visibility': 1.0},   # 右股関節
+                24: {'x': center_x + 40, 'y': center_y + 60, 'z': 0, 'visibility': 1.0},   # 左股関節
+                
+                # 膝 - 適度に曲げた状態、バーに近い
+                25: {'x': center_x - 40, 'y': center_y + 130, 'z': 0, 'visibility': 1.0},  # 右膝
+                26: {'x': center_x + 40, 'y': center_y + 130, 'z': 0, 'visibility': 1.0},  # 左膝
+                
+                # 足首 - 腰幅程度
+                27: {'x': center_x - 40, 'y': center_y + 220, 'z': 0, 'visibility': 1.0},  # 右足首
+                28: {'x': center_x + 40, 'y': center_y + 220, 'z': 0, 'visibility': 1.0},  # 左足首
+                
+                # つま先 - 前方を向く
+                31: {'x': center_x - 40, 'y': center_y + 250, 'z': 0, 'visibility': 1.0},  # 右つま先
+                32: {'x': center_x + 40, 'y': center_y + 250, 'z': 0, 'visibility': 1.0},  # 左つま先
             }
             
         elif exercise_type == 'overhead_press':
             # オーバーヘッドプレスの理想的なフォーム
             ideal_landmarks = {
-                # 肩
-                11: {'x': center_x - 80, 'y': center_y - 50, 'z': 0, 'visibility': 1.0},  # 右肩
-                12: {'x': center_x + 80, 'y': center_y - 50, 'z': 0, 'visibility': 1.0},  # 左肩
+                # 頭部/顔
+                0: {'x': center_x, 'y': center_y - 80, 'z': 0, 'visibility': 1.0},         # 鼻
                 
-                # 肘（挙げた位置）
-                13: {'x': center_x - 100, 'y': center_y - 120, 'z': 0, 'visibility': 1.0},  # 右肘
-                14: {'x': center_x + 100, 'y': center_y - 120, 'z': 0, 'visibility': 1.0},  # 左肘
+                # 肩 - 高く持ち上げる
+                11: {'x': center_x - 80, 'y': center_y - 50, 'z': 0, 'visibility': 1.0},   # 右肩
+                12: {'x': center_x + 80, 'y': center_y - 50, 'z': 0, 'visibility': 1.0},   # 左肩
                 
-                # 手首
+                # 肘 - バーの上に位置
+                13: {'x': center_x - 100, 'y': center_y - 120, 'z': 0, 'visibility': 1.0}, # 右肘
+                14: {'x': center_x + 100, 'y': center_y - 120, 'z': 0, 'visibility': 1.0}, # 左肘
+                
+                # 手首 - バーを保持
                 15: {'x': center_x - 60, 'y': center_y - 180, 'z': 0, 'visibility': 1.0},  # 右手首
                 16: {'x': center_x + 60, 'y': center_y - 180, 'z': 0, 'visibility': 1.0},  # 左手首
+                
+                # 胸部 - 胸を張る
+                5: {'x': center_x, 'y': center_y, 'z': 0, 'visibility': 1.0},              # 胸部中央
+                
+                # 腰/股関節 - 軽く反り、体幹安定
+                23: {'x': center_x - 40, 'y': center_y + 80, 'z': 0, 'visibility': 1.0},   # 右股関節
+                24: {'x': center_x + 40, 'y': center_y + 80, 'z': 0, 'visibility': 1.0},   # 左股関節
+                
+                # 膝 - やや曲げて安定
+                25: {'x': center_x - 40, 'y': center_y + 150, 'z': 0, 'visibility': 1.0},  # 右膝
+                26: {'x': center_x + 40, 'y': center_y + 150, 'z': 0, 'visibility': 1.0},  # 左膝
+                
+                # 足首 - 肩幅程度
+                27: {'x': center_x - 40, 'y': center_y + 220, 'z': 0, 'visibility': 1.0},  # 右足首
+                28: {'x': center_x + 40, 'y': center_y + 220, 'z': 0, 'visibility': 1.0},  # 左足首
             }
         
         else:
             # デフォルトのランドマーク（基本的な立ち姿勢）
             ideal_landmarks = {
+                # 頭部/顔
+                0: {'x': center_x, 'y': center_y - 170, 'z': 0, 'visibility': 1.0},        # 鼻
+                
                 # 肩
                 11: {'x': center_x - 80, 'y': center_y - 100, 'z': 0, 'visibility': 1.0},  # 右肩
                 12: {'x': center_x + 80, 'y': center_y - 100, 'z': 0, 'visibility': 1.0},  # 左肩
@@ -1173,7 +1231,7 @@ class TrainingAnalyzer:
                 15: {'x': center_x - 140, 'y': center_y, 'z': 0, 'visibility': 1.0},       # 右手首
                 16: {'x': center_x + 140, 'y': center_y, 'z': 0, 'visibility': 1.0},       # 左手首
                 
-                # 股関節
+                # 腰/股関節
                 23: {'x': center_x - 40, 'y': center_y + 50, 'z': 0, 'visibility': 1.0},   # 右股関節
                 24: {'x': center_x + 40, 'y': center_y + 50, 'z': 0, 'visibility': 1.0},   # 左股関節
                 
