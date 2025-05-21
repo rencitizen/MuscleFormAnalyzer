@@ -769,11 +769,24 @@ class TrainingAnalyzer:
                             if joint_id not in trajectory_points:
                                 trajectory_points[joint_id] = []
                             
-                            # 現在の関節位置を取得
-                            if str(joint_id) in landmarks_data[frame_idx]:
-                                joint = landmarks_data[frame_idx][str(joint_id)]
-                                x = int(joint["x"] * 640)
-                                y = int(joint["y"] * 360)
+                            # 現在の関節位置を取得 - ランドマークのIDを確認
+                            # MediaPipe出力は、キーが文字列または整数の可能性がある
+                            # そのため、辞書へのアクセス方法を調整する
+                            landmark_data = None
+                            # 整数インデックスでのアクセスを試みる
+                            if joint_id in landmarks_data[frame_idx]:
+                                landmark_data = landmarks_data[frame_idx][joint_id]
+                            # 文字列キーを試す前に辞書に含まれるか確認
+                            elif isinstance(landmarks_data[frame_idx], dict) and str(joint_id) in landmarks_data[frame_idx]:
+                                # 回避策: キーに直接アクセス
+                                try:
+                                    landmark_data = landmarks_data[frame_idx][str(joint_id)]
+                                except:
+                                    pass
+                                
+                            if landmark_data:
+                                x = int(landmark_data["x"] * 640)
+                                y = int(landmark_data["y"] * 360)
                                 
                                 # 軌道に点を追加
                                 trajectory_points[joint_id].append((x, y))
@@ -801,9 +814,20 @@ class TrainingAnalyzer:
                             
                             # 理想の軌道を描画
                             for joint_id in key_joints:
-                                if str(joint_id) in adjusted_ideal:
-                                    # 理想の関節位置
-                                    ideal_joint = adjusted_ideal[str(joint_id)]
+                                # 辞書アクセス方法を調整
+                                ideal_joint = None
+                                # 直接アクセスを試みる
+                                if joint_id in adjusted_ideal:
+                                    ideal_joint = adjusted_ideal[joint_id]
+                                # 文字列キーを試す前に辞書に含まれるか確認
+                                elif isinstance(adjusted_ideal, dict) and str(joint_id) in adjusted_ideal:
+                                    # 回避策: キーに直接アクセス
+                                    try:
+                                        ideal_joint = adjusted_ideal[str(joint_id)]
+                                    except:
+                                        pass
+                                    
+                                if ideal_joint:
                                     ideal_x = int(ideal_joint["x"])
                                     ideal_y = int(ideal_joint["y"])
                                     
