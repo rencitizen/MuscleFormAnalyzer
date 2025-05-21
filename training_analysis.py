@@ -1387,6 +1387,7 @@ class TrainingAnalyzer:
             調整されたランドマーク
         """
         adjusted = landmarks.copy()
+        self.form_feedback = []  # フォームフィードバックをリセット
         
         try:
             # 主要な関節の位置を取得
@@ -1400,27 +1401,123 @@ class TrainingAnalyzer:
             # 種目ごとに理想フォームを適用
             if exercise_type == 'squat':
                 # 姿勢の補正（背中をまっすぐに）
+                back_angle = self._calculate_back_angle(adjusted)
+                if back_angle and back_angle > 45:
+                    self.form_feedback.append({
+                        "severity": "warning",
+                        "issue": "背中が丸まっています",
+                        "suggestion": "胸を張り、背中をまっすぐに保ってください",
+                        "cause": "体幹筋の弱さや股関節の柔軟性不足が原因かもしれません",
+                        "risk": "腰への過度な負担がかかり、腰痛やヘルニアのリスクが高まります"
+                    })
                 self._straighten_back(adjusted, shoulder_center, hip_center)
                 
                 # 膝のアライメント（膝とつま先を同じ方向に）
+                knee_alignment = self._check_knee_alignment(adjusted)
+                if knee_alignment > 15:
+                    self.form_feedback.append({
+                        "severity": "error",
+                        "issue": "膝が内側に入っています（ニーイン）",
+                        "suggestion": "膝をつま先と同じ方向に向け、膝を外側に押し出すイメージで行いましょう",
+                        "cause": "股関節外旋筋群の弱さや足首の柔軟性不足が原因かもしれません",
+                        "risk": "膝関節への横方向の負担が増加し、膝蓋腱炎や靭帯損傷のリスクが高まります"
+                    })
                 self._align_knees_with_toes(adjusted)
                 
                 # 両足の対称性を確保
+                leg_asymmetry = self._check_leg_symmetry(adjusted)
+                if leg_asymmetry > 10:
+                    self.form_feedback.append({
+                        "severity": "warning",
+                        "issue": "両足のバランスが不均等です",
+                        "suggestion": "体重を両足に均等にかけ、左右対称の姿勢を意識してください",
+                        "cause": "片側優位の姿勢習慣や左右の筋力差が原因かもしれません",
+                        "risk": "左右不均等な筋発達や関節への偏った負担につながります"
+                    })
                 self._ensure_leg_symmetry(adjusted)
+                
+                # 深さのチェック
+                squat_depth = self._check_squat_depth(adjusted)
+                if squat_depth < 90:
+                    self.form_feedback.append({
+                        "severity": "info",
+                        "issue": "スクワットの深さが不足しています",
+                        "suggestion": "可能であれば、太ももが床と平行になるまで深く下げましょう",
+                        "cause": "股関節や足首の柔軟性不足、または負荷が高すぎる可能性があります",
+                        "risk": "大腿四頭筋や臀筋への刺激が不足し、筋発達が最適化されません"
+                    })
                 
             elif exercise_type == 'bench_press':
                 # 肩甲骨を寄せて安定した土台を作る
+                shoulder_retraction = self._check_shoulder_retraction(adjusted)
+                if shoulder_retraction < 0.7:
+                    self.form_feedback.append({
+                        "severity": "warning",
+                        "issue": "肩甲骨の引き寄せが不十分です",
+                        "suggestion": "胸を張り、肩甲骨をベンチに押し付けるようにしてください",
+                        "cause": "肩甲骨の安定筋群の弱さや意識不足が原因かもしれません",
+                        "risk": "肩関節への負担が増加し、肩の痛みや腱板損傷のリスクが高まります"
+                    })
                 self._retract_shoulders(adjusted)
                 
                 # 肘の角度調整（45-60度）
+                elbow_angles = self._check_elbow_angles(adjusted)
+                if elbow_angles < 45 or elbow_angles > 75:
+                    self.form_feedback.append({
+                        "severity": "error",
+                        "issue": "肘の角度が最適ではありません",
+                        "suggestion": "肘を45〜60度に保ち、体に近すぎず遠すぎない位置に調整してください",
+                        "cause": "胸筋への負荷を意識しすぎるか、反対に肩への負荷を意識しすぎている可能性があります",
+                        "risk": "肘や肩への過度な負担がかかり、関節炎や腱炎のリスクが高まります"
+                    })
                 self._adjust_elbow_angles(adjusted)
+                
+                # アーチの確認
+                arch_degree = self._check_back_arch(adjusted)
+                if arch_degree > 20:
+                    self.form_feedback.append({
+                        "severity": "warning",
+                        "issue": "背中のアーチが過度です",
+                        "suggestion": "適度なアーチは良いですが、腰を過度に反らせないようにしてください",
+                        "cause": "重量が高すぎるか、腰椎の安定性が不足している可能性があります",
+                        "risk": "腰椎への過度な負担がかかり、腰痛の原因となる可能性があります"
+                    })
                 
             elif exercise_type == 'deadlift':
                 # 背中の角度を適切に保つ
+                back_angle = self._calculate_back_angle(adjusted)
+                if back_angle and back_angle > 30:
+                    self.form_feedback.append({
+                        "severity": "error",
+                        "issue": "背中が丸まっています",
+                        "suggestion": "背中をまっすぐに伸ばし、胸を張ってください",
+                        "cause": "ハムストリングの柔軟性不足や体幹筋の弱さが原因かもしれません",
+                        "risk": "腰椎への非常に高い負担がかかり、椎間板ヘルニアや重度の腰痛のリスクが高まります"
+                    })
                 self._adjust_back_angle(adjusted, shoulder_center, hip_center)
                 
                 # 肩がバーの真上に来るように調整
+                shoulder_bar_alignment = self._check_shoulder_bar_alignment(adjusted)
+                if shoulder_bar_alignment > 10:
+                    self.form_feedback.append({
+                        "severity": "warning",
+                        "issue": "肩がバーの真上に位置していません",
+                        "suggestion": "セットアップ時に肩がバーの真上に来るようにポジションを調整してください",
+                        "cause": "初期セットアップの誤りや身体の比率に合わないスタンスの可能性があります",
+                        "risk": "効率的な力の伝達が妨げられ、腰や背中への余分な負担がかかります"
+                    })
                 self._position_shoulders_over_bar(adjusted)
+                
+                # ヒップの高さをチェック
+                hip_height = self._check_hip_height(adjusted)
+                if hip_height < 0.7:
+                    self.form_feedback.append({
+                        "severity": "info",
+                        "issue": "腰の位置が低すぎます",
+                        "suggestion": "スクワットではなくデッドリフトの姿勢を意識し、腰を適切な高さにセットアップしてください",
+                        "cause": "スクワットとデッドリフトの動作パターンを混同している可能性があります",
+                        "risk": "膝への過度な負担がかかり、効率的な臀筋・ハムストリングスの活性化が減少します"
+                    })
             
         except Exception as e:
             logger.warning(f"理想フォーム調整中にエラー: {e}")
