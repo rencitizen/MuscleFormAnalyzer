@@ -57,11 +57,16 @@ def analyze():
     if not file.filename.endswith(('.mp4', '.MP4')):
         return jsonify({'error': 'MP4形式のファイルのみサポートしています'}), 400
     
-    # Get exercise type
-    exercise_type = request.form.get('exercise_type', 'squat')
+    # Get exercise type - デフォルト値を確実に設定
+    exercise_type = request.form.get('exercise_type', 'squat').lower().strip()
+    
+    # 種目タイプの正規化と検証
+    valid_exercises = ['squat', 'bench_press', 'deadlift']
+    if exercise_type not in valid_exercises:
+        exercise_type = 'squat'  # 無効な値の場合はデフォルトに設定
     
     # デバッグのためにログ出力
-    logger.info(f"受け取った種目タイプ: {exercise_type}")
+    logger.info(f"受け取った種目タイプ（正規化後）: {exercise_type}")
     
     # Create temporary file
     temp_file_path = os.path.join('/tmp', f"{uuid.uuid4()}.mp4")
@@ -121,10 +126,10 @@ def generate_exercise_feedback(exercise_type, score):
         feedback['overall_feedback'] = "いくつかの重要な点でフォームの改善が必要です。以下の推奨事項に注目してください。"
     
     # 種目タイプの正規化（念のため小文字に変換して比較）
-    exercise_type = exercise_type.lower() if exercise_type else 'squat'
+    exercise_type = exercise_type.lower().strip() if exercise_type else 'squat'
     
-    # 種目ごとの具体的なフィードバック
-    if 'squat' in exercise_type:
+    # 種目ごとの具体的なフィードバック - 完全一致で判定
+    if exercise_type == 'squat':
         feedback['specific_feedback'] = [
             "膝とつま先の位置が適切です" if score > 75 else "膝がつま先より前に出ています",
             "腰の位置が安定しています" if score > 80 else "スクワット中に腰が丸まっています",
@@ -135,7 +140,7 @@ def generate_exercise_feedback(exercise_type, score):
             "膝がつま先と同じ方向を向くようにしましょう",
             "かかとに体重をかけるようにしましょう"
         ]
-    elif 'bench' in exercise_type:
+    elif exercise_type == 'bench_press':
         feedback['specific_feedback'] = [
             "バーのパスが適切です" if score > 75 else "バーが胸の上で安定していません",
             "肘の角度が適切です" if score > 80 else "肘の角度が広すぎます",
@@ -146,7 +151,7 @@ def generate_exercise_feedback(exercise_type, score):
             "肩甲骨をベンチに固定して安定させましょう",
             "肘を体に45度以内に保ちましょう"
         ]
-    elif 'dead' in exercise_type:
+    elif exercise_type == 'deadlift':
         feedback['specific_feedback'] = [
             "背中の角度が適切です" if score > 75 else "リフト中に背中が丸まっています",
             "バーのパスが効率的です" if score > 80 else "バーがシンからの距離が遠すぎます",
@@ -159,6 +164,7 @@ def generate_exercise_feedback(exercise_type, score):
         ]
     else:
         # デフォルトのフィードバック
+        logger.warning(f"未知の種目タイプ: {exercise_type}")
         feedback['specific_feedback'] = [
             "姿勢の安定性は良好です" if score > 75 else "姿勢が不安定です",
             "動作の一貫性があります" if score > 80 else "動作にばらつきがあります",
@@ -176,15 +182,17 @@ def generate_exercise_feedback(exercise_type, score):
 def results():
     """Display analysis results"""
     video_filename = request.args.get('video', '')
-    exercise_type = request.args.get('exercise', 'squat')
+    exercise_type = request.args.get('exercise', 'squat').lower().strip()
     
     # デバッグのためにログ出力
     logger.info(f"結果ページで受け取った種目タイプ: {exercise_type}")
     logger.info(f"リクエストパラメータ全体: {request.args}")
     
-    # 種目タイプの正規化（念のため）
-    if exercise_type:
-        exercise_type = exercise_type.lower()
+    # 種目タイプの検証
+    valid_exercises = ['squat', 'bench_press', 'deadlift']
+    if exercise_type not in valid_exercises:
+        logger.warning(f"無効な種目タイプを受信: {exercise_type}, デフォルトに設定")
+        exercise_type = 'squat'
     
     # シミュレートされたスコアを生成
     overall_score = random.randint(60, 95)
@@ -192,10 +200,18 @@ def results():
     # 種目に基づいたフィードバックを生成
     feedback = generate_exercise_feedback(exercise_type, overall_score)
     
+    # 種目名の表示用変換
+    exercise_display_names = {
+        'squat': 'スクワット',
+        'bench_press': 'ベンチプレス',
+        'deadlift': 'デッドリフト'
+    }
+    
     return render_template(
         'results.html',
         video_filename=video_filename,
         exercise_type=exercise_type,
+        exercise_display_name=exercise_display_names.get(exercise_type, '不明な種目'),
         overall_score=overall_score,
         overall_assessment=feedback['assessment'],
         overall_feedback=feedback['overall_feedback'],
