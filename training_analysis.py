@@ -7,6 +7,7 @@ import math
 from typing import Dict, List, Any, Tuple, Optional
 import mediapipe as mp
 from scipy.signal import find_peaks
+from training_analysis_check_functions import *
 
 # ロギング設定
 logging.basicConfig(level=logging.INFO)
@@ -1405,7 +1406,7 @@ class TrainingAnalyzer:
             # 種目ごとに理想フォームを適用
             if exercise_type == 'squat':
                 # 姿勢の補正（背中をまっすぐに）
-                back_angle = self._calculate_back_angle(adjusted)
+                back_angle = calculate_back_angle(adjusted)
                 if back_angle and back_angle > 45:
                     self.form_feedback.append({
                         "severity": "warning",
@@ -1417,7 +1418,7 @@ class TrainingAnalyzer:
                 self._straighten_back(adjusted, shoulder_center, hip_center)
                 
                 # 膝のアライメント（膝とつま先を同じ方向に）
-                knee_alignment = self._check_knee_alignment(adjusted)
+                knee_alignment = check_knee_alignment(adjusted)
                 if knee_alignment > 15:
                     self.form_feedback.append({
                         "severity": "error",
@@ -1429,7 +1430,7 @@ class TrainingAnalyzer:
                 self._align_knees_with_toes(adjusted)
                 
                 # 両足の対称性を確保
-                leg_asymmetry = self._check_leg_symmetry(adjusted)
+                leg_asymmetry = check_leg_symmetry(adjusted)
                 if leg_asymmetry > 10:
                     self.form_feedback.append({
                         "severity": "warning",
@@ -1441,7 +1442,7 @@ class TrainingAnalyzer:
                 self._ensure_leg_symmetry(adjusted)
                 
                 # 深さのチェック
-                squat_depth = self._check_squat_depth(adjusted)
+                squat_depth = check_squat_depth(adjusted)
                 if squat_depth < 90:
                     self.form_feedback.append({
                         "severity": "info",
@@ -1453,7 +1454,7 @@ class TrainingAnalyzer:
                 
             elif exercise_type == 'bench_press':
                 # 肩甲骨を寄せて安定した土台を作る
-                shoulder_retraction = self._check_shoulder_retraction(adjusted)
+                shoulder_retraction = check_shoulder_retraction(adjusted)
                 if shoulder_retraction < 0.7:
                     self.form_feedback.append({
                         "severity": "warning",
@@ -1465,7 +1466,7 @@ class TrainingAnalyzer:
                 self._retract_shoulders(adjusted)
                 
                 # 肘の角度調整（45-60度）
-                elbow_angles = self._check_elbow_angles(adjusted)
+                elbow_angles = check_elbow_angles(adjusted)
                 if elbow_angles < 45 or elbow_angles > 75:
                     self.form_feedback.append({
                         "severity": "error",
@@ -1477,7 +1478,7 @@ class TrainingAnalyzer:
                 self._adjust_elbow_angles(adjusted)
                 
                 # アーチの確認
-                arch_degree = self._check_back_arch(adjusted)
+                arch_degree = check_back_arch(adjusted)
                 if arch_degree > 20:
                     self.form_feedback.append({
                         "severity": "warning",
@@ -1489,7 +1490,7 @@ class TrainingAnalyzer:
                 
             elif exercise_type == 'deadlift':
                 # 背中の角度を適切に保つ
-                back_angle = self._calculate_back_angle(adjusted)
+                back_angle = calculate_back_angle(adjusted)
                 if back_angle and back_angle > 30:
                     self.form_feedback.append({
                         "severity": "error",
@@ -1501,7 +1502,7 @@ class TrainingAnalyzer:
                 self._adjust_back_angle(adjusted, shoulder_center, hip_center)
                 
                 # 肩がバーの真上に来るように調整
-                shoulder_bar_alignment = self._check_shoulder_bar_alignment(adjusted)
+                shoulder_bar_alignment = check_shoulder_bar_alignment(adjusted)
                 if shoulder_bar_alignment > 10:
                     self.form_feedback.append({
                         "severity": "warning",
@@ -1513,7 +1514,7 @@ class TrainingAnalyzer:
                 self._position_shoulders_over_bar(adjusted)
                 
                 # ヒップの高さをチェック
-                hip_height = self._check_hip_height(adjusted)
+                hip_height = check_hip_height(adjusted)
                 if hip_height < 0.7:
                     self.form_feedback.append({
                         "severity": "info",
@@ -1521,6 +1522,82 @@ class TrainingAnalyzer:
                         "suggestion": "スクワットではなくデッドリフトの姿勢を意識し、腰を適切な高さにセットアップしてください",
                         "cause": "スクワットとデッドリフトの動作パターンを混同している可能性があります",
                         "risk": "膝への過度な負担がかかり、効率的な臀筋・ハムストリングスの活性化が減少します"
+                    })
+                    
+            elif exercise_type == 'pushup':
+                # 腕立て伏せの分析
+                pushup_results = check_pushup_form(adjusted)
+                
+                # 肘の角度チェック
+                if 'elbow_too_bent' in pushup_results:
+                    self.form_feedback.append({
+                        "severity": "warning",
+                        "issue": "肘の曲がりが深すぎます",
+                        "suggestion": "肘を90度程度まで曲げ、それ以上深く下げないようにしてください",
+                        "cause": "三頭筋の弱さや体幹の不安定さが原因かもしれません",
+                        "risk": "肘や肩の関節に過度な負担がかかり、関節炎や腱炎のリスクが高まります"
+                    })
+                elif 'elbow_too_straight' in pushup_results:
+                    self.form_feedback.append({
+                        "severity": "info",
+                        "issue": "肘の曲げが不十分です",
+                        "suggestion": "より深く下げて、胸の筋肉をしっかり使うようにしてください",
+                        "cause": "十分な可動域での運動ができていないため、筋肉への刺激が不足しています",
+                        "risk": "胸筋や三頭筋への効果的な刺激が減少し、筋発達が最適化されません"
+                    })
+                
+                # 背中の姿勢チェック
+                if 'back_not_straight' in pushup_results:
+                    self.form_feedback.append({
+                        "severity": "error",
+                        "issue": "背中が真っ直ぐではありません",
+                        "suggestion": "頭からかかとまでを一直線に保ち、お腹を引き締めてください",
+                        "cause": "体幹筋の弱さや正しいフォームの認識不足が原因かもしれません",
+                        "risk": "腰椎への過度な負担がかかり、腰痛のリスクが高まります"
+                    })
+                
+                # 腰の位置チェック
+                if 'hip_dropping' in pushup_results:
+                    self.form_feedback.append({
+                        "severity": "warning",
+                        "issue": "腰が落ちています",
+                        "suggestion": "腰を引き上げ、体全体を一直線に保ってください",
+                        "cause": "体幹筋、特に腹筋と腰の筋肉の弱さが原因かもしれません",
+                        "risk": "腰への過度な負担がかかり、効果的な胸筋の刺激も減少します"
+                    })
+                
+            elif exercise_type == 'plank':
+                # プランクの分析
+                plank_results = check_plank_form(adjusted)
+                
+                # 背中の姿勢チェック
+                if 'back_not_straight' in plank_results:
+                    self.form_feedback.append({
+                        "severity": "error",
+                        "issue": "背中が真っ直ぐではありません",
+                        "suggestion": "頭からかかとまでを一直線に保ち、お腹を引き締めてください",
+                        "cause": "体幹筋の弱さや正しいフォームの認識不足が原因かもしれません",
+                        "risk": "腰椎への過度な負担がかかり、効果的な体幹トレーニングができません"
+                    })
+                
+                # 腰の位置チェック
+                if 'hip_dropping' in plank_results:
+                    self.form_feedback.append({
+                        "severity": "warning",
+                        "issue": "腰が落ちています",
+                        "suggestion": "腰を持ち上げ、体全体を一直線に保ってください",
+                        "cause": "体幹筋、特に腹筋と腰の筋肉の弱さが原因かもしれません",
+                        "risk": "腰への過度な負担がかかり、体幹筋への効果的な刺激が減少します"
+                    })
+                
+                # 頭の位置チェック
+                if 'head_dropping' in plank_results:
+                    self.form_feedback.append({
+                        "severity": "info",
+                        "issue": "頭が下がっています",
+                        "suggestion": "頭を持ち上げ、首を背中と一直線に保ってください",
+                        "cause": "首の筋肉の疲労や姿勢の意識不足が原因かもしれません",
+                        "risk": "首への負担が増加し、長時間のプランクが困難になります"
                     })
             
         except Exception as e:
