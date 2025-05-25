@@ -1,0 +1,60 @@
+{
+  "exercise_type": "bench_press",
+  "exercise_name": "ベンチプレス",
+  "form_score": 79.49360424569242,
+  "depth_score": 85,
+  "tempo_score": 80,
+  "balance_score": 73.98720849138485,
+  "stability_score": 75,
+  "issues": [
+    "特に問題は見られません"
+  ],
+  "strengths": [
+    "適切な可動域でベンチプレスができている"
+  ],
+  "rep_count": 7,
+  "max_depth": 0.0,
+  "advice": [
+    "このまま継続しましょう"
+  ],
+  "visualizations": {
+    "animation_frames": [
+      "/static/analysis_results/frame_bench_press_000.jpg",
+      "/static/analysis_results/frame_bench_press_001.jpg",
+      "/static/analysis_results/frame_bench_press_002.jpg",
+      "/static/analysis_results/frame_bench_press_003.jpg",
+      "/static/analysis_results/frame_bench_press_004.jpg",
+      "/static/analysis_results/frame_bench_press_005.jpg",
+      "/static/analysis_results/frame_bench_press_006.jpg",
+      "/static/analysis_results/frame_bench_press_007.jpg",
+      "/static/analysis_results/frame_bench_press_008.jpg",
+      "/static/analysis_results/frame_bench_press_009.jpg",
+      "/static/analysis_results/frame_bench_press_010.jpg",
+      "/static/analysis_results/frame_bench_press_011.jpg",
+      "/static/analysis_results/frame_bench_press_012.jpg",
+      "/static/analysis_results/frame_bench_press_013.jpg",
+      "/static/analysis_results/frame_bench_press_014.jpg",
+      "/static/analysis_results/frame_bench_press_015.jpg",
+      "/static/analysis_results/frame_bench_press_016.jpg",
+      "/static/analysis_results/frame_bench_press_017.jpg",
+      "/static/analysis_results/frame_bench_press_018.jpg",
+      "/static/analysis_results/frame_bench_press_019.jpg"
+    ],
+    "frame_sequence": [
+      "/static/analysis_results/frame_bench_press_0.jpg",
+      "/static/analysis_results/frame_bench_press_1.jpg",
+      "/static/analysis_results/frame_bench_press_2.jpg",
+      "/static/analysis_results/frame_bench_press_3.jpg",
+      "/static/analysis_results/frame_bench_press_4.jpg",
+      "/static/analysis_results/frame_bench_press_5.jpg"
+    ],
+    "summary_image": "/static/analysis_results/analysis_bench_press_summary.jpg",
+    "start_phase_image": "/static/analysis_results/pose_bench_press_start_0.jpg",
+    "middle_phase_image": "/static/analysis_results/pose_bench_press_middle_104.jpg",
+    "end_phase_image": "/static/analysis_results/pose_bench_press_end_204.jpg",
+    "trajectory_image": "/static/analysis_results/trajectory_bench_press.jpg"
+  },
+  "user_data": {
+    "height_cm": 176.0
+  }
+}

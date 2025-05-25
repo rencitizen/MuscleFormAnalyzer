@@ -25,7 +25,9 @@ EXERCISE_NAMES = {
     'squat': 'スクワット',
     'bench_press': 'ベンチプレス',
     'deadlift': 'デッドリフト',
-    'overhead_press': 'オーバーヘッドプレス'
+    'overhead_press': 'オーバーヘッドプレス',
+    'pushup': '腕立て伏せ',
+    'plank': 'プランク'
 }
 
 class TrainingAnalyzer:
@@ -46,6 +48,8 @@ class TrainingAnalyzer:
     def _default_keypoints(self) -> Dict[str, Any]:
         return {
             'squat': {'knee_angle_bottom': 90.0, 'hip_angle_bottom': 80.0},
+            'pushup': {'elbow_angle_bottom': 90.0, 'back_angle': 0.0},
+            'plank': {'back_angle': 0.0, 'hip_angle': 180.0},
             'bench_press': {'elbow_angle_bottom': 90.0},
             'deadlift': {'hip_angle_start': 70.0},
             'overhead_press': {'elbow_angle_bottom': 90.0}
