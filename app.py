@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, jsonify, send_from_directory, flash
+from flask import Flask, render_template, request, redirect, url_for, jsonify, send_from_directory, flash, session
 import os
 import json
 import uuid
@@ -13,6 +13,7 @@ from exercise_database import (
     EXERCISE_DATABASE, get_all_exercises, search_exercises, 
     get_exercises_by_category, get_exercise_by_id, COMMON_WEIGHTS, get_weight_suggestions
 )
+from auth_models import auth_manager
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'static/videos'
@@ -417,8 +418,14 @@ def add_workout():
     try:
         data = request.get_json()
         
-        # デフォルトユーザーID (将来的にはセッション管理で対応)
-        user_id = data.get('user_id', 'default_user')
+        # ユーザーIDを取得（セッションまたは入力から）
+        user_id = data.get('user_id') or session.get('user_email', 'default_user')
+        
+        # ユーザーIDが設定されていない場合は簡易設定
+        if user_id == 'default_user':
+            user_email = data.get('user_email', f'user_{uuid.uuid4().hex[:8]}@local.app')
+            session['user_email'] = user_email
+            user_id = user_email
         
         # 必須フィールドの検証
         required_fields = ['date', 'exercise', 'weight_kg', 'reps', 'sets']
@@ -458,7 +465,7 @@ def add_workout():
 def get_workouts():
     """ワークアウト記録を取得するAPI"""
     try:
-        user_id = request.args.get('user_id', 'default_user')
+        user_id = session.get('user_email', 'default_user')
         limit = int(request.args.get('limit', 50))
         
         workouts = workout_db.get_workouts_by_user(user_id, limit)
@@ -596,6 +603,107 @@ def get_weight_suggestions_api():
     except Exception as e:
         logger.error(f"重量候補取得エラー: {e}")
         return jsonify({'error': str(e)}), 500
+
+# ===== 認証機能 =====
+
+def get_current_user():
+    """現在ログイン中のユーザーを取得"""
+    session_token = session.get('session_token')
+    if session_token:
+        return auth_manager.get_user_from_session(session_token)
+    return None
+
+@app.route('/api/auth/register', methods=['POST'])
+def register():
+    """ユーザー登録"""
+    try:
+        data = request.get_json()
+        email = data.get('email', '').strip().lower()
+        password = data.get('password', '')
+        
+        # 入力検証
+        if not email or not password:
+            return jsonify({'error': 'メールアドレスとパスワードは必須です'}), 400
+        
+        if len(password) < 6:
+            return jsonify({'error': 'パスワードは6文字以上である必要があります'}), 400
+        
+        # ユーザー作成
+        result = auth_manager.create_user(email, password)
+        
+        if result['success']:
+            return jsonify({
+                'success': True,
+                'message': 'アカウントが作成されました。メール認証は省略して直接ログインできます。'
+            })
+        else:
+            return jsonify({'error': result['error']}), 400
+            
+    except Exception as e:
+        logger.error(f"登録エラー: {e}")
+        return jsonify({'error': 'アカウント作成に失敗しました'}), 500
+
+@app.route('/api/auth/login', methods=['POST'])
+def login():
+    """ユーザーログイン"""
+    try:
+        data = request.get_json()
+        email = data.get('email', '').strip().lower()
+        password = data.get('password', '')
+        
+        # メール認証をスキップして直接認証
+        result = auth_manager.authenticate_user_simple(email, password)
+        
+        if result['success']:
+            # セッション作成
+            session_token = auth_manager.create_session(result['user']['id'])
+            if session_token:
+                session['session_token'] = session_token
+                session['user_email'] = result['user']['email']
+                session.permanent = True
+                
+                return jsonify({
+                    'success': True,
+                    'message': 'ログインしました',
+                    'user': result['user']
+                })
+            else:
+                return jsonify({'error': 'セッション作成に失敗しました'}), 500
+        else:
+            return jsonify({'error': result['error']}), 401
+            
+    except Exception as e:
+        logger.error(f"ログインエラー: {e}")
+        return jsonify({'error': 'ログインに失敗しました'}), 500
+
+@app.route('/api/auth/logout', methods=['POST'])
+def logout():
+    """ログアウト"""
+    try:
+        session_token = session.get('session_token')
+        if session_token:
+            auth_manager.delete_session(session_token)
+        
+        session.clear()
+        return jsonify({'success': True, 'message': 'ログアウトしました'})
+        
+    except Exception as e:
+        logger.error(f"ログアウトエラー: {e}")
+        return jsonify({'error': 'ログアウトに失敗しました'}), 500
+
+@app.route('/api/auth/user', methods=['GET'])
+def get_user_info():
+    """現在のユーザー情報を取得"""
+    try:
+        user = get_current_user()
+        if user:
+            return jsonify({'user': user})
+        else:
+            return jsonify({'user': None})
+            
+    except Exception as e:
+        logger.error(f"ユーザー情報取得エラー: {e}")
+        return jsonify({'error': 'ユーザー情報の取得に失敗しました'}), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
