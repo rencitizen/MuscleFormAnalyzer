@@ -204,21 +204,20 @@
                                                         </div>
                                                         <div class="col-md-6 mb-3">
                                                             <label class="form-label">種目</label>
-                                                            <select class="form-select" id="workoutExercise" required>
-                                                                <option value="">選択してください</option>
-                                                                <option value="squat">スクワット</option>
-                                                                <option value="bench_press">ベンチプレス</option>
-                                                                <option value="deadlift">デッドリフト</option>
-                                                                <option value="overhead_press">オーバーヘッドプレス</option>
-                                                                <option value="pull_up">懸垂</option>
-                                                                <option value="row">ローイング</option>
-                                                            </select>
+                                                            <div class="input-group">
+                                                                <input type="text" class="form-control" id="workoutExerciseInput" placeholder="種目を検索または選択" readonly required>
+                                                                <button class="btn btn-outline-secondary" type="button" onclick="openExerciseSelector()">選択</button>
+                                                            </div>
+                                                            <input type="hidden" id="workoutExercise" required>
                                                         </div>
                                                     </div>
                                                     <div class="row">
                                                         <div class="col-md-4 mb-3">
                                                             <label class="form-label">重量 (kg)</label>
-                                                            <input type="number" step="0.5" class="form-control" id="workoutWeight" required>
+                                                            <div class="input-group">
+                                                                <input type="number" step="0.5" class="form-control" id="workoutWeight" required>
+                                                                <button class="btn btn-outline-secondary" type="button" onclick="openWeightSelector()">選択</button>
+                                                            </div>
                                                         </div>
                                                         <div class="col-md-4 mb-3">
                                                             <label class="form-label">回数</label>
@@ -245,6 +244,88 @@
                             </div>
                         </div>
                         
+                        <!-- 種目選択モーダル -->
+                        <div class="modal fade" id="exerciseModal" tabindex="-1">
+                            <div class="modal-dialog modal-lg">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">種目を選択</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <!-- 検索バー -->
+                                        <div class="mb-3">
+                                            <input type="text" class="form-control" id="exerciseSearch" placeholder="種目名を検索...">
+                                        </div>
+                                        
+                                        <!-- 部位別タブ -->
+                                        <ul class="nav nav-pills mb-3" id="bodyPartTabs" role="tablist">
+                                            <li class="nav-item" role="presentation">
+                                                <button class="nav-link active" id="legs-tab" data-bs-toggle="pill" data-bs-target="#legs" type="button" role="tab">🦵 脚部</button>
+                                            </li>
+                                            <li class="nav-item" role="presentation">
+                                                <button class="nav-link" id="chest-tab" data-bs-toggle="pill" data-bs-target="#chest" type="button" role="tab">💪 胸部</button>
+                                            </li>
+                                            <li class="nav-item" role="presentation">
+                                                <button class="nav-link" id="back-tab" data-bs-toggle="pill" data-bs-target="#back" type="button" role="tab">🔙 背中</button>
+                                            </li>
+                                            <li class="nav-item" role="presentation">
+                                                <button class="nav-link" id="shoulders-tab" data-bs-toggle="pill" data-bs-target="#shoulders" type="button" role="tab">🤲 肩</button>
+                                            </li>
+                                            <li class="nav-item" role="presentation">
+                                                <button class="nav-link" id="arms-tab" data-bs-toggle="pill" data-bs-target="#arms" type="button" role="tab">💪 腕</button>
+                                            </li>
+                                            <li class="nav-item" role="presentation">
+                                                <button class="nav-link" id="abs-tab" data-bs-toggle="pill" data-bs-target="#abs" type="button" role="tab">🔥 腹筋</button>
+                                            </li>
+                                        </ul>
+                                        
+                                        <!-- 種目一覧 -->
+                                        <div class="tab-content" id="exerciseTabContent">
+                                            <div class="tab-pane fade show active" id="legs" role="tabpanel">
+                                                <div id="legs-exercises" class="exercise-list"></div>
+                                            </div>
+                                            <div class="tab-pane fade" id="chest" role="tabpanel">
+                                                <div id="chest-exercises" class="exercise-list"></div>
+                                            </div>
+                                            <div class="tab-pane fade" id="back" role="tabpanel">
+                                                <div id="back-exercises" class="exercise-list"></div>
+                                            </div>
+                                            <div class="tab-pane fade" id="shoulders" role="tabpanel">
+                                                <div id="shoulders-exercises" class="exercise-list"></div>
+                                            </div>
+                                            <div class="tab-pane fade" id="arms" role="tabpanel">
+                                                <div id="arms-exercises" class="exercise-list"></div>
+                                            </div>
+                                            <div class="tab-pane fade" id="abs" role="tabpanel">
+                                                <div id="abs-exercises" class="exercise-list"></div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- 検索結果 -->
+                                        <div id="searchResults" class="exercise-list" style="display: none;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 重量選択モーダル -->
+                        <div class="modal fade" id="weightModal" tabindex="-1">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">重量を選択</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="row g-2" id="weightGrid">
+                                            <!-- 重量選択肢がここに動的に挿入されます -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <div class="sample-preview">
                             <h5>測定できる項目</h5>
                             <ul class="mb-0">
@@ -264,11 +345,187 @@
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
     
+    <style>
+        .exercise-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .exercise-item {
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            border: 1px solid var(--bs-border-color);
+            border-radius: 0.375rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .exercise-item:hover {
+            background-color: var(--bs-secondary-bg);
+            border-color: var(--bs-primary);
+        }
+        .exercise-category {
+            font-size: 0.875rem;
+            color: var(--bs-text-muted);
+        }
+        .weight-btn {
+            min-width: 80px;
+            margin-bottom: 0.5rem;
+        }
+    </style>
+
     <script>
+        let exerciseData = {};
+        
         // 今日の日付をデフォルトに設定
         document.addEventListener('DOMContentLoaded', function() {
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('workoutDate').value = today;
+            loadExerciseData();
+        });
+
+        // 種目データを読み込み
+        async function loadExerciseData() {
+            try {
+                const response = await fetch('/api/exercises/categories');
+                const result = await response.json();
+                exerciseData = result.categories;
+                
+                // 各部位の種目を読み込み
+                for (const category of exerciseData) {
+                    loadCategoryExercises(category.id);
+                }
+            } catch (error) {
+                console.error('種目データ読み込みエラー:', error);
+            }
+        }
+
+        // 部位別種目を読み込み
+        async function loadCategoryExercises(category) {
+            try {
+                const response = await fetch(`/api/exercises/category/${category}`);
+                const result = await response.json();
+                displayExercises(result.exercises, `${category}-exercises`);
+            } catch (error) {
+                console.error(`${category}の種目読み込みエラー:`, error);
+            }
+        }
+
+        // 種目を表示
+        function displayExercises(exercises, containerId) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            
+            container.innerHTML = '';
+            
+            // サブカテゴリー別にグループ化
+            const grouped = {};
+            exercises.forEach(exercise => {
+                const subcat = exercise.subcategory_name || 'その他';
+                if (!grouped[subcat]) grouped[subcat] = [];
+                grouped[subcat].push(exercise);
+            });
+            
+            // サブカテゴリーごとに表示
+            for (const [subcategory, exerciseList] of Object.entries(grouped)) {
+                const subcatDiv = document.createElement('div');
+                subcatDiv.className = 'mb-3';
+                subcatDiv.innerHTML = `<h6 class="text-muted">${subcategory}</h6>`;
+                
+                exerciseList.forEach(exercise => {
+                    const exerciseDiv = document.createElement('div');
+                    exerciseDiv.className = 'exercise-item';
+                    exerciseDiv.innerHTML = `
+                        <div class="fw-bold">${exercise.name}</div>
+                        <div class="exercise-category">${exercise.type === 'compound' ? '複合種目' : '単関節種目'}</div>
+                    `;
+                    exerciseDiv.onclick = () => selectExercise(exercise);
+                    subcatDiv.appendChild(exerciseDiv);
+                });
+                
+                container.appendChild(subcatDiv);
+            }
+        }
+
+        // 種目選択
+        function selectExercise(exercise) {
+            document.getElementById('workoutExercise').value = exercise.id;
+            document.getElementById('workoutExerciseInput').value = exercise.name;
+            
+            const modal = bootstrap.Modal.getInstance(document.getElementById('exerciseModal'));
+            modal.hide();
+        }
+
+        // 種目選択モーダルを開く
+        function openExerciseSelector() {
+            const modal = new bootstrap.Modal(document.getElementById('exerciseModal'));
+            modal.show();
+        }
+
+        // 重量選択モーダルを開く
+        async function openWeightSelector() {
+            try {
+                const currentWeight = parseFloat(document.getElementById('workoutWeight').value) || null;
+                const response = await fetch(`/api/weights/suggestions?current=${currentWeight}&count=30`);
+                const result = await response.json();
+                
+                const weightGrid = document.getElementById('weightGrid');
+                weightGrid.innerHTML = '';
+                
+                result.weights.forEach(weight => {
+                    const button = document.createElement('button');
+                    button.className = 'btn btn-outline-primary weight-btn col-3';
+                    button.textContent = weight + 'kg';
+                    button.onclick = () => selectWeight(weight);
+                    weightGrid.appendChild(button);
+                });
+                
+                const modal = new bootstrap.Modal(document.getElementById('weightModal'));
+                modal.show();
+            } catch (error) {
+                console.error('重量候補読み込みエラー:', error);
+            }
+        }
+
+        // 重量選択
+        function selectWeight(weight) {
+            document.getElementById('workoutWeight').value = weight;
+            
+            const modal = bootstrap.Modal.getInstance(document.getElementById('weightModal'));
+            modal.hide();
+        }
+
+        // 種目検索
+        document.getElementById('exerciseSearch').addEventListener('input', async function(e) {
+            const query = e.target.value.trim();
+            const searchResults = document.getElementById('searchResults');
+            const tabContent = document.getElementById('exerciseTabContent');
+            
+            if (query.length < 2) {
+                searchResults.style.display = 'none';
+                tabContent.style.display = 'block';
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/exercises/search?q=${encodeURIComponent(query)}`);
+                const result = await response.json();
+                
+                searchResults.innerHTML = '';
+                result.exercises.forEach(exercise => {
+                    const exerciseDiv = document.createElement('div');
+                    exerciseDiv.className = 'exercise-item';
+                    exerciseDiv.innerHTML = `
+                        <div class="fw-bold">${exercise.name}</div>
+                        <div class="exercise-category">${exercise.category_name} - ${exercise.subcategory_name}</div>
+                    `;
+                    exerciseDiv.onclick = () => selectExercise(exercise);
+                    searchResults.appendChild(exerciseDiv);
+                });
+                
+                searchResults.style.display = 'block';
+                tabContent.style.display = 'none';
+            } catch (error) {
+                console.error('検索エラー:', error);
+            }
         });
 
         // ワークアウトフォームを表示
@@ -283,6 +540,10 @@
             document.getElementById('workoutForm').reset();
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('workoutDate').value = today;
+            
+            // 隠しフィールドもリセット
+            document.getElementById('workoutExercise').value = '';
+            document.getElementById('workoutExerciseInput').value = '';
         }
 
         // ワークアウト記録を送信

@@ -9,6 +9,10 @@ from werkzeug.utils import secure_filename
 from training_analysis import TrainingAnalyzer
 from exercise_classifier import ExerciseClassifier
 from workout_models import workout_db
+from exercise_database import (
+    EXERCISE_DATABASE, get_all_exercises, search_exercises, 
+    get_exercises_by_category, get_exercise_by_id, COMMON_WEIGHTS, get_weight_suggestions
+)
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'static/videos'
@@ -525,6 +529,72 @@ def get_max_weights():
         
     except Exception as e:
         logger.error(f"最大重量取得エラー: {e}")
+        return jsonify({'error': str(e)}), 500
+
+# ===== 種目データベースAPI =====
+
+@app.route('/api/exercises/categories')
+def get_exercise_categories():
+    """部位別カテゴリー一覧を取得"""
+    try:
+        categories = []
+        for category_key, category in EXERCISE_DATABASE.items():
+            categories.append({
+                'id': category_key,
+                'name': category['name'],
+                'icon': category['icon'],
+                'subcategories': list(category['subcategories'].keys())
+            })
+        return jsonify({'categories': categories})
+    except Exception as e:
+        logger.error(f"カテゴリー取得エラー: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/exercises/category/<category>')
+def get_exercises_by_category_api(category):
+    """部位別で種目を取得"""
+    try:
+        exercises = get_exercises_by_category(category)
+        return jsonify({'exercises': exercises})
+    except Exception as e:
+        logger.error(f"カテゴリー別種目取得エラー: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/exercises/search')
+def search_exercises_api():
+    """種目検索API"""
+    try:
+        query = request.args.get('q', '')
+        if not query:
+            return jsonify({'exercises': []})
+        
+        exercises = search_exercises(query)
+        return jsonify({'exercises': exercises})
+    except Exception as e:
+        logger.error(f"種目検索エラー: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/exercises/all')
+def get_all_exercises_api():
+    """全種目を取得"""
+    try:
+        exercises = get_all_exercises()
+        return jsonify({'exercises': exercises})
+    except Exception as e:
+        logger.error(f"全種目取得エラー: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/weights/suggestions')
+def get_weight_suggestions_api():
+    """重量選択候補を取得"""
+    try:
+        current_weight = request.args.get('current', type=float)
+        count = request.args.get('count', 20, type=int)
+        
+        weights = get_weight_suggestions(current_weight, count)
+        return jsonify({'weights': weights})
+    except Exception as e:
+        logger.error(f"重量候補取得エラー: {e}")
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
