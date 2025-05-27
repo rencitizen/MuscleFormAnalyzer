@@ -60,6 +60,58 @@ def analyze():
             with open(result_file, 'w', encoding='utf-8') as f:
                 json.dump(results, f, ensure_ascii=False, indent=2)
             return redirect(url_for('training_results', mode='processed', result_file=f"training_result_{unique_id}.json"))
+        
+        elif analysis_type == 'body_metrics':
+            # 身体寸法分析の処理
+            from analysis import BodyAnalyzer
+            body_analyzer = BodyAnalyzer(user_height_cm=height)
+            try:
+                # 動画から身体寸法を分析
+                import cv2
+                import mediapipe as mp
+                
+                cap = cv2.VideoCapture(filepath)
+                mp_pose = mp.solutions.pose
+                pose = mp_pose.Pose(static_image_mode=False, model_complexity=2)
+                
+                # 最初のフレームを取得して分析
+                ret, frame = cap.read()
+                if ret:
+                    frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                    results_pose = pose.process(frame_rgb)
+                    
+                    if results_pose.pose_landmarks:
+                        # ランドマークを辞書形式に変換
+                        landmarks = {}
+                        h, w, _ = frame.shape
+                        for idx, landmark in enumerate(results_pose.pose_landmarks.landmark):
+                            landmarks[idx] = {
+                                'x': landmark.x * w,
+                                'y': landmark.y * h,
+                                'z': landmark.z,
+                                'visibility': landmark.visibility
+                            }
+                        
+                        # 身体寸法を分析
+                        body_results = body_analyzer.analyze_landmarks(landmarks, (w, h))
+                        result_file = os.path.join(RESULTS_DIR, f"body_metrics_{unique_id}.json")
+                        body_analyzer.save_results(body_results, result_file)
+                        
+                        cap.release()
+                        return jsonify({"success": True, "result_file": f"body_metrics_{unique_id}.json"})
+                    else:
+                        cap.release()
+                        return jsonify({"error": "ポーズが検出されませんでした"}), 400
+                else:
+                    cap.release()
+                    return jsonify({"error": "動画の読み込みに失敗しました"}), 400
+                    
+            except Exception as e:
+                logger.error(f"身体寸法分析エラー: {e}")
+                return jsonify({"error": f"分析エラー: {str(e)}"}), 500
+        
+        else:
+            return jsonify({"error": "不明な分析タイプです"}), 400
 
     return jsonify({"error": "不正なファイル形式"}), 400
 
