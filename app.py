@@ -65,9 +65,16 @@ def analyze():
                 mp_pose = mp.solutions.pose
                 pose = mp_pose.Pose(static_image_mode=False, model_complexity=2)
                 
-                # 最初のフレームを取得して身体寸法を測定
-                ret, frame = cap.read()
-                if ret:
+                # 複数フレームを取得して身体寸法を測定（精度向上）
+                measurements = []
+                frame_count = 0
+                max_frames = 5  # 最大5フレームで測定
+                
+                while frame_count < max_frames:
+                    ret, frame = cap.read()
+                    if not ret:
+                        break
+                        
                     frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                     results_pose = pose.process(frame_rgb)
                     
@@ -84,8 +91,21 @@ def analyze():
                             }
                         
                         # 身体寸法を分析
-                        body_metrics = body_analyzer.analyze_landmarks(landmarks, (w, h))
-                        logger.info(f"身体寸法測定完了: {body_metrics}")
+                        measurement = body_analyzer.analyze_landmarks(landmarks, (w, h))
+                        measurements.append(measurement)
+                        frame_count += 1
+                
+                # 複数測定の平均値を計算
+                if measurements:
+                    body_metrics = {
+                        'user_height_cm': height,
+                        'left_arm_cm': sum(m.get('left_arm_cm', 0) for m in measurements) / len(measurements),
+                        'right_arm_cm': sum(m.get('right_arm_cm', 0) for m in measurements) / len(measurements),
+                        'left_leg_cm': sum(m.get('left_leg_cm', 0) for m in measurements) / len(measurements),
+                        'right_leg_cm': sum(m.get('right_leg_cm', 0) for m in measurements) / len(measurements),
+                        'measurements_count': len(measurements)
+                    }
+                    logger.info(f"身体寸法測定完了（{len(measurements)}フレーム平均）: {body_metrics}")
                         
                 cap.release()
                 
