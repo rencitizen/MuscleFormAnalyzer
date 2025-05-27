@@ -165,7 +165,7 @@ def analyze():
                         body_analyzer.save_results(body_results, result_filename)
                         
                         cap.release()
-                        return jsonify({"success": True, "result_file": f"body_metrics_{unique_id}.json"})
+                        return redirect(url_for('body_metrics_results', result_file=f"body_metrics_{unique_id}.json"))
                     else:
                         cap.release()
                         return jsonify({"error": "ポーズが検出されませんでした"}), 400
@@ -202,6 +202,23 @@ def training_results():
         redirect_url += f'&result_file={result_file}'
         
     return redirect(redirect_url)
+
+@app.route('/body_metrics_results')
+def body_metrics_results():
+    """身体寸法測定結果ページ"""
+    result_file = request.args.get('result_file')
+    
+    if result_file:
+        try:
+            result_path = os.path.join(RESULTS_DIR, result_file)
+            with open(result_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            return render_template('body_metrics.html', data=data)
+        except Exception as e:
+            logger.error(f"Error loading body metrics data: {e}")
+            return render_template('body_metrics.html', error="データの読み込みに失敗しました")
+    else:
+        return render_template('body_metrics.html', error="結果ファイルが指定されていません")
 
 @app.route('/exercise_results')
 def exercise_results():
