@@ -26,9 +26,7 @@ EXERCISE_NAMES = {
     'squat': 'スクワット',
     'bench_press': 'ベンチプレス',
     'deadlift': 'デッドリフト',
-    'overhead_press': 'オーバーヘッドプレス',
-    'pushup': '腕立て伏せ',
-    'plank': 'プランク'
+    'overhead_press': 'オーバーヘッドプレス'
 }
 
 class TrainingAnalyzer:
@@ -49,8 +47,6 @@ class TrainingAnalyzer:
     def _default_keypoints(self) -> Dict[str, Any]:
         return {
             'squat': {'knee_angle_bottom': 90.0, 'hip_angle_bottom': 80.0},
-            'pushup': {'elbow_angle_bottom': 90.0, 'back_angle': 0.0},
-            'plank': {'back_angle': 0.0, 'hip_angle': 180.0},
             'bench_press': {'elbow_angle_bottom': 90.0},
             'deadlift': {'hip_angle_start': 70.0},
             'overhead_press': {'elbow_angle_bottom': 90.0}
@@ -1523,82 +1519,7 @@ class TrainingAnalyzer:
                         "cause": "スクワットとデッドリフトの動作パターンを混同している可能性があります",
                         "risk": "膝への過度な負担がかかり、効率的な臀筋・ハムストリングスの活性化が減少します"
                     })
-                    
-            elif exercise_type == 'pushup':
-                # 腕立て伏せの分析
-                pushup_results = check_pushup_form(adjusted)
-                
-                # 肘の角度チェック
-                if 'elbow_too_bent' in pushup_results:
-                    self.form_feedback.append({
-                        "severity": "warning",
-                        "issue": "肘の曲がりが深すぎます",
-                        "suggestion": "肘を90度程度まで曲げ、それ以上深く下げないようにしてください",
-                        "cause": "三頭筋の弱さや体幹の不安定さが原因かもしれません",
-                        "risk": "肘や肩の関節に過度な負担がかかり、関節炎や腱炎のリスクが高まります"
-                    })
-                elif 'elbow_too_straight' in pushup_results:
-                    self.form_feedback.append({
-                        "severity": "info",
-                        "issue": "肘の曲げが不十分です",
-                        "suggestion": "より深く下げて、胸の筋肉をしっかり使うようにしてください",
-                        "cause": "十分な可動域での運動ができていないため、筋肉への刺激が不足しています",
-                        "risk": "胸筋や三頭筋への効果的な刺激が減少し、筋発達が最適化されません"
-                    })
-                
-                # 背中の姿勢チェック
-                if 'back_not_straight' in pushup_results:
-                    self.form_feedback.append({
-                        "severity": "error",
-                        "issue": "背中が真っ直ぐではありません",
-                        "suggestion": "頭からかかとまでを一直線に保ち、お腹を引き締めてください",
-                        "cause": "体幹筋の弱さや正しいフォームの認識不足が原因かもしれません",
-                        "risk": "腰椎への過度な負担がかかり、腰痛のリスクが高まります"
-                    })
-                
-                # 腰の位置チェック
-                if 'hip_dropping' in pushup_results:
-                    self.form_feedback.append({
-                        "severity": "warning",
-                        "issue": "腰が落ちています",
-                        "suggestion": "腰を引き上げ、体全体を一直線に保ってください",
-                        "cause": "体幹筋、特に腹筋と腰の筋肉の弱さが原因かもしれません",
-                        "risk": "腰への過度な負担がかかり、効果的な胸筋の刺激も減少します"
-                    })
-                
-            elif exercise_type == 'plank':
-                # プランクの分析
-                plank_results = check_plank_form(adjusted)
-                
-                # 背中の姿勢チェック
-                if 'back_not_straight' in plank_results:
-                    self.form_feedback.append({
-                        "severity": "error",
-                        "issue": "背中が真っ直ぐではありません",
-                        "suggestion": "頭からかかとまでを一直線に保ち、お腹を引き締めてください",
-                        "cause": "体幹筋の弱さや正しいフォームの認識不足が原因かもしれません",
-                        "risk": "腰椎への過度な負担がかかり、効果的な体幹トレーニングができません"
-                    })
-                
-                # 腰の位置チェック
-                if 'hip_dropping' in plank_results:
-                    self.form_feedback.append({
-                        "severity": "warning",
-                        "issue": "腰が落ちています",
-                        "suggestion": "腰を持ち上げ、体全体を一直線に保ってください",
-                        "cause": "体幹筋、特に腹筋と腰の筋肉の弱さが原因かもしれません",
-                        "risk": "腰への過度な負担がかかり、体幹筋への効果的な刺激が減少します"
-                    })
-                
-                # 頭の位置チェック
-                if 'head_dropping' in plank_results:
-                    self.form_feedback.append({
-                        "severity": "info",
-                        "issue": "頭が下がっています",
-                        "suggestion": "頭を持ち上げ、首を背中と一直線に保ってください",
-                        "cause": "首の筋肉の疲労や姿勢の意識不足が原因かもしれません",
-                        "risk": "首への負担が増加し、長時間のプランクが困難になります"
-                    })
+
             
         except Exception as e:
             logger.warning(f"理想フォーム調整中にエラー: {e}")
