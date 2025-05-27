@@ -50,12 +50,58 @@ def analyze():
 
         if analysis_type == 'training':
             exercise_type = request.form.get('exercise_type', 'squat')
-            analyzer = TrainingAnalyzer(exercise_type=exercise_type)
-            results = analyzer.analyze_video(filepath)  # user_heightパラメーターを削除
-            # 身長情報を結果に追加
+            
+            # まず身体寸法を測定
+            from analysis import BodyAnalyzer
+            body_analyzer = BodyAnalyzer(user_height_cm=height)
+            body_metrics = {}
+            
+            try:
+                # 動画から身体寸法を分析
+                import cv2
+                import mediapipe as mp
+                
+                cap = cv2.VideoCapture(filepath)
+                mp_pose = mp.solutions.pose
+                pose = mp_pose.Pose(static_image_mode=False, model_complexity=2)
+                
+                # 最初のフレームを取得して身体寸法を測定
+                ret, frame = cap.read()
+                if ret:
+                    frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                    results_pose = pose.process(frame_rgb)
+                    
+                    if results_pose.pose_landmarks:
+                        # ランドマークを辞書形式に変換
+                        landmarks = {}
+                        h, w, _ = frame.shape
+                        for idx, landmark in enumerate(results_pose.pose_landmarks.landmark):
+                            landmarks[idx] = {
+                                'x': landmark.x * w,
+                                'y': landmark.y * h,
+                                'z': landmark.z,
+                                'visibility': landmark.visibility
+                            }
+                        
+                        # 身体寸法を分析
+                        body_metrics = body_analyzer.analyze_landmarks(landmarks, (w, h))
+                        logger.info(f"身体寸法測定完了: {body_metrics}")
+                        
+                cap.release()
+                
+            except Exception as e:
+                logger.warning(f"身体寸法測定中にエラー: {e}")
+            
+            # 身体寸法データを使ってトレーニング分析を実行
+            analyzer = TrainingAnalyzer(exercise_type=exercise_type, body_metrics=body_metrics)
+            results = analyzer.analyze_video(filepath)
+            
+            # 身長情報と身体寸法情報を結果に追加
             if 'user_data' not in results:
                 results['user_data'] = {}
             results['user_data']['height_cm'] = height
+            results['user_data']['body_metrics'] = body_metrics
+            
             result_file = os.path.join(RESULTS_DIR, f"training_result_{unique_id}.json")
             with open(result_file, 'w', encoding='utf-8') as f:
                 json.dump(results, f, ensure_ascii=False, indent=2)
@@ -94,8 +140,9 @@ def analyze():
                         
                         # 身体寸法を分析
                         body_results = body_analyzer.analyze_landmarks(landmarks, (w, h))
-                        result_file = os.path.join(RESULTS_DIR, f"body_metrics_{unique_id}.json")
-                        body_analyzer.save_results(body_results, result_file)
+                        result_filename = f"body_metrics_{unique_id}.json"
+                        result_file = os.path.join(RESULTS_DIR, result_filename)
+                        body_analyzer.save_results(body_results, result_filename)
                         
                         cap.release()
                         return jsonify({"success": True, "result_file": f"body_metrics_{unique_id}.json"})

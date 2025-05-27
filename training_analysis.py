@@ -30,11 +30,12 @@ EXERCISE_NAMES = {
 }
 
 class TrainingAnalyzer:
-    def __init__(self, exercise_type: str = 'squat'):
+    def __init__(self, exercise_type: str = 'squat', body_metrics: dict = None):
         self.exercise_type = exercise_type
         self.ideal_keypoints = self._load_ideal_keypoints()
         self.frame_count = 0
         self.video_fps = 0
+        self.body_metrics = body_metrics or {}  # 身体寸法データを保存
 
     def _load_ideal_keypoints(self) -> Dict[str, Any]:
         path = os.path.join(IDEAL_FORMS_PATH, f"{self.exercise_type}_ideal.json")
