@@ -400,5 +400,132 @@ def simple_training():
     
     return render_template('simple_training.html', training=data)
 
+# ===== トレーニング記録機能のルート =====
+
+@app.route('/workout_log')
+def workout_log():
+    """トレーニング記録メインページ"""
+    return render_template('workout_log.html')
+
+@app.route('/api/workouts', methods=['POST'])
+def add_workout():
+    """ワークアウト記録を追加するAPI"""
+    try:
+        data = request.get_json()
+        
+        # デフォルトユーザーID (将来的にはセッション管理で対応)
+        user_id = data.get('user_id', 'default_user')
+        
+        # 必須フィールドの検証
+        required_fields = ['date', 'exercise', 'weight_kg', 'reps', 'sets']
+        for field in required_fields:
+            if not data.get(field):
+                return jsonify({'error': f'{field}は必須です'}), 400
+        
+        # ユーザープロファイルを作成/更新
+        workout_db.create_user_profile(user_id, data.get('height_cm'))
+        
+        # ワークアウト記録を追加
+        workout_id = workout_db.add_workout(
+            user_id=user_id,
+            date=data['date'],
+            exercise=data['exercise'],
+            weight_kg=float(data['weight_kg']),
+            reps=int(data['reps']),
+            sets=int(data['sets']),
+            notes=data.get('notes'),
+            form_analysis_ref=data.get('form_analysis_ref')
+        )
+        
+        if workout_id:
+            return jsonify({
+                'success': True,
+                'message': 'ワークアウト記録を追加しました',
+                'workout_id': workout_id
+            })
+        else:
+            return jsonify({'error': 'データベースエラーが発生しました'}), 500
+            
+    except Exception as e:
+        logger.error(f"ワークアウト追加エラー: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/workouts', methods=['GET'])
+def get_workouts():
+    """ワークアウト記録を取得するAPI"""
+    try:
+        user_id = request.args.get('user_id', 'default_user')
+        limit = int(request.args.get('limit', 50))
+        
+        workouts = workout_db.get_workouts_by_user(user_id, limit)
+        
+        # 日付を文字列に変換
+        for workout in workouts:
+            if workout.get('date'):
+                workout['date'] = workout['date'].strftime('%Y-%m-%d')
+            if workout.get('created_at'):
+                workout['created_at'] = workout['created_at'].isoformat()
+            if workout.get('updated_at'):
+                workout['updated_at'] = workout['updated_at'].isoformat()
+        
+        return jsonify({'workouts': workouts})
+        
+    except Exception as e:
+        logger.error(f"ワークアウト取得エラー: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/workouts/<int:workout_id>', methods=['DELETE'])
+def delete_workout(workout_id):
+    """ワークアウト記録を削除するAPI"""
+    try:
+        user_id = request.args.get('user_id', 'default_user')
+        
+        success = workout_db.delete_workout(workout_id, user_id)
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': 'ワークアウト記録を削除しました'
+            })
+        else:
+            return jsonify({'error': '記録が見つからないか削除できませんでした'}), 404
+            
+    except Exception as e:
+        logger.error(f"ワークアウト削除エラー: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/progress/<exercise>')
+def get_progress(exercise):
+    """特定種目の進捗データを取得するAPI"""
+    try:
+        user_id = request.args.get('user_id', 'default_user')
+        
+        progress_data = workout_db.get_exercise_progress(user_id, exercise)
+        
+        # 日付を文字列に変換
+        for record in progress_data:
+            if record.get('date'):
+                record['date'] = record['date'].strftime('%Y-%m-%d')
+        
+        return jsonify({'progress': progress_data})
+        
+    except Exception as e:
+        logger.error(f"進捗データ取得エラー: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/max_weights')
+def get_max_weights():
+    """各種目の最大重量を取得するAPI"""
+    try:
+        user_id = request.args.get('user_id', 'default_user')
+        
+        max_weights = workout_db.get_max_weights(user_id)
+        
+        return jsonify({'max_weights': max_weights})
+        
+    except Exception as e:
+        logger.error(f"最大重量取得エラー: {e}")
+        return jsonify({'error': str(e)}), 500
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

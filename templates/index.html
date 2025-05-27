@@ -70,10 +70,13 @@
                             <!-- タブメニュー -->
                             <ul class="nav nav-tabs" id="analysisTab" role="tablist">
                                 <li class="nav-item" role="presentation">
-                                    <button class="nav-link active" id="training-tab" data-bs-toggle="tab" data-bs-target="#training-content" type="button" role="tab" aria-controls="training-content" aria-selected="true">トレーニング分析</button>
+                                    <button class="nav-link active" id="training-tab" data-bs-toggle="tab" data-bs-target="#training-content" type="button" role="tab" aria-controls="training-content" aria-selected="true">フォーム分析</button>
                                 </li>
                                 <li class="nav-item" role="presentation">
                                     <button class="nav-link" id="body-tab" data-bs-toggle="tab" data-bs-target="#body-content" type="button" role="tab" aria-controls="body-content" aria-selected="false">身体計測</button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="workout-log-tab" data-bs-toggle="tab" data-bs-target="#workout-log-content" type="button" role="tab" aria-controls="workout-log-content" aria-selected="false">トレーニング記録</button>
                                 </li>
                             </ul>
                             
@@ -157,6 +160,88 @@
                                         </div>
                                     </form>
                                 </div>
+                                
+                                <!-- トレーニング記録タブ -->
+                                <div class="tab-pane fade" id="workout-log-content" role="tabpanel" aria-labelledby="workout-log-tab">
+                                    <div class="text-center mb-4">
+                                        <h5>トレーニング記録</h5>
+                                        <p class="text-muted">日々のワークアウトを記録して進捗を管理しましょう</p>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <div class="card h-100">
+                                                <div class="card-body text-center">
+                                                    <h6 class="card-title">📝 記録入力</h6>
+                                                    <p class="card-text">手動でワークアウトを記録</p>
+                                                    <button class="btn btn-primary" onclick="openWorkoutForm()">記録を追加</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <div class="card h-100">
+                                                <div class="card-body text-center">
+                                                    <h6 class="card-title">📊 進捗確認</h6>
+                                                    <p class="card-text">グラフと履歴を表示</p>
+                                                    <a href="/workout_log" class="btn btn-outline-primary">履歴を見る</a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- クイック記録フォーム -->
+                                    <div id="quickWorkoutForm" class="mt-4" style="display: none;">
+                                        <div class="card">
+                                            <div class="card-header">
+                                                <h6 class="mb-0">クイック記録</h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <form id="workoutForm">
+                                                    <div class="row">
+                                                        <div class="col-md-6 mb-3">
+                                                            <label class="form-label">日付</label>
+                                                            <input type="date" class="form-control" id="workoutDate" required>
+                                                        </div>
+                                                        <div class="col-md-6 mb-3">
+                                                            <label class="form-label">種目</label>
+                                                            <select class="form-select" id="workoutExercise" required>
+                                                                <option value="">選択してください</option>
+                                                                <option value="squat">スクワット</option>
+                                                                <option value="bench_press">ベンチプレス</option>
+                                                                <option value="deadlift">デッドリフト</option>
+                                                                <option value="overhead_press">オーバーヘッドプレス</option>
+                                                                <option value="pull_up">懸垂</option>
+                                                                <option value="row">ローイング</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    <div class="row">
+                                                        <div class="col-md-4 mb-3">
+                                                            <label class="form-label">重量 (kg)</label>
+                                                            <input type="number" step="0.5" class="form-control" id="workoutWeight" required>
+                                                        </div>
+                                                        <div class="col-md-4 mb-3">
+                                                            <label class="form-label">回数</label>
+                                                            <input type="number" class="form-control" id="workoutReps" required>
+                                                        </div>
+                                                        <div class="col-md-4 mb-3">
+                                                            <label class="form-label">セット数</label>
+                                                            <input type="number" class="form-control" id="workoutSets" required>
+                                                        </div>
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label class="form-label">メモ（任意）</label>
+                                                        <textarea class="form-control" id="workoutNotes" rows="2" placeholder="フォームやコンディションのメモ"></textarea>
+                                                    </div>
+                                                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                                        <button type="button" class="btn btn-secondary" onclick="closeWorkoutForm()">キャンセル</button>
+                                                        <button type="submit" class="btn btn-primary">記録を保存</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         
@@ -178,5 +263,62 @@
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // 今日の日付をデフォルトに設定
+        document.addEventListener('DOMContentLoaded', function() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('workoutDate').value = today;
+        });
+
+        // ワークアウトフォームを表示
+        function openWorkoutForm() {
+            document.getElementById('quickWorkoutForm').style.display = 'block';
+            document.getElementById('workoutDate').focus();
+        }
+
+        // ワークアウトフォームを非表示
+        function closeWorkoutForm() {
+            document.getElementById('quickWorkoutForm').style.display = 'none';
+            document.getElementById('workoutForm').reset();
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('workoutDate').value = today;
+        }
+
+        // ワークアウト記録を送信
+        document.getElementById('workoutForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                date: document.getElementById('workoutDate').value,
+                exercise: document.getElementById('workoutExercise').value,
+                weight_kg: parseFloat(document.getElementById('workoutWeight').value),
+                reps: parseInt(document.getElementById('workoutReps').value),
+                sets: parseInt(document.getElementById('workoutSets').value),
+                notes: document.getElementById('workoutNotes').value
+            };
+
+            try {
+                const response = await fetch('/api/workouts', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert('✅ ' + result.message);
+                    closeWorkoutForm();
+                } else {
+                    alert('❌ エラー: ' + result.error);
+                }
+            } catch (error) {
+                alert('❌ 通信エラーが発生しました: ' + error.message);
+            }
+        });
+    </script>
 </body>
 </html>
