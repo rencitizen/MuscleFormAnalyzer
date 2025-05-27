@@ -427,9 +427,7 @@ def add_workout():
             session['user_email'] = user_email
             user_id = user_email
             
-        # ユーザーアカウントが存在しない場合は作成
-        if not workout_db.user_exists(user_id):
-            workout_db.create_user_account(user_id)
+        # シンプルなユーザー管理（外部キー制約なしで直接保存）
         
         # 必須フィールドの検証
         required_fields = ['date', 'exercise', 'weight_kg', 'reps', 'sets']
