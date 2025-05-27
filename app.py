@@ -410,7 +410,7 @@ def simple_training():
 @app.route('/workout_log')
 def workout_log():
     """トレーニング記録メインページ"""
-    return render_template('workout_log.html')
+    return render_template('index.html')
 
 @app.route('/api/workouts', methods=['POST'])
 def add_workout():
@@ -426,6 +426,10 @@ def add_workout():
             user_email = data.get('user_email', f'user_{uuid.uuid4().hex[:8]}@local.app')
             session['user_email'] = user_email
             user_id = user_email
+            
+        # ユーザーアカウントが存在しない場合は作成
+        if not workout_db.user_exists(user_id):
+            workout_db.create_user_account(user_id)
         
         # 必須フィールドの検証
         required_fields = ['date', 'exercise', 'weight_kg', 'reps', 'sets']

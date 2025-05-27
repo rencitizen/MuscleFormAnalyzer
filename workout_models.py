@@ -75,6 +75,42 @@ class WorkoutDatabase:
         except Exception as e:
             print(f"データベース初期化エラー: {e}")
     
+    def user_exists(self, user_id: str) -> bool:
+        """ユーザーアカウントが存在するかチェック"""
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute("SELECT 1 FROM user_accounts WHERE user_id = %s", (user_id,))
+                    return cur.fetchone() is not None
+        except Exception as e:
+            print(f"ユーザー存在チェックエラー: {e}")
+            return False
+    
+    def create_user_account(self, user_id: str) -> bool:
+        """ユーザーアカウントを作成"""
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor() as cur:
+                    # user_accounts テーブルに挿入
+                    cur.execute("""
+                        INSERT INTO user_accounts (user_id, created_at) 
+                        VALUES (%s, CURRENT_TIMESTAMP)
+                        ON CONFLICT (user_id) DO NOTHING
+                    """, (user_id,))
+                    
+                    # user_profiles テーブルに基本プロファイルを作成
+                    cur.execute("""
+                        INSERT INTO user_profiles (user_id, display_name, created_at) 
+                        VALUES (%s, %s, CURRENT_TIMESTAMP)
+                        ON CONFLICT (user_id) DO NOTHING
+                    """, (user_id, f"User {user_id.split('@')[0]}"))
+                    
+                    conn.commit()
+                    return True
+        except Exception as e:
+            print(f"ユーザーアカウント作成エラー: {e}")
+            return False
+
     def create_user_profile(self, user_id: str, height_cm: float = None, calibration_data: dict = None):
         """ユーザープロファイルを作成または更新"""
         try:
