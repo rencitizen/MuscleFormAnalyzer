@@ -28,7 +28,7 @@ class WorkoutDatabase:
         try:
             with self.get_connection() as conn:
                 with conn.cursor() as cur:
-                    # ユーザープロファイルテーブル
+                    # ユーザープロファイルテーブル（外部キー制約なし）
                     cur.execute("""
                         CREATE TABLE IF NOT EXISTS user_profiles (
                             id SERIAL PRIMARY KEY,
