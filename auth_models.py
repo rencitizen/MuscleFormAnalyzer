@@ -57,31 +57,7 @@ class AuthManager:
                         )
                     """)
                     
-                    # 既存のuser_profilesテーブルをuser_accountsと連携
-                    cur.execute("""
-                        ALTER TABLE user_profiles 
-                        DROP CONSTRAINT IF EXISTS user_profiles_user_id_fkey
-                    """)
-                    
-                    cur.execute("""
-                        ALTER TABLE user_profiles 
-                        ADD CONSTRAINT user_profiles_user_id_fkey 
-                        FOREIGN KEY (user_id) REFERENCES user_accounts(email) 
-                        ON DELETE CASCADE
-                    """)
-                    
-                    # 既存のworkoutsテーブルもuser_accountsと連携
-                    cur.execute("""
-                        ALTER TABLE workouts 
-                        DROP CONSTRAINT IF EXISTS workouts_user_id_fkey
-                    """)
-                    
-                    cur.execute("""
-                        ALTER TABLE workouts 
-                        ADD CONSTRAINT workouts_user_id_fkey 
-                        FOREIGN KEY (user_id) REFERENCES user_accounts(email) 
-                        ON DELETE CASCADE
-                    """)
+                    # 外部キー制約は作成しない（シンプルなデータベース構造を維持）
                     
                     conn.commit()
                     print("認証テーブルを初期化しました")
