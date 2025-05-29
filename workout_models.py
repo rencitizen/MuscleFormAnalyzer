@@ -234,5 +234,123 @@ class WorkoutDatabase:
             print(f"ワークアウト削除エラー: {e}")
             return False
 
+    def get_dashboard_stats(self, user_id: str) -> dict:
+        """ダッシュボード用統計データを取得"""
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor() as cur:
+                    # 今月のトレーニング日数
+                    cur.execute("""
+                        SELECT COUNT(DISTINCT date) as training_days
+                        FROM workouts 
+                        WHERE user_id = %s 
+                        AND date >= date_trunc('month', CURRENT_DATE)
+                    """, (user_id,))
+                    training_days = cur.fetchone()[0] or 0
+                    
+                    # 最も頻繁な種目TOP5
+                    cur.execute("""
+                        SELECT exercise, COUNT(*) as count
+                        FROM workouts 
+                        WHERE user_id = %s
+                        GROUP BY exercise
+                        ORDER BY count DESC
+                        LIMIT 5
+                    """, (user_id,))
+                    top_exercises = cur.fetchall()
+                    
+                    # 今月の総ボリューム
+                    cur.execute("""
+                        SELECT COALESCE(SUM(weight_kg * reps * sets), 0) as total_volume
+                        FROM workouts 
+                        WHERE user_id = %s 
+                        AND date >= date_trunc('month', CURRENT_DATE)
+                    """, (user_id,))
+                    total_volume = cur.fetchone()[0] or 0
+                    
+                    # 個人記録数
+                    cur.execute("""
+                        SELECT COUNT(DISTINCT exercise) as pr_count
+                        FROM workouts 
+                        WHERE user_id = %s
+                    """, (user_id,))
+                    pr_count = cur.fetchone()[0] or 0
+                    
+                    return {
+                        'training_days': training_days,
+                        'top_exercises': [{'exercise': ex[0], 'count': ex[1]} for ex in top_exercises],
+                        'total_volume': float(total_volume),
+                        'pr_count': pr_count
+                    }
+                    
+        except Exception as e:
+            print(f"ダッシュボード統計取得エラー: {e}")
+            return {}
+
+    def get_chart_progress_data(self, user_id: str, exercise: str) -> dict:
+        """グラフ用の進捗データを取得"""
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute("""
+                        SELECT date, MAX(weight_kg) as max_weight
+                        FROM workouts 
+                        WHERE user_id = %s AND exercise = %s
+                        GROUP BY date
+                        ORDER BY date
+                    """, (user_id, exercise))
+                    
+                    results = cur.fetchall()
+                    
+                    return {
+                        'exercise': exercise,
+                        'data': [
+                            {
+                                'date': row[0].strftime('%Y-%m-%d'),
+                                'weight': float(row[1])
+                            }
+                            for row in results
+                        ]
+                    }
+                    
+        except Exception as e:
+            print(f"グラフ進捗データ取得エラー: {e}")
+            return {'exercise': exercise, 'data': []}
+
+    def get_calendar_data(self, user_id: str, year: int, month: int) -> dict:
+        """カレンダー用のトレーニングデータを取得"""
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute("""
+                        SELECT date, COUNT(*) as workout_count,
+                               COUNT(DISTINCT exercise) as exercise_count
+                        FROM workouts 
+                        WHERE user_id = %s 
+                        AND EXTRACT(YEAR FROM date) = %s 
+                        AND EXTRACT(MONTH FROM date) = %s
+                        GROUP BY date
+                        ORDER BY date
+                    """, (user_id, year, month))
+                    
+                    results = cur.fetchall()
+                    
+                    return {
+                        'year': year,
+                        'month': month,
+                        'training_days': [
+                            {
+                                'date': row[0].strftime('%Y-%m-%d'),
+                                'workout_count': row[1],
+                                'exercise_count': row[2]
+                            }
+                            for row in results
+                        ]
+                    }
+                    
+        except Exception as e:
+            print(f"カレンダーデータ取得エラー: {e}")
+            return {'year': year, 'month': month, 'training_days': []}
+
 # グローバルインスタンス
 workout_db = WorkoutDatabase()

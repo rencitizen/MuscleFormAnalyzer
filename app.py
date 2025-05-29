@@ -540,6 +540,48 @@ def get_max_weights():
         logger.error(f"最大重量取得エラー: {e}")
         return jsonify({'error': str(e)}), 500
 
+# ===== データ可視化API =====
+
+@app.route('/dashboard')
+def dashboard():
+    """統計ダッシュボードページ"""
+    return render_template('dashboard.html')
+
+@app.route('/api/dashboard/stats')
+def get_dashboard_stats():
+    """ダッシュボード統計データを取得"""
+    try:
+        user_id = session.get('user_email', 'default_user')
+        stats = workout_db.get_dashboard_stats(user_id)
+        return jsonify(stats)
+    except Exception as e:
+        logger.error(f"ダッシュボード統計取得エラー: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/charts/progress/<exercise>')
+def get_chart_progress(exercise):
+    """グラフ用の進捗データを取得"""
+    try:
+        user_id = session.get('user_email', 'default_user')
+        chart_data = workout_db.get_chart_progress_data(user_id, exercise)
+        return jsonify(chart_data)
+    except Exception as e:
+        logger.error(f"グラフデータ取得エラー: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/charts/calendar')
+def get_calendar_data():
+    """カレンダー用のトレーニングデータを取得"""
+    try:
+        user_id = session.get('user_email', 'default_user')
+        year = request.args.get('year', default=datetime.now().year, type=int)
+        month = request.args.get('month', default=datetime.now().month, type=int)
+        calendar_data = workout_db.get_calendar_data(user_id, year, month)
+        return jsonify(calendar_data)
+    except Exception as e:
+        logger.error(f"カレンダーデータ取得エラー: {e}")
+        return jsonify({'error': str(e)}), 500
+
 # ===== 種目データベースAPI =====
 
 @app.route('/api/exercises/categories')

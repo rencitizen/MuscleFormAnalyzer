@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ダッシュボード - BodyScale</title>
+    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .stat-card {
+            background: var(--bs-dark);
+            border: 1px solid var(--bs-secondary);
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--bs-primary);
+        }
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin-bottom: 2rem;
+        }
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.25rem;
+            font-size: 0.875rem;
+            background: var(--bs-secondary);
+        }
+        .calendar-day.training {
+            background: var(--bs-success);
+            color: var(--bs-light);
+        }
+        .calendar-day.rest {
+            background: var(--bs-dark);
+        }
+    </style>
+</head>
+<body data-bs-theme="dark">
+    <div class="container-fluid">
+        <div class="row">
+            <!-- サイドバー -->
+            <nav class="col-md-2 d-none d-md-block sidebar">
+                <div class="position-sticky pt-3">
+                    <h5 class="text-primary">BodyScale</h5>
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="/dashboard">
+                                ダッシュボード
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/workout_log">
+                                トレーニング記録
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/">
+                                フォーム分析
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <!-- メインコンテンツ -->
+            <main class="col-md-10 ms-sm-auto px-md-4">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">ダッシュボード</h1>
+                </div>
+
+                <!-- 統計カード -->
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="stat-card text-center">
+                            <div class="stat-number" id="trainingDays">-</div>
+                            <div class="text-muted">今月のトレーニング日数</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card text-center">
+                            <div class="stat-number" id="totalVolume">-</div>
+                            <div class="text-muted">今月の総ボリューム(kg)</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card text-center">
+                            <div class="stat-number" id="prCount">-</div>
+                            <div class="text-muted">記録した種目数</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card text-center">
+                            <div class="stat-number" id="topExercise">-</div>
+                            <div class="text-muted">最頻種目</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 進捗グラフ -->
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="card bg-dark">
+                            <div class="card-header">
+                                <h5>種目別進捗グラフ</h5>
+                                <select id="exerciseSelect" class="form-select mt-2">
+                                    <option value="">種目を選択...</option>
+                                </select>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container">
+                                    <canvas id="progressChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 人気種目ランキング -->
+                    <div class="col-md-4">
+                        <div class="card bg-dark">
+                            <div class="card-header">
+                                <h5>人気種目TOP5</h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="topExercisesList">
+                                    <!-- 動的に生成 -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- カレンダー -->
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="card bg-dark">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5>トレーニングカレンダー</h5>
+                                <div>
+                                    <button id="prevMonth" class="btn btn-sm btn-outline-secondary me-2">←</button>
+                                    <span id="currentMonth"></span>
+                                    <button id="nextMonth" class="btn btn-sm btn-outline-secondary ms-2">→</button>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="calendar-grid" id="calendarGrid">
+                                    <!-- 動的に生成 -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        let currentDate = new Date();
+        let progressChart = null;
+
+        // ページ読み込み時の初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDashboardStats();
+            loadExerciseOptions();
+            updateCalendar();
+        });
+
+        // ダッシュボード統計の読み込み
+        async function loadDashboardStats() {
+            try {
+                const response = await fetch('/api/dashboard/stats');
+                const data = await response.json();
+                
+                document.getElementById('trainingDays').textContent = data.training_days || 0;
+                document.getElementById('totalVolume').textContent = Math.round(data.total_volume || 0);
+                document.getElementById('prCount').textContent = data.pr_count || 0;
+                
+                // 最頻種目
+                const topExercise = data.top_exercises && data.top_exercises.length > 0 
+                    ? data.top_exercises[0].exercise : '-';
+                document.getElementById('topExercise').textContent = topExercise;
+                
+                // 人気種目リスト
+                updateTopExercisesList(data.top_exercises || []);
+                
+            } catch (error) {
+                console.error('統計データ読み込みエラー:', error);
+            }
+        }
+
+        // 種目選択肢の読み込み
+        async function loadExerciseOptions() {
+            try {
+                const response = await fetch('/api/max_weights');
+                const data = await response.json();
+                
+                const select = document.getElementById('exerciseSelect');
+                data.max_weights?.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item.exercise;
+                    option.textContent = item.exercise;
+                    select.appendChild(option);
+                });
+                
+                select.addEventListener('change', function() {
+                    if (this.value) {
+                        loadProgressChart(this.value);
+                    }
+                });
+                
+            } catch (error) {
+                console.error('種目選択肢読み込みエラー:', error);
+            }
+        }
+
+        // 進捗グラフの読み込み
+        async function loadProgressChart(exercise) {
+            try {
+                const response = await fetch(`/api/charts/progress/${encodeURIComponent(exercise)}`);
+                const data = await response.json();
+                
+                const ctx = document.getElementById('progressChart').getContext('2d');
+                
+                if (progressChart) {
+                    progressChart.destroy();
+                }
+                
+                progressChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: data.data.map(item => new Date(item.date).toLocaleDateString('ja-JP')),
+                        datasets: [{
+                            label: `${exercise} 最大重量 (kg)`,
+                            data: data.data.map(item => item.weight),
+                            borderColor: '#0d6efd',
+                            backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    color: '#fff'
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                ticks: {
+                                    color: '#fff'
+                                }
+                            },
+                            y: {
+                                ticks: {
+                                    color: '#fff'
+                                }
+                            }
+                        }
+                    }
+                });
+                
+            } catch (error) {
+                console.error('進捗グラフ読み込みエラー:', error);
+            }
+        }
+
+        // 人気種目リストの更新
+        function updateTopExercisesList(exercises) {
+            const container = document.getElementById('topExercisesList');
+            container.innerHTML = '';
+            
+            exercises.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'd-flex justify-content-between align-items-center mb-2';
+                div.innerHTML = `
+                    <span>${index + 1}. ${item.exercise}</span>
+                    <span class="badge bg-primary">${item.count}回</span>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // カレンダーの更新
+        async function updateCalendar() {
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth() + 1;
+            
+            document.getElementById('currentMonth').textContent = 
+                `${year}年${month}月`;
+            
+            try {
+                const response = await fetch(`/api/charts/calendar?year=${year}&month=${month}`);
+                const data = await response.json();
+                
+                generateCalendar(year, month, data.training_days);
+                
+            } catch (error) {
+                console.error('カレンダーデータ読み込みエラー:', error);
+            }
+        }
+
+        // カレンダーの生成
+        function generateCalendar(year, month, trainingDays) {
+            const grid = document.getElementById('calendarGrid');
+            grid.innerHTML = '';
+            
+            // 曜日ヘッダー
+            const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
+            weekdays.forEach(day => {
+                const header = document.createElement('div');
+                header.className = 'calendar-day text-center fw-bold';
+                header.textContent = day;
+                header.style.background = 'var(--bs-secondary)';
+                grid.appendChild(header);
+            });
+            
+            // 月の日数と開始曜日
+            const firstDay = new Date(year, month - 1, 1).getDay();
+            const daysInMonth = new Date(year, month, 0).getDate();
+            
+            // 空白セルを追加
+            for (let i = 0; i < firstDay; i++) {
+                const empty = document.createElement('div');
+                empty.className = 'calendar-day';
+                grid.appendChild(empty);
+            }
+            
+            // 日付セルを追加
+            for (let day = 1; day <= daysInMonth; day++) {
+                const cell = document.createElement('div');
+                cell.className = 'calendar-day';
+                cell.textContent = day;
+                
+                const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const trainingData = trainingDays.find(td => td.date === dateStr);
+                
+                if (trainingData) {
+                    cell.classList.add('training');
+                    cell.title = `${trainingData.workout_count}セット, ${trainingData.exercise_count}種目`;
+                } else {
+                    cell.classList.add('rest');
+                }
+                
+                grid.appendChild(cell);
+            }
+        }
+
+        // カレンダーナビゲーション
+        document.getElementById('prevMonth').addEventListener('click', function() {
+            currentDate.setMonth(currentDate.getMonth() - 1);
+            updateCalendar();
+        });
+
+        document.getElementById('nextMonth').addEventListener('click', function() {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            updateCalendar();
+        });
+    </script>
+</body>
+</html>
