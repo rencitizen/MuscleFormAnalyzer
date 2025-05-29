@@ -1,0 +1,185 @@
+BodyScale Firebase認証システム実装プロンプト
+🎯 実装目標
+Firebase Authentication を使用したメールアドレス認証システムの構築 既存のBodyScaleアプリに本格的なユーザーアカウント機能を追加
+
+🔥 Firebase Authentication 要件
+認証機能の実装
+✅ メールアドレス + パスワード認証
+✅ ユーザー登録・ログイン・ログアウト
+✅ メール認証による本人確認
+✅ パスワードリセット機能
+✅ セッション管理とユーザー状態管理
+セキュリティ要件
+✅ Firebase Security Rules設定
+✅ 認証状態の永続化
+✅ 不正アクセス防止
+✅ セキュアなトークン管理
+📋 既存システムとの統合
+現在のアプリ構成
+- Flask API（Python）
+- Next.js フロントエンド（想定）
+- PostgreSQL データベース
+- MediaPipe AI分析
+- トレーニング記録システム
+Firebase統合アプローチ
+- フロントエンド：Firebase SDK for Web
+- バックエンド：Firebase Admin SDK for Python
+- データベース：既存PostgreSQL + Firebase User UID連携
+- 認証フロー：Firebase → Flask API認証確認
+🛠 技術実装要件
+1. Firebase プロジェクト設定
+javascript
+// Firebase 設定
+const firebaseConfig = {
+  apiKey: "your-api-key",
+  authDomain: "bodyscale-app.firebaseapp.com",
+  projectId: "bodyscale-app",
+  storageBucket: "bodyscale-app.appspot.com",
+  messagingSenderId: "your-sender-id",
+  appId: "your-app-id"
+};
+2. フロントエンド認証機能
+javascript
+// 必要な機能
+- ユーザー登録フォーム
+- ログインフォーム  
+- パスワードリセット
+- メール認証確認
+- 認証状態監視
+- ログアウト機能
+3. バックエンド統合
+python
+# Flask + Firebase Admin SDK
+- Firebase トークン検証
+- ユーザーUID取得
+- 既存データベースとの連携
+- セッション管理
+4. データベース連携
+sql
+-- ユーザーテーブル拡張
+ALTER TABLE users ADD COLUMN firebase_uid VARCHAR(255) UNIQUE;
+-- 既存データとFirebase UIDの紐づけ
+🎨 UI/UX設計要件
+認証画面デザイン
+既存のミニマリストデザイン（黒/白/グレー）継承
+シンプルで直感的なフォーム
+エラーメッセージの適切な表示
+ローディング状態の表示
+ユーザーフロー
+1. 初回訪問 → 登録・ログイン選択
+2. 登録 → メール認証 → プロフィール設定
+3. ログイン → ダッシュボード
+4. パスワード忘れ → リセットメール → 新パスワード設定
+📱 実装する画面・機能
+1. 認証関連画面
+- /register - ユーザー登録
+- /login - ログイン  
+- /reset-password - パスワードリセット
+- /verify-email - メール認証確認
+- /profile - プロフィール管理
+2. 認証状態管理
+javascript
+// ユーザー状態の管理
+- 未ログイン：認証画面表示
+- ログイン済み：アプリ機能利用可能
+- メール未認証：認証促進表示
+3. データ移行・統合
+- 既存のトレーニング記録とFirebase UIDの紐づけ
+- 身体寸法データの移行
+- フォーム分析履歴の保持
+⚡ 技術的実装指針
+フロントエンド（JavaScript/React）
+javascript
+// Firebase SDK 使用
+import { initializeApp } from 'firebase/app';
+import { 
+  getAuth, 
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  sendEmailVerification,
+  sendPasswordResetEmail,
+  onAuthStateChanged
+} from 'firebase/auth';
+バックエンド（Python/Flask）
+python
+# Firebase Admin SDK 使用
+import firebase_admin
+from firebase_admin import credentials, auth
+
+# トークン検証ミドルウェア
+def verify_firebase_token(token):
+    try:
+        decoded_token = auth.verify_id_token(token)
+        return decoded_token['uid']
+    except:
+        return None
+セキュリティ設定
+javascript
+// Firebase Security Rules
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}
+🚀 実装ステップ
+フェーズ1：Firebase基盤構築
+Firebaseプロジェクト作成・設定
+Authentication有効化
+基本的なSDK統合
+フェーズ2：認証機能実装
+登録・ログイン画面作成
+メール認証機能実装
+パスワードリセット機能
+フェーズ3：既存システム統合
+Flask APIとの連携
+データベーススキーマ拡張
+既存データの移行
+フェーズ4：UX最適化
+認証フローの改善
+エラーハンドリング強化
+レスポンシブ対応
+💡 期待する成果
+ユーザー体験
+簡単で安全なアカウント作成
+ワンクリックログイン
+パスワード忘れても安心
+データの永続的保存
+技術的成果
+セキュアな認証システム
+スケーラブルなユーザー管理
+既存機能との完全統合
+将来の機能拡張への対応
+🎯 重要な制約・要件
+既存システムとの互換性
+現在のトレーニング記録機能を維持
+AIフォーム分析機能の継続
+データベースの整合性保持
+パフォーマンス
+認証処理の高速化
+ページ読み込み時間の最小化
+オフライン対応（可能な範囲で）
+ユーザビリティ
+直感的な認証フロー
+分かりやすいエラーメッセージ
+モバイルフレンドリー
+📝 実装指示
+この要件に基づき、Firebase Authentication を使用した本格的なユーザー認証システムを既存のBodyScaleアプリに統合してください。
+
+委任事項：
+
+Firebase プロジェクトの詳細設定
+認証フローの具体的実装
+UI/UXの詳細デザイン
+エラーハンドリングの実装
+セキュリティ設定の最適化
+期待する成果物：
+
+完全に動作する認証システム
+美しく直感的な認証UI
+既存機能との seamless な統合
+セキュアで信頼性の高いシステム
+技術的実装の詳細は全てあなたの最適な判断にお任せします。RIZAPを超える、プロフェッショナルなフィットネスアプリを完成させてください！
+
