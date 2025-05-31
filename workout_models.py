@@ -352,5 +352,92 @@ class WorkoutDatabase:
             print(f"カレンダーデータ取得エラー: {e}")
             return {'year': year, 'month': month, 'training_days': []}
 
+    def get_user_settings(self, user_id: str) -> dict:
+        """ユーザー設定を取得"""
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute("""
+                        SELECT height_cm, calibration_data
+                        FROM user_profiles 
+                        WHERE user_id = %s
+                    """, (user_id,))
+                    
+                    result = cur.fetchone()
+                    if result:
+                        return {
+                            'height': result[0],
+                            'calibration_data': result[1]
+                        }
+                    return {}
+                    
+        except Exception as e:
+            print(f"ユーザー設定取得エラー: {e}")
+            return {}
+
+    def save_user_settings(self, user_id: str, settings: dict) -> bool:
+        """ユーザー設定を保存"""
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute("""
+                        INSERT INTO user_profiles (user_id, height_cm, calibration_data)
+                        VALUES (%s, %s, %s)
+                        ON CONFLICT (user_id) 
+                        DO UPDATE SET 
+                            height_cm = EXCLUDED.height_cm,
+                            calibration_data = EXCLUDED.calibration_data,
+                            updated_at = CURRENT_TIMESTAMP
+                    """, (user_id, settings.get('height'), json.dumps(settings)))
+                    conn.commit()
+                    return True
+        except Exception as e:
+            print(f"ユーザー設定保存エラー: {e}")
+            return False
+
+    def export_user_data(self, user_id: str) -> dict:
+        """ユーザーデータをエクスポート"""
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor() as cur:
+                    # ワークアウトデータ
+                    cur.execute("""
+                        SELECT * FROM workouts 
+                        WHERE user_id = %s
+                        ORDER BY date DESC
+                    """, (user_id,))
+                    workouts = cur.fetchall()
+                    
+                    # プロフィールデータ
+                    cur.execute("""
+                        SELECT * FROM user_profiles 
+                        WHERE user_id = %s
+                    """, (user_id,))
+                    profile = cur.fetchone()
+                    
+                    return {
+                        'user_id': user_id,
+                        'export_date': datetime.now().isoformat(),
+                        'workouts': [dict(zip([desc[0] for desc in cur.description], row)) for row in workouts],
+                        'profile': dict(zip([desc[0] for desc in cur.description], profile)) if profile else None
+                    }
+                    
+        except Exception as e:
+            print(f"データエクスポートエラー: {e}")
+            return {}
+
+    def clear_user_data(self, user_id: str) -> bool:
+        """ユーザーデータを削除"""
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute("DELETE FROM workouts WHERE user_id = %s", (user_id,))
+                    cur.execute("DELETE FROM user_profiles WHERE user_id = %s", (user_id,))
+                    conn.commit()
+                    return True
+        except Exception as e:
+            print(f"データ削除エラー: {e}")
+            return False
+
 # グローバルインスタンス
 workout_db = WorkoutDatabase()

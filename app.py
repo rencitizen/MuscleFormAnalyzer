@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, jsonify, send_from_directory, flash, session
+from flask import Flask, render_template, request, redirect, url_for, jsonify, send_from_directory, flash, session, make_response
 import os
 import json
 import uuid
@@ -580,6 +580,81 @@ def get_calendar_data():
         return jsonify(calendar_data)
     except Exception as e:
         logger.error(f"カレンダーデータ取得エラー: {e}")
+        return jsonify({'error': str(e)}), 500
+
+# ===== 設定管理API =====
+
+@app.route('/settings')
+def settings_page():
+    """設定ページ"""
+    return render_template('settings.html')
+
+@app.route('/api/language', methods=['POST'])
+def set_language():
+    """言語設定API"""
+    try:
+        data = request.get_json()
+        language = data.get('language', 'ja')
+        session['language'] = language
+        return jsonify({'status': 'success', 'language': language})
+    except Exception as e:
+        logger.error(f"言語設定エラー: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/settings', methods=['GET'])
+def get_settings():
+    """設定情報を取得"""
+    try:
+        user_id = session.get('user_email', 'default_user')
+        settings = workout_db.get_user_settings(user_id)
+        return jsonify(settings)
+    except Exception as e:
+        logger.error(f"設定取得エラー: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/settings/personal', methods=['POST'])
+def save_personal_settings():
+    """個人情報設定を保存"""
+    try:
+        user_id = session.get('user_email', 'default_user')
+        data = request.get_json()
+        
+        success = workout_db.save_user_settings(user_id, data)
+        if success:
+            return jsonify({'status': 'success'})
+        else:
+            return jsonify({'error': '保存に失敗しました'}), 500
+    except Exception as e:
+        logger.error(f"個人情報保存エラー: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/export/data', methods=['GET'])
+def export_user_data():
+    """ユーザーデータをエクスポート"""
+    try:
+        user_id = session.get('user_email', 'default_user')
+        data = workout_db.export_user_data(user_id)
+        
+        response = make_response(jsonify(data))
+        response.headers['Content-Disposition'] = 'attachment; filename=bodyscale_data.json'
+        response.headers['Content-Type'] = 'application/json'
+        return response
+    except Exception as e:
+        logger.error(f"データエクスポートエラー: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/data/clear', methods=['POST'])
+def clear_user_data():
+    """ユーザーデータを削除"""
+    try:
+        user_id = session.get('user_email', 'default_user')
+        success = workout_db.clear_user_data(user_id)
+        if success:
+            return jsonify({'status': 'success'})
+        else:
+            return jsonify({'error': '削除に失敗しました'}), 500
+    except Exception as e:
+        logger.error(f"データ削除エラー: {e}")
         return jsonify({'error': str(e)}), 500
 
 # ===== 種目データベースAPI =====
