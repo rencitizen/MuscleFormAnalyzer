@@ -590,6 +590,14 @@
                 alert('❌ 通信エラーが発生しました: ' + error.message);
             }
         });
+
+        // 言語システム初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            const languageSelector = document.getElementById('languageSelector');
+            if (languageSelector && window.i18n) {
+                languageSelector.appendChild(window.i18n.createLanguageSelector());
+            }
+        });
     </script>
 </body>
 </html>

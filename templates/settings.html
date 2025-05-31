@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-i18n="settings">設定</title>
-    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    <title data-i18n="settings">Settings - BodyScale</title>
+    <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
+    <script src="/static/js/i18n.js"></script>
     <style>
         .settings-container {
             max-width: 800px;
@@ -12,309 +13,361 @@
             padding: 2rem;
         }
         .settings-section {
-            background: var(--bs-dark);
-            border: 1px solid var(--bs-secondary);
-            border-radius: 0.5rem;
-            padding: 2rem;
-            margin-bottom: 2rem;
-        }
-        .section-header {
-            display: flex;
-            align-items: center;
-            margin-bottom: 1.5rem;
-            padding-bottom: 1rem;
-            border-bottom: 1px solid var(--bs-secondary);
-        }
-        .section-icon {
-            font-size: 1.5rem;
-            margin-right: 1rem;
-        }
-        .language-toggle {
-            display: flex;
-            gap: 0.5rem;
-        }
-        .language-btn {
-            padding: 0.5rem 1rem;
-            border: 1px solid var(--bs-secondary);
-            background: var(--bs-dark);
-            color: var(--bs-light);
-            border-radius: 0.25rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        .language-btn.active {
-            background: var(--bs-primary);
-            border-color: var(--bs-primary);
-        }
-        .form-section {
-            margin-bottom: 2rem;
-        }
-        .danger-zone {
-            border: 1px solid var(--bs-danger);
+            background: var(--bs-gray-800);
             border-radius: 0.5rem;
             padding: 1.5rem;
-            margin-top: 2rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--bs-gray-700);
+        }
+        .settings-section h3 {
+            color: var(--bs-info);
+            margin-bottom: 1rem;
+            font-size: 1.25rem;
+        }
+        .form-label {
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+        .btn-danger {
+            background-color: var(--bs-red);
+            border-color: var(--bs-red);
+        }
+        .btn-success {
+            background-color: var(--bs-green);
+            border-color: var(--bs-green);
+        }
+        .alert {
+            margin-top: 1rem;
         }
     </style>
 </head>
 <body>
-    <div class="container-fluid">
-        <div class="row">
-            <!-- サイドバー -->
-            <nav class="col-md-2 d-none d-md-block sidebar">
-                <div class="position-sticky pt-3">
-                    <h5 class="text-primary">BodyScale</h5>
-                    <ul class="nav flex-column">
-                        <li class="nav-item">
-                            <a class="nav-link" href="/dashboard" data-i18n="dashboard">ダッシュボード</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/workout_log" data-i18n="training_records">トレーニング記録</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/" data-i18n="training_analysis">フォーム分析</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link active" href="/settings" data-i18n="settings">設定</a>
-                        </li>
+    <div class="container settings-container">
+        <!-- ヘッダー -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 data-i18n="settings">⚙️ 設定</h1>
+            <div class="d-flex gap-2">
+                <div id="languageSelector"></div>
+                <a href="/" class="btn btn-outline-primary" data-i18n="back_to_main">メインに戻る</a>
+            </div>
+        </div>
+
+        <!-- 言語設定 -->
+        <div class="settings-section">
+            <h3 data-i18n="language_settings">🌐 言語設定</h3>
+            <div class="row">
+                <div class="col-md-6">
+                    <label class="form-label" data-i18n="select_language">表示言語を選択:</label>
+                    <select class="form-select" id="languageSelect">
+                        <option value="ja" data-i18n="japanese">日本語</option>
+                        <option value="en" data-i18n="english">English</option>
+                    </select>
+                    <small class="form-text text-muted" data-i18n="language_help">言語を変更すると、すべてのページの表示が切り替わります。</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- 個人情報設定 -->
+        <div class="settings-section">
+            <h3 data-i18n="personal_info">👤 個人情報設定</h3>
+            <form id="personalInfoForm">
+                <div class="row">
+                    <div class="col-md-6">
+                        <label for="height" class="form-label" data-i18n="height">身長 (cm):</label>
+                        <input type="number" class="form-control" id="height" name="height" min="100" max="250" step="0.1">
+                        <small class="form-text text-muted" data-i18n="height_help">身体計測の精度向上に使用されます。</small>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="weight" class="form-label" data-i18n="weight">体重 (kg):</label>
+                        <input type="number" class="form-control" id="weight" name="weight" min="30" max="200" step="0.1">
+                        <small class="form-text text-muted" data-i18n="weight_help">トレーニング目標の計算に使用されます。</small>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <label for="age" class="form-label" data-i18n="age">年齢:</label>
+                        <input type="number" class="form-control" id="age" name="age" min="13" max="100">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="gender" class="form-label" data-i18n="gender">性別:</label>
+                        <select class="form-select" id="gender" name="gender">
+                            <option value="" data-i18n="not_specified">指定しない</option>
+                            <option value="male" data-i18n="male">男性</option>
+                            <option value="female" data-i18n="female">女性</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <button type="submit" class="btn btn-success" data-i18n="save_settings">設定を保存</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- トレーニング設定 -->
+        <div class="settings-section">
+            <h3 data-i18n="training_settings">🏋️ トレーニング設定</h3>
+            <form id="trainingSettingsForm">
+                <div class="row">
+                    <div class="col-md-6">
+                        <label for="defaultSets" class="form-label" data-i18n="default_sets">デフォルトセット数:</label>
+                        <input type="number" class="form-control" id="defaultSets" name="defaultSets" min="1" max="10" value="3">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="defaultReps" class="form-label" data-i18n="default_reps">デフォルト回数:</label>
+                        <input type="number" class="form-control" id="defaultReps" name="defaultReps" min="1" max="50" value="10">
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <label for="weightUnit" class="form-label" data-i18n="weight_unit">重量単位:</label>
+                        <select class="form-select" id="weightUnit" name="weightUnit">
+                            <option value="kg" data-i18n="kg">キログラム (kg)</option>
+                            <option value="lbs" data-i18n="lbs">ポンド (lbs)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="restTimer" class="form-label" data-i18n="rest_timer">デフォルト休憩時間 (秒):</label>
+                        <input type="number" class="form-control" id="restTimer" name="restTimer" min="30" max="600" value="90">
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <button type="submit" class="btn btn-success" data-i18n="save_training_settings">トレーニング設定を保存</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- データ管理 -->
+        <div class="settings-section">
+            <h3 data-i18n="data_management">📊 データ管理</h3>
+            <div class="row">
+                <div class="col-md-6">
+                    <h5 data-i18n="export_data">データエクスポート</h5>
+                    <p class="text-muted" data-i18n="export_description">すべてのトレーニングデータをJSON形式でダウンロードできます。</p>
+                    <button class="btn btn-info" id="exportDataBtn" data-i18n="export_all_data">全データをエクスポート</button>
+                </div>
+                <div class="col-md-6">
+                    <h5 class="text-danger" data-i18n="delete_data">データ削除</h5>
+                    <p class="text-muted" data-i18n="delete_warning">すべてのトレーニング記録と設定が完全に削除されます。この操作は取り消せません。</p>
+                    <button class="btn btn-danger" id="deleteDataBtn" data-i18n="delete_all_data">全データを削除</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- アプリ情報 -->
+        <div class="settings-section">
+            <h3 data-i18n="app_info">ℹ️ アプリ情報</h3>
+            <div class="row">
+                <div class="col-md-12">
+                    <p><strong data-i18n="app_name">アプリ名:</strong> BodyScale Pose Analyzer</p>
+                    <p><strong data-i18n="version">バージョン:</strong> 2.0.0</p>
+                    <p><strong data-i18n="features">主な機能:</strong></p>
+                    <ul>
+                        <li data-i18n="feature_form_analysis">AI パワード フォーム分析</li>
+                        <li data-i18n="feature_body_measurement">高精度身体計測</li>
+                        <li data-i18n="feature_training_log">包括的トレーニング記録</li>
+                        <li data-i18n="feature_progress_tracking">進捗データ可視化</li>
+                        <li data-i18n="feature_multilingual">多言語サポート</li>
                     </ul>
                 </div>
-            </nav>
-
-            <!-- メインコンテンツ -->
-            <main class="col-md-10 ms-sm-auto">
-                <div class="settings-container">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h1 class="h2" data-i18n="settings">設定</h1>
-                        <div id="languageSelector"></div>
-                    </div>
-
-                    <!-- 言語設定 -->
-                    <div class="settings-section">
-                        <div class="section-header">
-                            <span class="section-icon">🌐</span>
-                            <h3 data-i18n="language_settings">言語設定</h3>
-                        </div>
-                        <div class="form-section">
-                            <label class="form-label" data-i18n="language_settings">言語設定</label>
-                            <div class="language-toggle">
-                                <button class="language-btn active" data-lang="ja">🇯🇵 日本語</button>
-                                <button class="language-btn" data-lang="en">🇺🇸 English</button>
-                            </div>
-                            <div class="form-text mt-2">
-                                <label class="form-check-label">
-                                    <input class="form-check-input me-2" type="checkbox" id="autoDetectLang">
-                                    <span data-i18n="auto_detect">自動検出</span>
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 個人情報 -->
-                    <div class="settings-section">
-                        <div class="section-header">
-                            <span class="section-icon">👤</span>
-                            <h3 data-i18n="personal_info">個人情報</h3>
-                        </div>
-                        <form id="personalInfoForm">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label class="form-label" data-i18n="height">身長</label>
-                                        <div class="input-group">
-                                            <input type="number" class="form-control" id="height" min="100" max="250" step="0.1">
-                                            <span class="input-group-text">cm</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label class="form-label" data-i18n="weight">体重</label>
-                                        <div class="input-group">
-                                            <input type="number" class="form-control" id="weight" min="30" max="200" step="0.1">
-                                            <span class="input-group-text">kg</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label class="form-label" data-i18n="age">年齢</label>
-                                        <input type="number" class="form-control" id="age" min="10" max="100">
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label class="form-label">性別</label>
-                                        <select class="form-select" id="gender">
-                                            <option value="">選択してください</option>
-                                            <option value="male">男性</option>
-                                            <option value="female">女性</option>
-                                            <option value="other">その他</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                            <button type="submit" class="btn btn-primary" data-i18n="save">保存</button>
-                        </form>
-                    </div>
-
-                    <!-- アプリ設定 -->
-                    <div class="settings-section">
-                        <div class="section-header">
-                            <span class="section-icon">⚙️</span>
-                            <h3 data-i18n="app_settings">アプリ設定</h3>
-                        </div>
-                        <div class="form-section">
-                            <label class="form-label">測定単位</label>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <select class="form-select" id="weightUnit">
-                                        <option value="kg">キログラム (kg)</option>
-                                        <option value="lbs">ポンド (lbs)</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-6">
-                                    <select class="form-select" id="heightUnit">
-                                        <option value="cm">センチメートル (cm)</option>
-                                        <option value="inch">インチ (inch)</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="form-section">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="autoBackup">
-                                <label class="form-check-label">
-                                    自動バックアップを有効にする
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- データ管理 -->
-                    <div class="settings-section">
-                        <div class="section-header">
-                            <span class="section-icon">📊</span>
-                            <h3 data-i18n="data_management">データ管理</h3>
-                        </div>
-                        <div class="form-section">
-                            <button class="btn btn-outline-primary me-2" id="exportDataBtn" data-i18n="export_data">データエクスポート</button>
-                            <button class="btn btn-outline-secondary" id="importDataBtn">データインポート</button>
-                        </div>
-                        
-                        <div class="danger-zone">
-                            <h5 class="text-danger">危険な操作</h5>
-                            <p class="text-muted">以下の操作は元に戻すことができません。</p>
-                            <button class="btn btn-outline-danger me-2" id="clearDataBtn">全データ削除</button>
-                            <button class="btn btn-danger" id="deleteAccountBtn" data-i18n="delete_account">アカウント削除</button>
-                        </div>
-                    </div>
-                </div>
-            </main>
+            </div>
         </div>
+
+        <!-- 成功・エラーメッセージ -->
+        <div id="alertContainer"></div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="/static/js/i18n.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // 言語セレクターを追加
             const languageSelector = document.getElementById('languageSelector');
-            languageSelector.appendChild(window.i18n.createLanguageSelector());
+            if (languageSelector && window.i18n) {
+                languageSelector.appendChild(window.i18n.createLanguageSelector());
+            }
 
-            // 言語切り替えボタン
-            const languageButtons = document.querySelectorAll('.language-btn');
-            languageButtons.forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const lang = this.getAttribute('data-lang');
-                    window.i18n.setLanguage(lang);
-                    
-                    // アクティブ状態を更新
-                    languageButtons.forEach(b => b.classList.remove('active'));
-                    this.classList.add('active');
-                });
+            // 現在の設定を読み込み
+            loadCurrentSettings();
+
+            // 言語変更の監視
+            const languageSelect = document.getElementById('languageSelect');
+            languageSelect.addEventListener('change', function() {
+                if (window.i18n) {
+                    window.i18n.setLanguage(this.value);
+                }
             });
 
-            // 個人情報フォーム
+            // 個人情報フォームの送信
             document.getElementById('personalInfoForm').addEventListener('submit', async function(e) {
                 e.preventDefault();
-                
-                const formData = {
-                    height: document.getElementById('height').value,
-                    weight: document.getElementById('weight').value,
-                    age: document.getElementById('age').value,
-                    gender: document.getElementById('gender').value
-                };
+                await savePersonalSettings();
+            });
 
-                try {
-                    const response = await fetch('/api/settings/personal', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(formData)
-                    });
-
-                    if (response.ok) {
-                        alert(window.i18n.t('success_save'));
-                    } else {
-                        alert(window.i18n.t('error_occurred'));
-                    }
-                } catch (error) {
-                    alert(window.i18n.t('error_occurred'));
-                }
+            // トレーニング設定フォームの送信
+            document.getElementById('trainingSettingsForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                await saveTrainingSettings();
             });
 
             // データエクスポート
             document.getElementById('exportDataBtn').addEventListener('click', async function() {
-                try {
-                    const response = await fetch('/api/export/data');
-                    const blob = await response.blob();
-                    
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.style.display = 'none';
-                    a.href = url;
-                    a.download = 'bodyscale_data.json';
-                    document.body.appendChild(a);
-                    a.click();
-                    window.URL.revokeObjectURL(url);
-                    
-                    alert(window.i18n.t('data_exported'));
-                } catch (error) {
-                    alert(window.i18n.t('error_occurred'));
-                }
+                await exportUserData();
             });
 
-            // データ削除確認
-            document.getElementById('clearDataBtn').addEventListener('click', function() {
-                if (confirm(window.i18n.t('confirm_delete'))) {
-                    // データ削除処理
-                    fetch('/api/data/clear', { method: 'POST' })
-                        .then(() => alert('データを削除しました'))
-                        .catch(() => alert(window.i18n.t('error_occurred')));
+            // データ削除
+            document.getElementById('deleteDataBtn').addEventListener('click', async function() {
+                if (confirm('本当にすべてのデータを削除しますか？この操作は取り消せません。')) {
+                    await clearUserData();
                 }
             });
-
-            // 設定値の読み込み
-            loadSettings();
         });
 
-        async function loadSettings() {
+        async function loadCurrentSettings() {
             try {
                 const response = await fetch('/api/settings');
                 const settings = await response.json();
                 
-                if (settings.height) document.getElementById('height').value = settings.height;
-                if (settings.weight) document.getElementById('weight').value = settings.weight;
-                if (settings.age) document.getElementById('age').value = settings.age;
-                if (settings.gender) document.getElementById('gender').value = settings.gender;
-                
+                if (settings.height) {
+                    document.getElementById('height').value = settings.height;
+                }
+                if (settings.weight) {
+                    document.getElementById('weight').value = settings.weight;
+                }
+                if (settings.age) {
+                    document.getElementById('age').value = settings.age;
+                }
+                if (settings.gender) {
+                    document.getElementById('gender').value = settings.gender;
+                }
+                if (settings.defaultSets) {
+                    document.getElementById('defaultSets').value = settings.defaultSets;
+                }
+                if (settings.defaultReps) {
+                    document.getElementById('defaultReps').value = settings.defaultReps;
+                }
+                if (settings.weightUnit) {
+                    document.getElementById('weightUnit').value = settings.weightUnit;
+                }
+                if (settings.restTimer) {
+                    document.getElementById('restTimer').value = settings.restTimer;
+                }
             } catch (error) {
-                console.error('設定読み込みエラー:', error);
+                console.error('設定の読み込みエラー:', error);
             }
+        }
+
+        async function savePersonalSettings() {
+            const formData = new FormData(document.getElementById('personalInfoForm'));
+            const settings = Object.fromEntries(formData);
+
+            try {
+                const response = await fetch('/api/save_personal_settings', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(settings)
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showAlert('個人情報設定が保存されました。', 'success');
+                } else {
+                    showAlert('設定の保存に失敗しました: ' + result.error, 'danger');
+                }
+            } catch (error) {
+                showAlert('通信エラーが発生しました: ' + error.message, 'danger');
+            }
+        }
+
+        async function saveTrainingSettings() {
+            const formData = new FormData(document.getElementById('trainingSettingsForm'));
+            const settings = Object.fromEntries(formData);
+
+            try {
+                const response = await fetch('/api/save_training_settings', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(settings)
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showAlert('トレーニング設定が保存されました。', 'success');
+                } else {
+                    showAlert('設定の保存に失敗しました: ' + result.error, 'danger');
+                }
+            } catch (error) {
+                showAlert('通信エラーが発生しました: ' + error.message, 'danger');
+            }
+        }
+
+        async function exportUserData() {
+            try {
+                const response = await fetch('/api/export_user_data');
+                const data = await response.json();
+                
+                if (data.user_id) {
+                    // データをJSONファイルとしてダウンロード
+                    const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `bodyscale_data_${data.export_date.split('T')[0]}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    
+                    showAlert('データのエクスポートが完了しました。', 'success');
+                } else {
+                    showAlert('エクスポートするデータがありません。', 'warning');
+                }
+            } catch (error) {
+                showAlert('エクスポートエラー: ' + error.message, 'danger');
+            }
+        }
+
+        async function clearUserData() {
+            try {
+                const response = await fetch('/api/clear_user_data', {
+                    method: 'POST'
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showAlert('すべてのデータが削除されました。', 'success');
+                    // フォームをリセット
+                    document.getElementById('personalInfoForm').reset();
+                    document.getElementById('trainingSettingsForm').reset();
+                } else {
+                    showAlert('データ削除に失敗しました: ' + result.error, 'danger');
+                }
+            } catch (error) {
+                showAlert('通信エラーが発生しました: ' + error.message, 'danger');
+            }
+        }
+
+        function showAlert(message, type) {
+            const alertContainer = document.getElementById('alertContainer');
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type} alert-dismissible fade show`;
+            alert.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            alertContainer.appendChild(alert);
+            
+            // 5秒後に自動で消す
+            setTimeout(() => {
+                if (alert.parentNode) {
+                    alert.remove();
+                }
+            }, 5000);
         }
     </script>
 </body>
