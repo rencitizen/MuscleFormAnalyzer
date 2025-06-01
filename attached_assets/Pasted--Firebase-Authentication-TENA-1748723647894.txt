@@ -1,0 +1,380 @@
+# メールアドレス認証システム実装プロンプト
+
+## 🎯 実装目標
+**Firebase Authentication を使用した本格的なメールアドレス認証システムの構築**
+既存のTENAX/PERSISTOアプリに安全で使いやすい認証機能を追加
+
+## 🔐 認証システム要件
+
+### 必須機能
+```
+✅ ユーザー登録（メール + パスワード）
+✅ メール認証（確認リンク送信）
+✅ ログイン・ログアウト
+✅ パスワードリセット（メール経由）
+✅ 認証状態の永続化
+✅ セッション管理
+✅ 既存データとの紐付け
+```
+
+### セキュリティ要件
+```
+✅ パスワード強度チェック
+✅ メール認証必須
+✅ 不正アクセス防止
+✅ セキュアなトークン管理
+✅ CSRF対策
+✅ 入力値検証
+```
+
+## 🔥 Firebase Authentication 実装
+
+### Firebase プロジェクト設定
+```javascript
+// firebase-config.js
+import { initializeApp } from 'firebase/app';
+import { 
+  getAuth, 
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  sendEmailVerification,
+  sendPasswordResetEmail,
+  updatePassword,
+  onAuthStateChanged,
+  signOut
+} from 'firebase/auth';
+
+const firebaseConfig = {
+  apiKey: "your-api-key",
+  authDomain: "tenax-app.firebaseapp.com", 
+  projectId: "tenax-app",
+  storageBucket: "tenax-app.appspot.com",
+  messagingSenderId: "your-sender-id",
+  appId: "your-app-id"
+};
+
+const app = initializeApp(firebaseConfig);
+export const auth = getAuth(app);
+```
+
+### 認証関数の実装
+```javascript
+// auth-functions.js
+
+// ユーザー登録
+export const registerUser = async (email, password) => {
+  try {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    await sendEmailVerification(userCredential.user);
+    return { success: true, user: userCredential.user };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+};
+
+// ログイン
+export const loginUser = async (email, password) => {
+  try {
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    if (!userCredential.user.emailVerified) {
+      return { success: false, error: 'メール認証が必要です' };
+    }
+    return { success: true, user: userCredential.user };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+};
+
+// パスワードリセット
+export const resetPassword = async (email) => {
+  try {
+    await sendPasswordResetEmail(auth, email);
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+};
+```
+
+## 📱 認証UI実装
+
+### 1. 登録画面（Register）
+```html
+<!-- register.html -->
+<div class="auth-container">
+  <h2>{{ 'register.title' | translate }}</h2>
+  <form id="registerForm">
+    <div class="form-group">
+      <label>{{ 'forms.email' | translate }}</label>
+      <input type="email" id="email" required>
+    </div>
+    
+    <div class="form-group">
+      <label>{{ 'forms.password' | translate }}</label>
+      <input type="password" id="password" required>
+      <div class="password-requirements">
+        • {{ 'register.password_length' | translate }}
+        • {{ 'register.password_chars' | translate }}
+      </div>
+    </div>
+    
+    <div class="form-group">
+      <label>{{ 'forms.confirm_password' | translate }}</label>
+      <input type="password" id="confirmPassword" required>
+    </div>
+    
+    <button type="submit" class="btn-primary">
+      {{ 'buttons.register' | translate }}
+    </button>
+  </form>
+  
+  <div class="auth-links">
+    <a href="/login">{{ 'auth.already_have_account' | translate }}</a>
+  </div>
+</div>
+```
+
+### 2. ログイン画面（Login）
+```html
+<!-- login.html -->
+<div class="auth-container">
+  <h2>{{ 'login.title' | translate }}</h2>
+  <form id="loginForm">
+    <div class="form-group">
+      <label>{{ 'forms.email' | translate }}</label>
+      <input type="email" id="email" required>
+    </div>
+    
+    <div class="form-group">
+      <label>{{ 'forms.password' | translate }}</label>
+      <input type="password" id="password" required>
+    </div>
+    
+    <button type="submit" class="btn-primary">
+      {{ 'buttons.login' | translate }}
+    </button>
+  </form>
+  
+  <div class="auth-links">
+    <a href="/forgot-password">{{ 'auth.forgot_password' | translate }}</a>
+    <a href="/register">{{ 'auth.create_account' | translate }}</a>
+  </div>
+</div>
+```
+
+### 3. メール認証確認画面
+```html
+<!-- verify-email.html -->
+<div class="verification-container">
+  <div class="verification-icon">📧</div>
+  <h2>{{ 'verify.title' | translate }}</h2>
+  <p>{{ 'verify.message' | translate }}</p>
+  
+  <div class="verification-actions">
+    <button id="resendBtn" class="btn-secondary">
+      {{ 'verify.resend' | translate }}
+    </button>
+    <button id="checkBtn" class="btn-primary">
+      {{ 'verify.check_verification' | translate }}
+    </button>
+  </div>
+</div>
+```
+
+## 🔧 バックエンド統合
+
+### Flask + Firebase Admin SDK
+```python
+# app.py
+import firebase_admin
+from firebase_admin import credentials, auth
+from functools import wraps
+
+# Firebase Admin 初期化
+cred = credentials.Certificate('path/to/serviceAccountKey.json')
+firebase_admin.initialize_app(cred)
+
+# 認証デコレータ
+def firebase_auth_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        token = request.headers.get('Authorization')
+        if not token:
+            return jsonify({'error': 'No token provided'}), 401
+        
+        try:
+            decoded_token = auth.verify_id_token(token.replace('Bearer ', ''))
+            request.current_user = decoded_token
+            return f(*args, **kwargs)
+        except Exception as e:
+            return jsonify({'error': 'Invalid token'}), 401
+    
+    return decorated_function
+
+# ユーザー情報取得API
+@app.route('/api/user', methods=['GET'])
+@firebase_auth_required
+def get_user():
+    uid = request.current_user['uid']
+    email = request.current_user['email']
+    
+    # データベースからユーザー情報取得
+    user_data = get_user_data(uid)
+    return jsonify(user_data)
+
+# データ保存API
+@app.route('/api/workouts', methods=['POST'])
+@firebase_auth_required
+def save_workout():
+    uid = request.current_user['uid']
+    workout_data = request.json
+    workout_data['user_uid'] = uid
+    
+    # ワークアウトデータ保存
+    save_workout_data(workout_data)
+    return jsonify({'success': True})
+```
+
+### データベースの拡張
+```sql
+-- ユーザーテーブルの拡張
+ALTER TABLE users ADD COLUMN firebase_uid VARCHAR(255) UNIQUE;
+ALTER TABLE users ADD COLUMN email VARCHAR(255) UNIQUE;
+ALTER TABLE users ADD COLUMN email_verified BOOLEAN DEFAULT FALSE;
+ALTER TABLE users ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+
+-- 既存データとの紐付け
+ALTER TABLE workouts ADD COLUMN user_uid VARCHAR(255);
+ALTER TABLE body_measurements ADD COLUMN user_uid VARCHAR(255);
+ALTER TABLE form_analyses ADD COLUMN user_uid VARCHAR(255);
+
+-- インデックス追加
+CREATE INDEX idx_users_firebase_uid ON users(firebase_uid);
+CREATE INDEX idx_workouts_user_uid ON workouts(user_uid);
+```
+
+## 🎨 認証フロー設計
+
+### ユーザー登録フロー
+```
+1. 登録フォーム入力
+2. パスワード強度チェック
+3. Firebase アカウント作成
+4. メール認証送信
+5. 「メール確認してください」画面表示
+6. ユーザーがメール内リンククリック
+7. 認証完了 → アプリ利用開始
+```
+
+### ログインフロー
+```
+1. ログインフォーム入力
+2. Firebase 認証
+3. メール認証済みチェック
+4. 成功 → ダッシュボードへ
+5. 失敗 → エラーメッセージ表示
+```
+
+### パスワードリセットフロー
+```
+1. 「パスワードを忘れた」リンククリック
+2. メールアドレス入力
+3. Firebase パスワードリセットメール送信
+4. ユーザーがメール内リンククリック
+5. 新しいパスワード設定
+6. ログイン可能
+```
+
+## 🌐 多言語対応
+
+### 認証関連の翻訳
+```json
+{
+  "auth": {
+    "login": "ログイン / Login",
+    "register": "新規登録 / Sign Up", 
+    "logout": "ログアウト / Logout",
+    "forgot_password": "パスワードを忘れた / Forgot Password",
+    "reset_password": "パスワードリセット / Reset Password",
+    "verify_email": "メール認証 / Verify Email",
+    "already_have_account": "既にアカウントをお持ちですか？ / Already have an account?",
+    "create_account": "アカウントを作成 / Create Account"
+  },
+  
+  "register": {
+    "title": "新規登録 / Sign Up",
+    "password_length": "8文字以上 / At least 8 characters",
+    "password_chars": "英数字を含む / Include letters and numbers",
+    "email_sent": "認証メールを送信しました / Verification email sent",
+    "check_email": "メールをご確認ください / Please check your email"
+  },
+  
+  "login": {
+    "title": "ログイン / Login", 
+    "email_not_verified": "メール認証が必要です / Email verification required",
+    "invalid_credentials": "メールまたはパスワードが間違っています / Invalid email or password"
+  },
+  
+  "verify": {
+    "title": "メール認証 / Email Verification",
+    "message": "認証メールを送信しました。メール内のリンクをクリックしてください。/ We sent you a verification email. Please click the link in the email.",
+    "resend": "メール再送信 / Resend Email", 
+    "check_verification": "認証確認 / Check Verification"
+  }
+}
+```
+
+## 🚀 実装ステップ
+
+### Phase 1: Firebase 基盤
+1. Firebase プロジェクト作成
+2. Authentication 有効化
+3. SDK 統合
+
+### Phase 2: 認証UI
+1. 登録・ログイン画面作成
+2. メール認証画面
+3. パスワードリセット機能
+
+### Phase 3: バックエンド統合
+1. Firebase Admin SDK 実装
+2. 認証ミドルウェア作成
+3. データベース拡張
+
+### Phase 4: 既存システム統合
+1. 既存データの移行
+2. 認証状態での機能制限
+3. 多言語対応
+
+## 💡 期待する成果
+
+### ユーザー体験
+- 安全で簡単なアカウント作成
+- パスワード忘れても安心
+- メール認証による信頼性
+- データの完全な個人管理
+
+### 技術的成果
+- エンタープライズレベルの認証
+- スケーラブルなユーザー管理
+- セキュアなデータ保護
+- 国際標準の実装
+
+## 📝 実装指示
+
+**この要件に基づき、Firebase Authentication を使用した完全なメールアドレス認証システムを実装してください。**
+
+**委任事項：**
+- Firebase プロジェクトの詳細設定
+- 認証UIの具体的デザイン
+- エラーハンドリングの実装
+- セキュリティ設定の最適化
+- 既存データとの統合方法
+
+**期待する成果物：**
+- 完全に動作する認証システム
+- 美しく直感的な認証UI
+- セキュアで信頼性の高いシステム
+- 既存機能との完璧な統合
+
+**これでTENAX/PERSISTOが世界レベルのプロフェッショナルアプリとして完成します！**
