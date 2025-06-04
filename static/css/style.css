@@ -1,14 +1,14 @@
 /* BodyScale Pose Analyzer - Minimalist Design System */
 :root {
-  --primary-color: #001130;        /* 深いネイビーブルー */
-  --accent-color: #FFFFFF;         /* 白 */
+  --primary-color: #FFFFFF;        /* 白 */
+  --accent-color: #001130;         /* 深いネイビーブルー */
   --sub-accent: #FFDB58;           /* からし色 */
-  --text-primary: #FFFFFF;
-  --text-secondary: rgba(255, 255, 255, 0.7);
-  --border-color: rgba(255, 255, 255, 0.08);
-  --surface-bg: rgba(255, 255, 255, 0.02);
-  --hover-bg: rgba(255, 255, 255, 0.05);
-  --active-bg: rgba(255, 255, 255, 0.08);
+  --text-primary: #001130;
+  --text-secondary: rgba(0, 17, 48, 0.7);
+  --border-color: rgba(0, 17, 48, 0.08);
+  --surface-bg: rgba(0, 17, 48, 0.02);
+  --hover-bg: rgba(0, 17, 48, 0.05);
+  --active-bg: rgba(0, 17, 48, 0.08);
   --shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
   --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
@@ -157,7 +157,7 @@ body {
 }
 
 .btn-primary:hover {
-  background-color: rgba(255, 255, 255, 0.9);
+  background-color: rgba(0, 17, 48, 0.9);
   transform: translateY(-1px);
 }
 
@@ -174,7 +174,7 @@ body {
 
 .btn-accent {
   background-color: var(--sub-accent);
-  color: var(--primary-color);
+  color: var(--accent-color);
 }
 
 .btn-accent:hover {
@@ -519,7 +519,7 @@ body {
   bottom: 0;
   left: 0;
   right: 0;
-  background-color: rgba(0, 17, 48, 0.95);
+  background-color: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(20px);
   border-top: 1px solid var(--border-color);
   z-index: 100;
@@ -547,7 +547,7 @@ body {
 
 .nav-item:hover,
 .nav-item.active {
-  color: var(--accent-color);
+  color: var(--sub-accent);
   background-color: var(--active-bg);
 }
 

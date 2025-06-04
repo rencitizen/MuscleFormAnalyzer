@@ -64,6 +64,48 @@
                     </a>
                 </div>
             </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">クイック記録</h2>
+                </div>
+                <div class="card-body">
+                    <form id="quickWorkoutForm" class="upload-form">
+                        <div class="form-group">
+                            <label for="quickExercise" class="form-label">種目</label>
+                            <select class="form-control" id="quickExercise" required>
+                                <option value="">種目を選択</option>
+                                <option value="squat">スクワット</option>
+                                <option value="bench_press">ベンチプレス</option>
+                                <option value="deadlift">デッドリフト</option>
+                                <option value="overhead_press">オーバーヘッドプレス</option>
+                            </select>
+                        </div>
+                        
+                        <div style="display: flex; gap: 1rem;">
+                            <div class="form-group" style="flex: 1;">
+                                <label for="quickWeight" class="form-label">重量 (kg)</label>
+                                <input type="number" step="0.5" class="form-control" id="quickWeight" required>
+                            </div>
+                            <div class="form-group" style="flex: 1;">
+                                <label for="quickReps" class="form-label">回数</label>
+                                <input type="number" class="form-control" id="quickReps" required>
+                            </div>
+                            <div class="form-group" style="flex: 1;">
+                                <label for="quickSets" class="form-label">セット</label>
+                                <input type="number" class="form-control" id="quickSets" required>
+                            </div>
+                        </div>
+                        
+                        <button class="btn btn-accent btn-lg" type="submit">
+                            <svg class="icon" viewBox="0 0 24 24">
+                                <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2v16z"/>
+                            </svg>
+                            記録を保存
+                        </button>
+                    </form>
+                </div>
+            </div>
         
         <!-- Bottom Navigation -->
         <nav class="bottom-nav">
@@ -107,6 +149,43 @@
             if (heightSlider && heightValue) {
                 heightSlider.addEventListener('input', function() {
                     heightValue.textContent = this.value;
+                });
+            }
+
+            // Quick workout form submission
+            const quickForm = document.getElementById('quickWorkoutForm');
+            if (quickForm) {
+                quickForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    const formData = {
+                        date: new Date().toISOString().split('T')[0],
+                        exercise: document.getElementById('quickExercise').value,
+                        weight: parseFloat(document.getElementById('quickWeight').value),
+                        reps: parseInt(document.getElementById('quickReps').value),
+                        sets: parseInt(document.getElementById('quickSets').value)
+                    };
+                    
+                    fetch('/add_workout', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(formData)
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert('記録を保存しました！');
+                            quickForm.reset();
+                        } else {
+                            alert('保存に失敗しました: ' + data.error);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('保存中にエラーが発生しました');
+                    });
                 });
             }
         });
