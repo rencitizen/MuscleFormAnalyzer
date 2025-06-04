@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>トレーニング記録 - BodyScale</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="main-content">
+            <div class="app-header">
+                <h1 class="app-title">トレーニング記録</h1>
+                <p class="app-subtitle">ワークアウトを記録して進捗を管理</p>
+            </div>
+
+            <!-- 記録フォーム -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">新しい記録を追加</h2>
+                </div>
+                <div class="card-body">
+                    <form id="workoutForm" class="upload-form">
+                        <div class="form-group">
+                            <label for="workoutDate" class="form-label">日付</label>
+                            <input type="date" class="form-control" id="workoutDate" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="exerciseCategory" class="form-label">部位</label>
+                            <select class="form-control" id="exerciseCategory" required>
+                                <option value="">部位を選択</option>
+                                <option value="chest">胸部</option>
+                                <option value="back">背中</option>
+                                <option value="shoulders">肩</option>
+                                <option value="arms">腕</option>
+                                <option value="legs">脚部</option>
+                                <option value="abs">腹筋</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="exerciseSelect" class="form-label">種目</label>
+                            <select class="form-control" id="exerciseSelect" required disabled>
+                                <option value="">まず部位を選択してください</option>
+                            </select>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+                            <div class="form-group">
+                                <label for="weight" class="form-label">重量 (kg)</label>
+                                <input type="number" step="0.5" class="form-control" id="weight" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="reps" class="form-label">回数</label>
+                                <input type="number" class="form-control" id="reps" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="sets" class="form-label">セット数</label>
+                                <input type="number" class="form-control" id="sets" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="notes" class="form-label">メモ（任意）</label>
+                            <textarea class="form-control" id="notes" rows="3" placeholder="フォームやコンディションについて"></textarea>
+                        </div>
+
+                        <button class="btn btn-accent btn-lg" type="submit">
+                            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2v16z"/>
+                            </svg>
+                            記録を保存
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 最近の記録 -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">最近の記録</h2>
+                </div>
+                <div class="card-body">
+                    <div id="recentWorkouts" class="workout-list">
+                        <div class="loading-skeleton">
+                            <div class="skeleton" style="height: 60px; margin-bottom: 1rem;"></div>
+                            <div class="skeleton" style="height: 60px; margin-bottom: 1rem;"></div>
+                            <div class="skeleton" style="height: 60px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Navigation -->
+        <nav class="bottom-nav">
+            <div class="nav-container">
+                <a href="/" class="nav-item">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+                        <polyline points="9,22 9,12 15,12 15,22"/>
+                    </svg>
+                    <span class="nav-label">ホーム</span>
+                </a>
+                <a href="/workout_log" class="nav-item active">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M9 11H7a2 2 0 00-2 2v7a2 2 0 002 2h10a2 2 0 002-2v-7a2 2 0 00-2-2h-2M9 11V9a2 2 0 112 0v2M9 11h6"/>
+                    </svg>
+                    <span class="nav-label">記録</span>
+                </a>
+                <a href="/dashboard" class="nav-item">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                    <span class="nav-label">統計</span>
+                </a>
+                <a href="/settings" class="nav-item">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
+                    </svg>
+                    <span class="nav-label">設定</span>
+                </a>
+            </div>
+        </nav>
+    </div>
+
+    <script>
+        // 種目データベース
+        const exerciseDatabase = {
+            chest: [
+                {id: 'bench_press', name: 'ベンチプレス'},
+                {id: 'dumbbell_press', name: 'ダンベルプレス'},
+                {id: 'incline_bench_press', name: 'インクラインベンチプレス'},
+                {id: 'incline_dumbbell_press', name: 'インクラインダンベルプレス'},
+                {id: 'decline_bench_press', name: 'デクラインベンチプレス'},
+                {id: 'decline_dumbbell_press', name: 'デクラインダンベルプレス'},
+                {id: 'dips', name: 'ディップス'},
+                {id: 'chest_fly', name: 'チェストフライ'},
+                {id: 'push_up', name: 'プッシュアップ'},
+                {id: 'cable_fly', name: 'ケーブルフライ'}
+            ],
+            back: [
+                {id: 'deadlift', name: 'デッドリフト'},
+                {id: 'lat_pulldown', name: 'ラットプルダウン'},
+                {id: 'chin_up', name: 'チンニング'},
+                {id: 'pull_up', name: '懸垂'},
+                {id: 'barbell_row', name: 'バーベルロウ'},
+                {id: 'dumbbell_row', name: 'ダンベルロウ'},
+                {id: 'seated_row', name: 'シーテッドロウ'},
+                {id: 'hyperextension', name: 'ハイパーエクステンション'},
+                {id: 'shrug', name: 'シュラッグ'},
+                {id: 'rack_pull', name: 'ラックプル'},
+                {id: 'straight_arm_pulldown', name: 'ストレートアームプルダウン'},
+                {id: 't_bar_row', name: 'Tバーロウ'}
+            ],
+            shoulders: [
+                {id: 'shoulder_press', name: 'ショルダープレス'},
+                {id: 'side_raise', name: 'サイドレイズ'},
+                {id: 'front_raise', name: 'フロントレイズ'},
+                {id: 'rear_delt_fly', name: 'リアデルトフライ'},
+                {id: 'upright_row', name: 'アップライトロウ'},
+                {id: 'military_press', name: 'ミリタリープレス'},
+                {id: 'arnold_press', name: 'アーノルドプレス'}
+            ],
+            arms: [
+                {id: 'barbell_curl', name: 'バーベルカール'},
+                {id: 'dumbbell_curl', name: 'ダンベルカール'},
+                {id: 'preacher_curl', name: 'プリチャーカール'},
+                {id: 'hammer_curl', name: 'ハンマーカール'},
+                {id: 'cable_curl', name: 'ケーブルカール'},
+                {id: 'concentration_curl', name: 'コンセントレーションカール'},
+                {id: 'triceps_extension', name: 'トライセップスエクステンション'},
+                {id: 'skull_crusher', name: 'スカルクラッシャー'},
+                {id: 'narrow_bench_press', name: 'ナローベンチプレス'},
+                {id: 'push_down', name: 'プッシュダウン'},
+                {id: 'cable_extension', name: 'ケーブルエクステンション'},
+                {id: 'overhead_extension', name: 'オーバーヘッドエクステンション'},
+                {id: 'wrist_curl', name: 'リストカール'},
+                {id: 'reverse_wrist_curl', name: 'リバースリストカール'},
+                {id: 'farmer_walk', name: 'ファーマーズウォーク'}
+            ],
+            legs: [
+                {id: 'squat', name: 'スクワット'},
+                {id: 'leg_press', name: 'レッグプレス'},
+                {id: 'leg_extension', name: 'レッグエクステンション'},
+                {id: 'front_squat', name: 'フロントスクワット'},
+                {id: 'goblet_squat', name: 'ゴブレットスクワット'},
+                {id: 'split_squat', name: 'スプリットスクワット'},
+                {id: 'romanian_deadlift', name: 'ルーマニアンデッドリフト'},
+                {id: 'rdl', name: 'RDL'},
+                {id: 'leg_curl', name: 'レッグカール'},
+                {id: 'good_morning', name: 'グッドモーニング'},
+                {id: 'stiff_leg_deadlift', name: 'スティッフレッグデッドリフト'},
+                {id: 'hip_thrust', name: 'ヒップスラスト'},
+                {id: 'bulgarian_squat', name: 'ブルガリアンスクワット'},
+                {id: 'cable_kickback', name: 'ケーブルキックバック'},
+                {id: 'abduction', name: 'アブダクション'},
+                {id: 'adduction', name: 'アダクション'},
+                {id: 'glute_bridge', name: 'グルートブリッジ'},
+                {id: 'standing_calf_raise', name: 'スタンディングカーフレイズ'},
+                {id: 'seated_calf_raise', name: 'シーテッドカーフレイズ'},
+                {id: 'donkey_calf_raise', name: 'ドンキーカーフレイズ'}
+            ],
+            abs: [
+                {id: 'crunch', name: 'クランチ'},
+                {id: 'sit_up', name: 'シットアップ'},
+                {id: 'leg_raise', name: 'レッグレイズ'},
+                {id: 'plank', name: 'プランク'},
+                {id: 'side_plank', name: 'サイドプランク'},
+                {id: 'russian_twist', name: 'ロシアンツイスト'},
+                {id: 'ab_roller', name: 'アブローラー'},
+                {id: 'bicycle_crunch', name: 'バイシクルクランチ'},
+                {id: 'mountain_climber', name: 'マウンテンクライマー'}
+            ]
+        };
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // 今日の日付を設定
+            document.getElementById('workoutDate').value = new Date().toISOString().split('T')[0];
+
+            // 部位選択時の種目更新
+            document.getElementById('exerciseCategory').addEventListener('change', function() {
+                const category = this.value;
+                const exerciseSelect = document.getElementById('exerciseSelect');
+                
+                exerciseSelect.innerHTML = '<option value="">種目を選択</option>';
+                
+                if (category && exerciseDatabase[category]) {
+                    exerciseSelect.disabled = false;
+                    exerciseDatabase[category].forEach(exercise => {
+                        const option = document.createElement('option');
+                        option.value = exercise.id;
+                        option.textContent = exercise.name;
+                        exerciseSelect.appendChild(option);
+                    });
+                } else {
+                    exerciseSelect.disabled = true;
+                }
+            });
+
+            // フォーム送信
+            document.getElementById('workoutForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const formData = {
+                    date: document.getElementById('workoutDate').value,
+                    exercise: document.getElementById('exerciseSelect').value,
+                    weight: parseFloat(document.getElementById('weight').value),
+                    reps: parseInt(document.getElementById('reps').value),
+                    sets: parseInt(document.getElementById('sets').value),
+                    notes: document.getElementById('notes').value
+                };
+
+                // 種目名を取得
+                const categorySelect = document.getElementById('exerciseCategory');
+                const exerciseSelect = document.getElementById('exerciseSelect');
+                const category = categorySelect.value;
+                const exerciseId = exerciseSelect.value;
+                
+                if (category && exerciseId && exerciseDatabase[category]) {
+                    const exercise = exerciseDatabase[category].find(ex => ex.id === exerciseId);
+                    if (exercise) {
+                        formData.exercise_name = exercise.name;
+                    }
+                }
+                
+                fetch('/add_workout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('記録を保存しました！');
+                        this.reset();
+                        document.getElementById('workoutDate').value = new Date().toISOString().split('T')[0];
+                        document.getElementById('exerciseSelect').disabled = true;
+                        loadRecentWorkouts();
+                    } else {
+                        alert('保存に失敗しました: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('保存中にエラーが発生しました');
+                });
+            });
+
+            // 最近の記録を読み込み
+            loadRecentWorkouts();
+        });
+
+        function loadRecentWorkouts() {
+            fetch('/get_workouts?limit=5')
+                .then(response => response.json())
+                .then(data => {
+                    const container = document.getElementById('recentWorkouts');
+                    
+                    if (data.workouts && data.workouts.length > 0) {
+                        container.innerHTML = data.workouts.map(workout => `
+                            <div class="workout-item">
+                                <div class="workout-header">
+                                    <span class="exercise-name">${workout.exercise_name || workout.exercise}</span>
+                                    <span class="workout-date">${workout.date}</span>
+                                </div>
+                                <div class="workout-details">
+                                    ${workout.weight}kg × ${workout.reps}回 × ${workout.sets}セット
+                                    ${workout.notes ? `<span class="workout-notes">${workout.notes}</span>` : ''}
+                                </div>
+                            </div>
+                        `).join('');
+                    } else {
+                        container.innerHTML = '<p class="no-data">まだ記録がありません</p>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById('recentWorkouts').innerHTML = '<p class="error">記録の読み込みに失敗しました</p>';
+                });
+        }
+    </script>
+</body>
+</html>

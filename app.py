@@ -410,9 +410,14 @@ def simple_training():
 @app.route('/workout_log')
 def workout_log():
     """トレーニング記録メインページ"""
-    return render_template('index.html')
+    return render_template('workout_record.html')
 
-@app.route('/api/workouts', methods=['POST'])
+@app.route('/workout_record')
+def workout_record():
+    """トレーニング記録専用ページ"""
+    return render_template('workout_record.html')
+
+@app.route('/add_workout', methods=['POST'])
 def add_workout():
     """ワークアウト記録を追加するAPI"""
     try:
@@ -430,7 +435,7 @@ def add_workout():
         # シンプルなユーザー管理（外部キー制約なしで直接保存）
         
         # 必須フィールドの検証
-        required_fields = ['date', 'exercise', 'weight_kg', 'reps', 'sets']
+        required_fields = ['date', 'exercise', 'weight', 'reps', 'sets']
         for field in required_fields:
             if not data.get(field):
                 return jsonify({'error': f'{field}は必須です'}), 400
@@ -443,7 +448,8 @@ def add_workout():
             user_id=user_id,
             date=data['date'],
             exercise=data['exercise'],
-            weight_kg=float(data['weight_kg']),
+            exercise_name=data.get('exercise_name', data['exercise']),
+            weight_kg=float(data['weight']),
             reps=int(data['reps']),
             sets=int(data['sets']),
             notes=data.get('notes'),
