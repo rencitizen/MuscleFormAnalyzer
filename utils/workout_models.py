@@ -216,8 +216,8 @@ class WorkoutDatabase:
                             MAX(date) as latest_date
                         FROM workouts 
                         WHERE user_id = %s 
-                        GROUP BY category, category_name
-                        HAVING category != 'other'
+                        GROUP BY 1, 2
+                        HAVING 1 != 'other'
                         ORDER BY total_volume DESC
                     """, (user_id,))
                     summary = cur.fetchall()

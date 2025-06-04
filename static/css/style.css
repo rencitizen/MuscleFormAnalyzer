@@ -1,8 +1,8 @@
 /* Tenax Fit - Premium Design System */
 :root {
   --primary-color: #FFFFFF;        /* 純白 */
-  --accent-color: #001130;         /* 深いネイビーブルー */
-  --sub-accent: #D4AF37;           /* エレガントなゴールド */
+  --accent-color: #2369;           /* メインカラー */
+  --sub-accent: #2296;             /* サブカラー */
   --text-primary: #001130;
   --text-secondary: rgba(0, 17, 48, 0.65);
   --text-light: rgba(0, 17, 48, 0.45);
