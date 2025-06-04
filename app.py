@@ -439,7 +439,7 @@ def add_workout():
         # シンプルなユーザー管理（外部キー制約なしで直接保存）
         
         # 必須フィールドの検証
-        required_fields = ['date', 'exercise', 'weight', 'reps', 'sets']
+        required_fields = ['date', 'exercise', 'weight', 'reps']
         for field in required_fields:
             if not data.get(field):
                 return jsonify({'error': f'{field}は必須です'}), 400
