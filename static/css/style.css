@@ -513,38 +513,136 @@ body {
   }
 }
 
+/* Bottom Navigation */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: rgba(0, 17, 48, 0.95);
+  backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border-color);
+  z-index: 100;
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+.nav-container {
+  display: flex;
+  justify-content: space-around;
+  padding: 0.75rem 0 calc(0.75rem + env(safe-area-inset-bottom));
+}
+
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.5rem;
+  text-decoration: none;
+  color: var(--text-secondary);
+  transition: all 0.15s ease;
+  min-width: 60px;
+  border-radius: 0.5rem;
+}
+
+.nav-item:hover,
+.nav-item.active {
+  color: var(--accent-color);
+  background-color: var(--active-bg);
+}
+
+.nav-icon {
+  width: 24px;
+  height: 24px;
+  margin-bottom: 0.25rem;
+  stroke-width: 2;
+}
+
+.nav-label {
+  font-size: 0.75rem;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+
+/* Icons */
+.icon {
+  width: 20px;
+  height: 20px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.icon-lg {
+  width: 24px;
+  height: 24px;
+}
+
+/* Status indicators */
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--sub-accent);
+  display: inline-block;
+  margin-left: 0.5rem;
+}
+
+.status-success {
+  background-color: #4ade80;
+}
+
+.status-warning {
+  background-color: var(--sub-accent);
+}
+
+.status-error {
+  background-color: #ef4444;
+}
+
+/* Loading states */
+.skeleton {
+  background: linear-gradient(90deg, 
+    var(--surface-bg) 25%, 
+    var(--hover-bg) 50%, 
+    var(--surface-bg) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+  border-radius: 0.5rem;
+}
+
+@keyframes skeleton-loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
 /* Responsive adjustments */
-@media (max-width: 768px) {
-  .progress-steps {
-    flex-direction: column;
-    gap: 1rem;
-    align-items: flex-start;
+@media (max-width: 420px) {
+  .main-content {
+    padding: 1.5rem 1rem 6rem;
   }
   
-  .progress-steps::before {
-    width: 2px;
-    height: 100%;
-    left: 1.5rem;
-    top: 0;
-    transform: none;
+  .app-title {
+    font-size: 1.5rem;
   }
   
-  .progress-step {
-    flex-direction: row;
-    width: 100%;
-    gap: 1rem;
+  .btn-lg {
+    padding: 1rem 1.5rem;
+    font-size: 1rem;
+    min-height: 48px;
+  }
+}
+
+@media (min-width: 421px) {
+  .container {
+    border-left: 1px solid var(--border-color);
+    border-right: 1px solid var(--border-color);
   }
   
-  .step-icon {
-    margin-bottom: 0;
-  }
-  
-  .step-label {
-    text-align: left;
-  }
-  
-  .score-gauge {
-    width: 150px;
-    height: 150px;
+  .bottom-nav {
+    border-left: 1px solid var(--border-color);
+    border-right: 1px solid var(--border-color);
   }
 }
