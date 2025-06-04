@@ -8,7 +8,7 @@ import firebase_admin
 from firebase_admin import credentials, auth
 import pyrebase
 from typing import Optional, Dict, Any
-from auth_models import AuthManager
+from utils.auth_models import AuthManager
 
 class FirebaseAuthManager:
     def __init__(self):
