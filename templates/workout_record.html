@@ -89,6 +89,21 @@
                             <div class="skeleton" style="height: 60px;"></div>
                         </div>
                     </div>
+                    
+                    <!-- すべての記録を表示ボタン -->
+                    <div style="text-align: center; margin-top: 1.5rem;">
+                        <button class="btn btn-secondary" id="loadAllWorkouts">
+                            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>
+                            </svg>
+                            すべての記録を表示
+                        </button>
+                    </div>
+                    
+                    <!-- 全記録表示エリア -->
+                    <div id="allWorkouts" class="workout-list" style="display: none; margin-top: 1.5rem;">
+                        <!-- 動的に生成される -->
+                    </div>
                 </div>
             </div>
         </div>
@@ -293,6 +308,24 @@
 
             // 最近の記録を読み込み
             loadRecentWorkouts();
+
+            // すべての記録を表示ボタン
+            document.getElementById('loadAllWorkouts').addEventListener('click', function() {
+                const allWorkoutsDiv = document.getElementById('allWorkouts');
+                if (allWorkoutsDiv.style.display === 'none') {
+                    loadAllWorkouts();
+                    allWorkoutsDiv.style.display = 'block';
+                    this.textContent = '記録を非表示';
+                } else {
+                    allWorkoutsDiv.style.display = 'none';
+                    this.innerHTML = `
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>
+                        </svg>
+                        すべての記録を表示
+                    `;
+                }
+            });
         });
 
         function loadRecentWorkouts() {
@@ -309,7 +342,7 @@
                                     <span class="workout-date">${workout.date}</span>
                                 </div>
                                 <div class="workout-details">
-                                    ${workout.weight}kg × ${workout.reps}回 × ${workout.sets}セット
+                                    ${workout.weight_kg || workout.weight}kg × ${workout.reps}回 × ${workout.sets}セット
                                     ${workout.notes ? `<span class="workout-notes">${workout.notes}</span>` : ''}
                                 </div>
                             </div>
@@ -322,6 +355,63 @@
                     console.error('Error:', error);
                     document.getElementById('recentWorkouts').innerHTML = '<p class="error">記録の読み込みに失敗しました</p>';
                 });
+        }
+
+        function loadAllWorkouts() {
+            fetch('/get_workouts?limit=100')
+                .then(response => response.json())
+                .then(data => {
+                    const container = document.getElementById('allWorkouts');
+                    
+                    if (data.workouts && data.workouts.length > 0) {
+                        container.innerHTML = data.workouts.map(workout => `
+                            <div class="workout-item" style="position: relative;">
+                                <div class="workout-header">
+                                    <span class="exercise-name">${workout.exercise_name || workout.exercise}</span>
+                                    <span class="workout-date">${workout.date}</span>
+                                    <button class="btn btn-sm btn-secondary" onclick="deleteWorkout(${workout.id})" style="position: absolute; right: 10px; top: 10px; padding: 0.25rem 0.5rem; font-size: 0.75rem; background-color: #ef4444; border-color: #ef4444; color: white;">
+                                        削除
+                                    </button>
+                                </div>
+                                <div class="workout-details">
+                                    ${workout.weight_kg || workout.weight}kg × ${workout.reps}回 × ${workout.sets}セット
+                                    ${workout.notes ? `<span class="workout-notes">${workout.notes}</span>` : ''}
+                                </div>
+                            </div>
+                        `).join('');
+                    } else {
+                        container.innerHTML = '<p class="no-data">記録がありません</p>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    container.innerHTML = '<p class="error">記録の読み込みに失敗しました</p>';
+                });
+        }
+
+        function deleteWorkout(workoutId) {
+            if (confirm('この記録を削除しますか？')) {
+                fetch(`/delete_workout/${workoutId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('記録を削除しました');
+                        loadRecentWorkouts();
+                        loadAllWorkouts();
+                    } else {
+                        alert('削除に失敗しました: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('削除中にエラーが発生しました');
+                });
+            }
         }
     </script>
 </body>

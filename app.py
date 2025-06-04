@@ -497,7 +497,7 @@ def get_workouts():
 def delete_workout(workout_id):
     """ワークアウト記録を削除するAPI"""
     try:
-        user_id = request.args.get('user_id', 'default_user')
+        user_id = session.get('user_email', 'default_user')
         
         success = workout_db.delete_workout(workout_id, user_id)
         
@@ -513,13 +513,17 @@ def delete_workout(workout_id):
         logger.error(f"ワークアウト削除エラー: {e}")
         return jsonify({'error': str(e)}), 500
 
-@app.route('/get_progress/<exercise>')
-def get_progress(exercise):
+@app.route('/get_chart_progress/<exercise>')
+def get_chart_progress(exercise):
     """特定種目の進捗データを取得するAPI"""
     try:
-        user_id = request.args.get('user_id', 'default_user')
+        user_id = session.get('user_email', 'default_user')
         
         progress_data = workout_db.get_exercise_progress(user_id, exercise)
+        
+        # データが存在しない場合の処理
+        if not progress_data:
+            return jsonify({'dates': [], 'weights': []})
         
         # 日付を文字列に変換
         for record in progress_data:
@@ -564,18 +568,9 @@ def get_dashboard_stats():
         logger.error(f"ダッシュボード統計取得エラー: {e}")
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/charts/progress/<exercise>')
-def get_chart_progress(exercise):
-    """グラフ用の進捗データを取得"""
-    try:
-        user_id = session.get('user_email', 'default_user')
-        chart_data = workout_db.get_chart_progress_data(user_id, exercise)
-        return jsonify(chart_data)
-    except Exception as e:
-        logger.error(f"グラフデータ取得エラー: {e}")
-        return jsonify({'error': str(e)}), 500
 
-@app.route('/api/charts/calendar')
+
+@app.route('/get_calendar_data')
 def get_calendar_data():
     """カレンダー用のトレーニングデータを取得"""
     try:
