@@ -7,13 +7,14 @@ import shutil
 from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
 from analysis.training_analysis import TrainingAnalyzer
-from exercise_classifier import ExerciseClassifier
-from workout_models import workout_db
-from exercise_database import (
+from core.exercise_classifier import ExerciseClassifier
+from utils.workout_models import workout_db
+from core.exercise_database import (
     EXERCISE_DATABASE, get_all_exercises, search_exercises, 
     get_exercises_by_category, get_exercise_by_id, COMMON_WEIGHTS, get_weight_suggestions
 )
-from auth_models import auth_manager
+from utils.auth_models import AuthManager
+auth_manager = AuthManager()
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'static/videos'
@@ -62,7 +63,7 @@ def analyze():
             exercise_type = request.form.get('exercise_type', 'squat')
             
             # まず身体寸法を測定
-            from analysis import BodyAnalyzer
+            from core.analysis import BodyAnalyzer
             body_analyzer = BodyAnalyzer(user_height_cm=height)
             body_metrics = {}
             
@@ -139,7 +140,7 @@ def analyze():
         
         elif analysis_type == 'body_metrics':
             # 身体寸法分析の処理
-            from analysis import BodyAnalyzer
+            from core.analysis import BodyAnalyzer
             body_analyzer = BodyAnalyzer(user_height_cm=height)
             try:
                 # 動画から身体寸法を分析

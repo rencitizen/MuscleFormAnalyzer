@@ -7,7 +7,7 @@ import math
 from typing import Dict, List, Any, Tuple, Optional
 import mediapipe as mp
 from scipy.signal import find_peaks
-from training_analysis_check_functions import *
+from .training_analysis_check_functions import *
 
 # ロギング設定
 logging.basicConfig(level=logging.INFO)
