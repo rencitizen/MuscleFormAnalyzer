@@ -590,7 +590,7 @@ def settings_page():
     """設定ページ"""
     return render_template('settings.html')
 
-@app.route('/api/language', methods=['POST'])
+@app.route('/set_language', methods=['POST'])
 def set_language():
     """言語設定API"""
     try:
@@ -602,7 +602,7 @@ def set_language():
         logger.error(f"言語設定エラー: {e}")
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/settings', methods=['GET'])
+@app.route('/get_settings', methods=['GET'])
 def get_settings():
     """設定情報を取得"""
     try:
@@ -613,7 +613,7 @@ def get_settings():
         logger.error(f"設定取得エラー: {e}")
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/settings/personal', methods=['POST'])
+@app.route('/save_personal_settings', methods=['POST'])
 def save_personal_settings():
     """個人情報設定を保存"""
     try:
