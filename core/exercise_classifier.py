@@ -21,12 +21,12 @@ import mediapipe as mp
 from pathlib import Path
 
 # ステップモジュールをインポート
-from ..analysis import step01_cleanup
-from ..analysis import step02_smooth
-from ..analysis import step03_normalize
-from ..analysis import step04_temporal
-from ..analysis import step05_voting
-from ..analysis import step06_rulegate
+from analysis import step01_cleanup
+from analysis import step02_smooth
+from analysis import step03_normalize
+from analysis import step04_temporal
+from analysis import step05_voting
+from analysis import step06_rulegate
 
 class ExerciseClassifier:
     """

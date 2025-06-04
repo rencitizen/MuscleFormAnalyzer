@@ -17,7 +17,10 @@ EXERCISE_DATABASE = {
                     {"id": "leg_extension", "name": "レッグエクステンション", "type": "isolation"},
                     {"id": "front_squat", "name": "フロントスクワット", "type": "compound"},
                     {"id": "goblet_squat", "name": "ゴブレットスクワット", "type": "compound"},
-                    {"id": "split_squat", "name": "スプリットスクワット", "type": "compound"}
+                    {"id": "split_squat", "name": "スプリットスクワット", "type": "compound"},
+                    {"id": "lunge", "name": "ランジ", "type": "compound"},
+                    {"id": "hack_squat", "name": "ハックスクワット", "type": "compound"},
+                    {"id": "sissy_squat", "name": "シシースクワット", "type": "isolation"}
                 ]
             },
             "hamstrings": {
@@ -27,7 +30,8 @@ EXERCISE_DATABASE = {
                     {"id": "rdl", "name": "RDL", "type": "compound"},
                     {"id": "leg_curl", "name": "レッグカール", "type": "isolation"},
                     {"id": "good_morning", "name": "グッドモーニング", "type": "compound"},
-                    {"id": "stiff_leg_deadlift", "name": "スティッフレッグデッドリフト", "type": "compound"}
+                    {"id": "stiff_leg_deadlift", "name": "スティッフレッグデッドリフト", "type": "compound"},
+                    {"id": "back_extension", "name": "バックエクステンション", "type": "compound"}
                 ]
             },
             "glutes": {
@@ -67,7 +71,12 @@ EXERCISE_DATABASE = {
                     {"id": "dips", "name": "ディップス", "type": "compound"},
                     {"id": "chest_fly", "name": "チェストフライ", "type": "isolation"},
                     {"id": "push_up", "name": "プッシュアップ", "type": "compound"},
-                    {"id": "cable_fly", "name": "ケーブルフライ", "type": "isolation"}
+                    {"id": "cable_fly", "name": "ケーブルフライ", "type": "isolation"},
+                    {"id": "chest_press", "name": "チェストプレス", "type": "compound"},
+                    {"id": "dumbbell_fly", "name": "ダンベルフライ", "type": "isolation"},
+                    {"id": "incline_dumbbell_fly", "name": "インクラインダンベルフライ", "type": "isolation"},
+                    {"id": "cable_crossover", "name": "ケーブルクロスオーバー", "type": "isolation"},
+                    {"id": "dumbbell_pullover", "name": "ダンベルプルオーバー", "type": "compound"}
                 ]
             }
         }
@@ -83,7 +92,10 @@ EXERCISE_DATABASE = {
                     {"id": "chin_up", "name": "チンニング", "type": "compound"},
                     {"id": "pull_up", "name": "懸垂", "type": "compound"},
                     {"id": "straight_arm_pulldown", "name": "ストレートアームプルダウン", "type": "isolation"},
-                    {"id": "t_bar_row", "name": "Tバーロウ", "type": "compound"}
+                    {"id": "t_bar_row", "name": "Tバーロウ", "type": "compound"},
+                    {"id": "bent_over_row", "name": "ベントオーバーロウ", "type": "compound"},
+                    {"id": "one_hand_row", "name": "ワンハンドロウ", "type": "compound"},
+                    {"id": "reverse_grip_chinning", "name": "逆手懸垂", "type": "compound"}
                 ]
             },
             "traps_erectors": {
@@ -113,7 +125,9 @@ EXERCISE_DATABASE = {
                     {"id": "rear_delt_fly", "name": "リアデルトフライ", "type": "isolation"},
                     {"id": "upright_row", "name": "アップライトロウ", "type": "compound"},
                     {"id": "military_press", "name": "ミリタリープレス", "type": "compound"},
-                    {"id": "arnold_press", "name": "アーノルドプレス", "type": "compound"}
+                    {"id": "arnold_press", "name": "アーノルドプレス", "type": "compound"},
+                    {"id": "rear_raise", "name": "リアレイズ", "type": "isolation"},
+                    {"id": "face_pull", "name": "フェイスプル", "type": "compound"}
                 ]
             }
         }
@@ -130,7 +144,8 @@ EXERCISE_DATABASE = {
                     {"id": "preacher_curl", "name": "プリチャーカール", "type": "isolation"},
                     {"id": "hammer_curl", "name": "ハンマーカール", "type": "isolation"},
                     {"id": "cable_curl", "name": "ケーブルカール", "type": "isolation"},
-                    {"id": "concentration_curl", "name": "コンセントレーションカール", "type": "isolation"}
+                    {"id": "concentration_curl", "name": "コンセントレーションカール", "type": "isolation"},
+                    {"id": "drag_curl", "name": "ドラッグカール", "type": "isolation"}
                 ]
             },
             "triceps": {
@@ -141,7 +156,12 @@ EXERCISE_DATABASE = {
                     {"id": "narrow_bench_press", "name": "ナローベンチプレス", "type": "compound"},
                     {"id": "push_down", "name": "プッシュダウン", "type": "isolation"},
                     {"id": "cable_extension", "name": "ケーブルエクステンション", "type": "isolation"},
-                    {"id": "overhead_extension", "name": "オーバーヘッドエクステンション", "type": "isolation"}
+                    {"id": "overhead_extension", "name": "オーバーヘッドエクステンション", "type": "isolation"},
+                    {"id": "french_press", "name": "フレンチプレス", "type": "isolation"},
+                    {"id": "press_down", "name": "プレスダウン", "type": "isolation"},
+                    {"id": "kickback", "name": "キックバック", "type": "isolation"},
+                    {"id": "reverse_push_up", "name": "リバースプッシュアップ", "type": "compound"},
+                    {"id": "diamond_push_up", "name": "ダイヤモンドプッシュアップ", "type": "compound"}
                 ]
             },
             "forearms": {
@@ -169,7 +189,9 @@ EXERCISE_DATABASE = {
                     {"id": "russian_twist", "name": "ロシアンツイスト", "type": "isolation"},
                     {"id": "ab_roller", "name": "アブローラー", "type": "compound"},
                     {"id": "bicycle_crunch", "name": "バイシクルクランチ", "type": "isolation"},
-                    {"id": "mountain_climber", "name": "マウンテンクライマー", "type": "compound"}
+                    {"id": "mountain_climber", "name": "マウンテンクライマー", "type": "compound"},
+                    {"id": "side_bend", "name": "サイドベント", "type": "isolation"},
+                    {"id": "knee_to_chest", "name": "ニートゥチェスト", "type": "compound"}
                 ]
             }
         }
