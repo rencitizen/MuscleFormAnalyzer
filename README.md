@@ -1,4 +1,4 @@
-# BodyScale Pose Analyzer
+# Tenax Fit Pose Analyzer
 
 動画から姿勢推定を行い、ユーザーの身長を元に実寸法（cm単位）で体の各部位を計測するツール。
 

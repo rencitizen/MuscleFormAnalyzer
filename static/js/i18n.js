@@ -171,7 +171,7 @@ class I18nManager {
         if (!['ja', 'en'].includes(lang)) return;
         
         this.currentLanguage = lang;
-        localStorage.setItem('bodyscale_language', lang);
+        localStorage.setItem('tenaxfit_language', lang);
         this.updatePageContent();
         
         // サーバーに言語設定を送信
