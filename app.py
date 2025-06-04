@@ -6,7 +6,7 @@ import logging
 import shutil
 from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
-from training_analysis import TrainingAnalyzer
+from analysis.training_analysis import TrainingAnalyzer
 from exercise_classifier import ExerciseClassifier
 from workout_models import workout_db
 from exercise_database import (
