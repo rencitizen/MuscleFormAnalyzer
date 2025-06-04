@@ -2,55 +2,248 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ダッシュボード - BodyScale</title>
-    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>統計 - BodyScale</title>
+    <link rel="stylesheet" href="/static/css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        .stat-card {
-            background: var(--bs-dark);
-            border: 1px solid var(--bs-secondary);
-            border-radius: 0.5rem;
-            padding: 1.5rem;
-            margin-bottom: 1rem;
-        }
-        .stat-number {
-            font-size: 2rem;
-            font-weight: bold;
-            color: var(--bs-primary);
-        }
-        .chart-container {
-            position: relative;
-            height: 400px;
-            margin-bottom: 2rem;
-        }
-        .calendar-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 0.5rem;
-            margin-top: 1rem;
-        }
-        .calendar-day {
-            aspect-ratio: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 0.25rem;
-            font-size: 0.875rem;
-            background: var(--bs-secondary);
-        }
-        .calendar-day.training {
-            background: var(--bs-success);
-            color: var(--bs-light);
-        }
-        .calendar-day.rest {
-            background: var(--bs-dark);
-        }
-    </style>
+
 </head>
-<body data-bs-theme="dark">
-    <div class="container-fluid">
-        <div class="row">
+<body>
+    <div class="container">
+        <div class="main-content">
+            <div class="app-header">
+                <h1 class="app-title">統計</h1>
+                <p class="app-subtitle">トレーニング進捗・データ分析</p>
+            </div>
+
+            <!-- 統計カード -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">今月の統計</h2>
+                </div>
+                <div class="card-body">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1.5rem;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 2rem; font-weight: 600; color: var(--sub-accent); margin-bottom: 0.5rem;" id="workoutCount">-</div>
+                            <div style="color: var(--text-secondary); font-size: 0.9rem;">ワークアウト数</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 2rem; font-weight: 600; color: var(--sub-accent); margin-bottom: 0.5rem;" id="totalVolume">-</div>
+                            <div style="color: var(--text-secondary); font-size: 0.9rem;">総ボリューム(kg)</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 2rem; font-weight: 600; color: var(--sub-accent); margin-bottom: 0.5rem;" id="exerciseCount">-</div>
+                            <div style="color: var(--text-secondary); font-size: 0.9rem;">実施種目数</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 最近のトレーニング -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">最近のトレーニング</h2>
+                </div>
+                <div class="card-body">
+                    <div id="recentWorkouts" class="workout-list">
+                        <div class="loading-skeleton">
+                            <div class="skeleton" style="height: 60px; margin-bottom: 1rem;"></div>
+                            <div class="skeleton" style="height: 60px; margin-bottom: 1rem;"></div>
+                            <div class="skeleton" style="height: 60px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 進捗グラフ -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">進捗グラフ</h2>
+                </div>
+                <div class="card-body">
+                    <div class="form-group" style="margin-bottom: 1.5rem;">
+                        <select id="exerciseSelect" class="form-control">
+                            <option value="">種目を選択...</option>
+                        </select>
+                    </div>
+                    <div style="position: relative; height: 300px;">
+                        <canvas id="progressChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Navigation -->
+        <nav class="bottom-nav">
+            <div class="nav-container">
+                <a href="/" class="nav-item">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+                        <polyline points="9,22 9,12 15,12 15,22"/>
+                    </svg>
+                    <span class="nav-label">ホーム</span>
+                </a>
+                <a href="/workout_record" class="nav-item">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M9 11H7a2 2 0 00-2 2v7a2 2 0 002 2h10a2 2 0 002-2v-7a2 2 0 00-2-2h-2M9 11V9a2 2 0 112 0v2M9 11h6"/>
+                    </svg>
+                    <span class="nav-label">記録</span>
+                </a>
+                <a href="/dashboard" class="nav-item active">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                    <span class="nav-label">統計</span>
+                </a>
+                <a href="/settings" class="nav-item">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
+                    </svg>
+                    <span class="nav-label">設定</span>
+                </a>
+            </div>
+        </nav>
+    </div>
+
+    <script>
+        let progressChart = null;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDashboardData();
+            loadRecentWorkouts();
+            loadExerciseList();
+        });
+
+        function loadDashboardData() {
+            fetch('/get_dashboard_stats')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('workoutCount').textContent = data.workout_count || 0;
+                    document.getElementById('totalVolume').textContent = data.total_volume || 0;
+                    document.getElementById('exerciseCount').textContent = data.exercise_count || 0;
+                })
+                .catch(error => {
+                    console.error('統計データ読み込みエラー:', error);
+                });
+        }
+
+        function loadRecentWorkouts() {
+            fetch('/get_workouts?limit=5')
+                .then(response => response.json())
+                .then(data => {
+                    const container = document.getElementById('recentWorkouts');
+                    
+                    if (data.workouts && data.workouts.length > 0) {
+                        container.innerHTML = data.workouts.map(workout => `
+                            <div class="workout-item">
+                                <div class="workout-header">
+                                    <span class="exercise-name">${workout.exercise_name || workout.exercise}</span>
+                                    <span class="workout-date">${workout.date}</span>
+                                </div>
+                                <div class="workout-details">
+                                    ${workout.weight_kg}kg × ${workout.reps}回 × ${workout.sets}セット
+                                    ${workout.notes ? `<span class="workout-notes">${workout.notes}</span>` : ''}
+                                </div>
+                            </div>
+                        `).join('');
+                    } else {
+                        container.innerHTML = '<p class="no-data">まだ記録がありません</p>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById('recentWorkouts').innerHTML = '<p class="error">記録の読み込みに失敗しました</p>';
+                });
+        }
+
+        function loadExerciseList() {
+            fetch('/get_workouts?limit=100')
+                .then(response => response.json())
+                .then(data => {
+                    const exerciseSelect = document.getElementById('exerciseSelect');
+                    const exercises = [...new Set(data.workouts?.map(w => w.exercise) || [])];
+                    
+                    exercises.forEach(exercise => {
+                        const option = document.createElement('option');
+                        option.value = exercise;
+                        option.textContent = exercise;
+                        exerciseSelect.appendChild(option);
+                    });
+                    
+                    exerciseSelect.addEventListener('change', function() {
+                        if (this.value) {
+                            loadProgressChart(this.value);
+                        }
+                    });
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        }
+
+        function loadProgressChart(exercise) {
+            fetch(`/get_chart_progress/${exercise}`)
+                .then(response => response.json())
+                .then(data => {
+                    const ctx = document.getElementById('progressChart').getContext('2d');
+                    
+                    if (progressChart) {
+                        progressChart.destroy();
+                    }
+                    
+                    progressChart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: data.dates || [],
+                            datasets: [{
+                                label: '最大重量 (kg)',
+                                data: data.weights || [],
+                                borderColor: '#D4AF37',
+                                backgroundColor: 'rgba(212, 175, 55, 0.1)',
+                                tension: 0.4,
+                                fill: true
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    grid: {
+                                        color: 'rgba(255, 255, 255, 0.1)'
+                                    },
+                                    ticks: {
+                                        color: '#001130'
+                                    }
+                                },
+                                x: {
+                                    grid: {
+                                        color: 'rgba(255, 255, 255, 0.1)'
+                                    },
+                                    ticks: {
+                                        color: '#001130'
+                                    }
+                                }
+                            },
+                            plugins: {
+                                legend: {
+                                    labels: {
+                                        color: '#001130'
+                                    }
+                                }
+                            }
+                        }
+                    });
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        }
+    </script>
+</body>
+</html>
             <!-- サイドバー -->
             <nav class="col-md-2 d-none d-md-block sidebar">
                 <div class="position-sticky pt-3">

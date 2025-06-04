@@ -469,7 +469,7 @@ def add_workout():
         logger.error(f"ワークアウト追加エラー: {e}")
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/workouts', methods=['GET'])
+@app.route('/get_workouts', methods=['GET'])
 def get_workouts():
     """ワークアウト記録を取得するAPI"""
     try:
@@ -493,7 +493,7 @@ def get_workouts():
         logger.error(f"ワークアウト取得エラー: {e}")
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/workouts/<int:workout_id>', methods=['DELETE'])
+@app.route('/delete_workout/<int:workout_id>', methods=['DELETE'])
 def delete_workout(workout_id):
     """ワークアウト記録を削除するAPI"""
     try:
@@ -513,7 +513,7 @@ def delete_workout(workout_id):
         logger.error(f"ワークアウト削除エラー: {e}")
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/progress/<exercise>')
+@app.route('/get_progress/<exercise>')
 def get_progress(exercise):
     """特定種目の進捗データを取得するAPI"""
     try:
