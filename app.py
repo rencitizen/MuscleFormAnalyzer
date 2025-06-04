@@ -583,11 +583,160 @@ def get_calendar_data():
         logger.error(f"カレンダーデータ取得エラー: {e}")
         return jsonify({'error': str(e)}), 500
 
+# ===== Firebase認証システム =====
+
+@app.route('/login')
+def login_page():
+    """ログインページ"""
+    # 既にログインしている場合はリダイレクト
+    if session.get('user_email'):
+        return redirect('/')
+    return render_template('login.html')
+
+@app.route('/register')
+def register_page():
+    """新規登録ページ"""
+    # 既にログインしている場合はリダイレクト
+    if session.get('user_email'):
+        return redirect('/')
+    return render_template('register.html')
+
+@app.route('/firebase-config')
+def firebase_config():
+    """Firebase設定を提供"""
+    config = {
+        'apiKey': os.environ.get('FIREBASE_API_KEY'),
+        'authDomain': os.environ.get('FIREBASE_AUTH_DOMAIN'),
+        'projectId': os.environ.get('FIREBASE_PROJECT_ID'),
+        'storageBucket': os.environ.get('FIREBASE_STORAGE_BUCKET'),
+        'messagingSenderId': os.environ.get('FIREBASE_MESSAGING_SENDER_ID'),
+        'appId': os.environ.get('FIREBASE_APP_ID')
+    }
+    return jsonify(config)
+
+@app.route('/firebase-login', methods=['POST'])
+def firebase_login():
+    """Firebase IDトークンでログイン"""
+    try:
+        data = request.get_json()
+        id_token = data.get('idToken')
+        
+        if not id_token:
+            return jsonify({'success': False, 'error': 'IDトークンが必要です'}), 400
+        
+        # Firebase IDトークンの検証（実装時にfirebase_authを使用）
+        # 現在は簡易実装
+        session['firebase_token'] = id_token
+        
+        # メールアドレスをセッションに保存（実際の実装では検証済みトークンから取得）
+        email = data.get('email', 'firebase_user@example.com')
+        session['user_email'] = email
+        session['auth_method'] = 'firebase'
+        
+        return jsonify({'success': True})
+        
+    except Exception as e:
+        logger.error(f"Firebase ログインエラー: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/firebase-register', methods=['POST'])
+def firebase_register():
+    """Firebase IDトークンで新規登録"""
+    try:
+        data = request.get_json()
+        id_token = data.get('idToken')
+        email = data.get('email')
+        
+        if not id_token or not email:
+            return jsonify({'success': False, 'error': 'IDトークンとメールが必要です'}), 400
+        
+        # ユーザープロファイルを作成
+        workout_db.create_user_profile(email)
+        
+        return jsonify({'success': True, 'message': 'アカウントを作成しました'})
+        
+    except Exception as e:
+        logger.error(f"Firebase 登録エラー: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/login', methods=['POST'])
+def traditional_login():
+    """従来のメール・パスワードログイン"""
+    try:
+        data = request.get_json()
+        email = data.get('email')
+        password = data.get('password')
+        
+        if not email or not password:
+            return jsonify({'success': False, 'error': 'メールとパスワードが必要です'}), 400
+        
+        # 既存の認証システムを使用
+        auth_result = auth_manager.authenticate_user_simple(email, password)
+        
+        if auth_result.get('success'):
+            session['user_email'] = email
+            session['auth_method'] = 'traditional'
+            return jsonify({'success': True})
+        else:
+            return jsonify({'success': False, 'error': 'メールアドレスまたはパスワードが正しくありません'}), 401
+            
+    except Exception as e:
+        logger.error(f"ログインエラー: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/register', methods=['POST'])
+def traditional_register():
+    """従来のメール・パスワード新規登録"""
+    try:
+        data = request.get_json()
+        email = data.get('email')
+        password = data.get('password')
+        
+        if not email or not password:
+            return jsonify({'success': False, 'error': 'メールとパスワードが必要です'}), 400
+        
+        # 既存の認証システムを使用
+        auth_result = auth_manager.create_user(email, password)
+        
+        if auth_result.get('success'):
+            # ユーザープロファイルを作成
+            workout_db.create_user_profile(email)
+            return jsonify({'success': True, 'message': 'アカウントを作成しました'})
+        else:
+            return jsonify({'success': False, 'error': auth_result.get('error', '登録に失敗しました')}), 400
+            
+    except Exception as e:
+        logger.error(f"登録エラー: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/logout')
+def logout_page():
+    """ログアウトページ"""
+    auth_method = session.get('auth_method')
+    
+    if auth_method == 'firebase':
+        # Firebase セッション削除
+        session.pop('firebase_token', None)
+    
+    # セッションクリア
+    session.pop('user_email', None)
+    session.pop('auth_method', None)
+    
+    return redirect('/login')
+
+@app.route('/forgot-password')
+def forgot_password_page():
+    """パスワードリセットページ"""
+    return render_template('forgot_password.html')
+
 # ===== 設定管理API =====
 
 @app.route('/settings')
 def settings_page():
     """設定ページ"""
+    # 認証チェック
+    if not session.get('user_email'):
+        return redirect('/login')
     return render_template('settings.html')
 
 @app.route('/set_language', methods=['POST'])

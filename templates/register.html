@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>新規登録 - BodyScale</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="auth-container">
+            <div class="auth-header">
+                <h1 class="auth-title">BodyScale</h1>
+                <p class="auth-subtitle">AI パワード フィットネス</p>
+            </div>
+
+            <div class="auth-card">
+                <div class="auth-card-header">
+                    <h2>新規登録</h2>
+                    <p>アカウントを作成してください</p>
+                </div>
+
+                <form id="registerForm" class="auth-form">
+                    <div class="form-group">
+                        <label for="email" class="form-label">メールアドレス</label>
+                        <input type="email" class="form-control" id="email" name="email" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password" class="form-label">パスワード</label>
+                        <input type="password" class="form-control" id="password" name="password" required minlength="6">
+                        <small class="form-text">6文字以上で入力してください</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="confirmPassword" class="form-label">パスワード確認</label>
+                        <input type="password" class="form-control" id="confirmPassword" name="confirmPassword" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="checkbox-container">
+                            <input type="checkbox" id="terms" required>
+                            <span class="checkmark"></span>
+                            <span class="checkbox-text">利用規約とプライバシーポリシーに同意します</span>
+                        </label>
+                    </div>
+
+                    <button type="submit" class="btn btn-accent btn-lg auth-submit">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+                            <circle cx="8.5" cy="7" r="4"/>
+                            <path d="M20 8v6M23 11h-6"/>
+                        </svg>
+                        アカウント作成
+                    </button>
+                </form>
+
+                <div class="auth-divider">
+                    <span>または</span>
+                </div>
+
+                <div class="auth-links">
+                    <a href="/login" class="auth-link">
+                        既にアカウントをお持ちの方はこちら
+                    </a>
+                </div>
+            </div>
+
+            <div class="auth-footer">
+                <p>&copy; 2025 BodyScale. All rights reserved.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+
+    <script>
+        // Firebase設定（サーバーから取得）
+        let firebaseConfig = null;
+        let auth = null;
+
+        // Firebase初期化
+        async function initFirebase() {
+            try {
+                const response = await fetch('/firebase-config');
+                firebaseConfig = await response.json();
+                
+                if (firebaseConfig && firebaseConfig.apiKey) {
+                    firebase.initializeApp(firebaseConfig);
+                    auth = firebase.auth();
+                }
+            } catch (error) {
+                console.log('Firebase初期化スキップ:', error);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initFirebase();
+
+            document.getElementById('registerForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                const confirmPassword = document.getElementById('confirmPassword').value;
+                
+                // パスワード確認
+                if (password !== confirmPassword) {
+                    alert('パスワードが一致しません');
+                    return;
+                }
+                
+                try {
+                    // Firebase認証を試行
+                    if (auth) {
+                        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                        
+                        // メール認証送信
+                        await userCredential.user.sendEmailVerification();
+                        
+                        const idToken = await userCredential.user.getIdToken();
+                        
+                        // サーバーにIDトークンを送信
+                        const response = await fetch('/firebase-register', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ idToken: idToken, email: email })
+                        });
+                        
+                        const result = await response.json();
+                        if (result.success) {
+                            alert('アカウントを作成しました。確認メールを送信しました。');
+                            window.location.href = '/login';
+                        } else {
+                            alert('登録に失敗しました: ' + result.error);
+                        }
+                    } else {
+                        // フォールバック: 従来の認証
+                        const response = await fetch('/register', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ email: email, password: password })
+                        });
+                        
+                        const result = await response.json();
+                        if (result.success) {
+                            alert('アカウントを作成しました');
+                            window.location.href = '/login';
+                        } else {
+                            alert('登録に失敗しました: ' + result.error);
+                        }
+                    }
+                } catch (error) {
+                    console.error('登録エラー:', error);
+                    alert('登録中にエラーが発生しました: ' + error.message);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
