@@ -49,7 +49,6 @@ class WorkoutDatabase:
                             exercise VARCHAR(100) NOT NULL,
                             weight_kg FLOAT NOT NULL,
                             reps INTEGER NOT NULL,
-                            sets INTEGER NOT NULL,
                             notes TEXT,
                             form_analysis_ref VARCHAR(255),
                             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -131,7 +130,7 @@ class WorkoutDatabase:
             return False
     
     def add_workout(self, user_id: str, date: str, exercise: str, weight_kg: float, 
-                   reps: int, sets: int, notes: str = None, form_analysis_ref: str = None, exercise_name: str = None):
+                   reps: int, notes: str = None, form_analysis_ref: str = None, exercise_name: str = None):
         """ワークアウト記録を追加"""
         try:
             with self.get_connection() as conn:

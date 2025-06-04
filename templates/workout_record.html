@@ -33,7 +33,9 @@
                                 <option value="chest">胸部</option>
                                 <option value="back">背中</option>
                                 <option value="shoulders">肩</option>
-                                <option value="arms">腕</option>
+                                <option value="biceps">上腕二頭筋</option>
+                                <option value="triceps">上腕三頭筋</option>
+                                <option value="forearms">前腕</option>
                                 <option value="legs">脚部</option>
                                 <option value="abs">腹筋</option>
                             </select>
@@ -46,7 +48,7 @@
                             </select>
                         </div>
 
-                        <div class="form-grid-3">
+                        <div class="form-grid-2">
                             <div class="form-group">
                                 <label for="weight" class="form-label">重量 (kg)</label>
                                 <input type="number" step="0.5" class="form-control" id="weight" required>
@@ -54,10 +56,6 @@
                             <div class="form-group">
                                 <label for="reps" class="form-label">回数</label>
                                 <input type="number" class="form-control" id="reps" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="sets" class="form-label">セット数</label>
-                                <input type="number" class="form-control" id="sets" required>
                             </div>
                         </div>
 
@@ -179,19 +177,30 @@
                 {id: 'military_press', name: 'ミリタリープレス'},
                 {id: 'arnold_press', name: 'アーノルドプレス'}
             ],
-            arms: [
+            biceps: [
                 {id: 'barbell_curl', name: 'バーベルカール'},
                 {id: 'dumbbell_curl', name: 'ダンベルカール'},
                 {id: 'preacher_curl', name: 'プリチャーカール'},
                 {id: 'hammer_curl', name: 'ハンマーカール'},
                 {id: 'cable_curl', name: 'ケーブルカール'},
                 {id: 'concentration_curl', name: 'コンセントレーションカール'},
+                {id: 'drag_curl', name: 'ドラッグカール'},
+                {id: 'reverse_grip_chinning', name: '逆手懸垂'}
+            ],
+            triceps: [
                 {id: 'triceps_extension', name: 'トライセップスエクステンション'},
                 {id: 'skull_crusher', name: 'スカルクラッシャー'},
                 {id: 'narrow_bench_press', name: 'ナローベンチプレス'},
                 {id: 'push_down', name: 'プッシュダウン'},
                 {id: 'cable_extension', name: 'ケーブルエクステンション'},
                 {id: 'overhead_extension', name: 'オーバーヘッドエクステンション'},
+                {id: 'french_press', name: 'フレンチプレス'},
+                {id: 'press_down', name: 'プレスダウン'},
+                {id: 'kickback', name: 'キックバック'},
+                {id: 'reverse_push_up', name: 'リバースプッシュアップ'},
+                {id: 'diamond_push_up', name: 'ダイヤモンドプッシュアップ'}
+            ],
+            forearms: [
                 {id: 'wrist_curl', name: 'リストカール'},
                 {id: 'reverse_wrist_curl', name: 'リバースリストカール'},
                 {id: 'farmer_walk', name: 'ファーマーズウォーク'}
@@ -264,7 +273,6 @@
                     exercise: document.getElementById('exerciseSelect').value,
                     weight: parseFloat(document.getElementById('weight').value),
                     reps: parseInt(document.getElementById('reps').value),
-                    sets: parseInt(document.getElementById('sets').value),
                     notes: document.getElementById('notes').value
                 };
 
