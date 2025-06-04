@@ -337,21 +337,22 @@
         });
 
         function loadRecentWorkouts() {
-            fetch('/get_workouts?limit=5')
+            // 部位別集計データを読み込み
+            fetch('/get_workouts?view=summary')
                 .then(response => response.json())
                 .then(data => {
                     const container = document.getElementById('recentWorkouts');
                     
-                    if (data.workouts && data.workouts.length > 0) {
-                        container.innerHTML = data.workouts.map(workout => `
-                            <div class="workout-item">
-                                <div class="workout-header">
-                                    <span class="exercise-name">${workout.exercise_name || workout.exercise}</span>
-                                    <span class="workout-date">${workout.date}</span>
+                    if (data.summary && data.summary.length > 0) {
+                        container.innerHTML = data.summary.map(item => `
+                            <div class="muscle-group-item" onclick="toggleCategoryDetails('${item.category}', this)">
+                                <div class="muscle-group-header">
+                                    <span class="muscle-group-name">${item.category_name}</span>
+                                    <span class="muscle-group-volume">${Math.round(item.total_volume)}kg</span>
+                                    <span class="expand-icon">▼</span>
                                 </div>
-                                <div class="workout-details">
-                                    ${workout.weight_kg || workout.weight}kg × ${workout.reps}回
-                                    ${workout.notes ? `<span class="workout-notes">${workout.notes}</span>` : ''}
+                                <div class="muscle-group-details" id="details-${item.category}" style="display: none;">
+                                    <div class="loading">詳細を読み込み中...</div>
                                 </div>
                             </div>
                         `).join('');
@@ -363,6 +364,47 @@
                     console.error('Error:', error);
                     document.getElementById('recentWorkouts').innerHTML = '<p class="error">記録の読み込みに失敗しました</p>';
                 });
+        }
+
+        function toggleCategoryDetails(category, element) {
+            const detailsDiv = document.getElementById(`details-${category}`);
+            const expandIcon = element.querySelector('.expand-icon');
+            
+            if (detailsDiv.style.display === 'none') {
+                // 詳細を表示
+                detailsDiv.style.display = 'block';
+                expandIcon.textContent = '▲';
+                
+                // データを読み込み
+                fetch(`/get_workouts_by_category/${category}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.workouts && data.workouts.length > 0) {
+                            detailsDiv.innerHTML = data.workouts.map(workout => `
+                                <div class="workout-detail-item">
+                                    <div class="workout-detail-header">
+                                        <span class="exercise-name">${workout.exercise_name || workout.exercise}</span>
+                                        <span class="workout-date">${workout.date}</span>
+                                    </div>
+                                    <div class="workout-detail-data">
+                                        ${workout.weight_kg}kg × ${workout.reps}回
+                                        ${workout.notes ? `<span class="workout-notes">${workout.notes}</span>` : ''}
+                                    </div>
+                                </div>
+                            `).join('');
+                        } else {
+                            detailsDiv.innerHTML = '<p class="no-data">この部位の記録がありません</p>';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        detailsDiv.innerHTML = '<p class="error">詳細の読み込みに失敗しました</p>';
+                    });
+            } else {
+                // 詳細を非表示
+                detailsDiv.style.display = 'none';
+                expandIcon.textContent = '▼';
+            }
         }
 
         function loadAllWorkouts() {

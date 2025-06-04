@@ -1034,3 +1034,107 @@ body {
     border-right: 1px solid var(--border-color);
   }
 }
+
+/* 部位別表示スタイル */
+.muscle-group-item {
+  background-color: var(--surface-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: 1rem;
+  margin-bottom: 0.75rem;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.muscle-group-item:hover {
+  box-shadow: var(--shadow);
+  border-color: rgba(0, 17, 48, 0.1);
+}
+
+.muscle-group-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: linear-gradient(135deg, var(--surface-elevated) 0%, var(--surface-bg) 100%);
+}
+
+.muscle-group-name {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+.muscle-group-volume {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--sub-accent);
+  background: var(--gradient-gold);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.expand-icon {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  transition: transform 0.2s ease;
+  user-select: none;
+}
+
+.muscle-group-details {
+  border-top: 1px solid var(--border-color);
+  background-color: var(--surface-bg);
+}
+
+.workout-detail-item {
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid rgba(0, 17, 48, 0.04);
+}
+
+.workout-detail-item:last-child {
+  border-bottom: none;
+}
+
+.workout-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.25rem;
+}
+
+.workout-detail-header .exercise-name {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.workout-detail-header .workout-date {
+  font-size: 0.8rem;
+  color: var(--text-light);
+  font-weight: 400;
+}
+
+.workout-detail-data {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.workout-notes {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.85rem;
+  color: var(--text-light);
+  font-style: italic;
+  font-weight: 400;
+}
+
+.loading {
+  padding: 1rem;
+  text-align: center;
+  color: var(--text-light);
+  font-size: 0.9rem;
+}

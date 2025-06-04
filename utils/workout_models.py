@@ -175,6 +175,95 @@ class WorkoutDatabase:
             print(f"ワークアウト取得エラー: {e}")
             return []
     
+    def get_workouts_summary_by_category(self, user_id: str) -> List[Dict]:
+        """部位別にワークアウト記録を集計"""
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                    # 部位別の総重量を計算
+                    cur.execute("""
+                        SELECT 
+                            CASE 
+                                WHEN exercise IN ('bench_press', 'incline_bench_press', 'decline_bench_press', 'chest_press', 'push_up', 'dips', 'dumbbell_fly', 'incline_dumbbell_fly', 'cable_crossover', 'dumbbell_pullover') THEN 'chest'
+                                WHEN exercise IN ('deadlift', 'lat_pulldown', 'bent_over_row', 'one_hand_row', 'chin_up', 't_bar_row', 'shrug', 'back_extension', 'seated_row') THEN 'back'
+                                WHEN exercise IN ('shoulder_press', 'arnold_press', 'upright_row', 'front_raise', 'side_raise', 'rear_raise', 'face_pull') THEN 'shoulders'
+                                WHEN exercise IN ('barbell_curl', 'dumbbell_curl', 'hammer_curl', 'concentration_curl', 'preacher_curl', 'cable_curl', 'drag_curl', 'reverse_chin_up') THEN 'biceps'
+                                WHEN exercise IN ('triceps_extension', 'skull_crusher', 'narrow_bench_press', 'push_down', 'cable_extension', 'overhead_extension', 'french_press', 'press_down', 'kickback', 'reverse_push_up', 'diamond_push_up') THEN 'triceps'
+                                WHEN exercise IN ('wrist_curl', 'reverse_wrist_curl', 'farmer_walk') THEN 'forearms'
+                                WHEN exercise IN ('squat', 'leg_press', 'leg_extension', 'front_squat', 'goblet_squat', 'split_squat', 'lunge', 'hack_squat', 'sissy_squat') THEN 'quadriceps'
+                                WHEN exercise IN ('romanian_deadlift', 'rdl', 'leg_curl', 'good_morning', 'stiff_leg_deadlift', 'back_extension') THEN 'hamstrings'
+                                WHEN exercise IN ('hip_thrust', 'bulgarian_squat', 'cable_kickback', 'abduction', 'adduction', 'glute_bridge') THEN 'glutes'
+                                WHEN exercise IN ('standing_calf_raise', 'seated_calf_raise') THEN 'calves'
+                                WHEN exercise IN ('crunch', 'sit_up', 'leg_raise', 'plank', 'side_plank', 'russian_twist', 'ab_roller', 'bicycle_crunch', 'mountain_climber', 'side_bend', 'knee_to_chest') THEN 'abs'
+                                ELSE 'other'
+                            END as category,
+                            CASE 
+                                WHEN exercise IN ('bench_press', 'incline_bench_press', 'decline_bench_press', 'chest_press', 'push_up', 'dips', 'dumbbell_fly', 'incline_dumbbell_fly', 'cable_crossover', 'dumbbell_pullover') THEN '胸'
+                                WHEN exercise IN ('deadlift', 'lat_pulldown', 'bent_over_row', 'one_hand_row', 'chin_up', 't_bar_row', 'shrug', 'back_extension', 'seated_row') THEN '背中'
+                                WHEN exercise IN ('shoulder_press', 'arnold_press', 'upright_row', 'front_raise', 'side_raise', 'rear_raise', 'face_pull') THEN '肩'
+                                WHEN exercise IN ('barbell_curl', 'dumbbell_curl', 'hammer_curl', 'concentration_curl', 'preacher_curl', 'cable_curl', 'drag_curl', 'reverse_chin_up') THEN '上腕二頭筋'
+                                WHEN exercise IN ('triceps_extension', 'skull_crusher', 'narrow_bench_press', 'push_down', 'cable_extension', 'overhead_extension', 'french_press', 'press_down', 'kickback', 'reverse_push_up', 'diamond_push_up') THEN '上腕三頭筋'
+                                WHEN exercise IN ('wrist_curl', 'reverse_wrist_curl', 'farmer_walk') THEN '前腕'
+                                WHEN exercise IN ('squat', 'leg_press', 'leg_extension', 'front_squat', 'goblet_squat', 'split_squat', 'lunge', 'hack_squat', 'sissy_squat') THEN '大腿四頭筋'
+                                WHEN exercise IN ('romanian_deadlift', 'rdl', 'leg_curl', 'good_morning', 'stiff_leg_deadlift', 'back_extension') THEN 'ハムストリングス'
+                                WHEN exercise IN ('hip_thrust', 'bulgarian_squat', 'cable_kickback', 'abduction', 'adduction', 'glute_bridge') THEN 'お尻'
+                                WHEN exercise IN ('standing_calf_raise', 'seated_calf_raise') THEN 'ふくらはぎ'
+                                WHEN exercise IN ('crunch', 'sit_up', 'leg_raise', 'plank', 'side_plank', 'russian_twist', 'ab_roller', 'bicycle_crunch', 'mountain_climber', 'side_bend', 'knee_to_chest') THEN '腹筋'
+                                ELSE 'その他'
+                            END as category_name,
+                            SUM(weight_kg * reps) as total_volume,
+                            COUNT(*) as workout_count,
+                            MAX(date) as latest_date
+                        FROM workouts 
+                        WHERE user_id = %s 
+                        GROUP BY category, category_name
+                        HAVING category != 'other'
+                        ORDER BY total_volume DESC
+                    """, (user_id,))
+                    summary = cur.fetchall()
+                    return [dict(item) for item in summary]
+        except Exception as e:
+            print(f"部位別集計エラー: {e}")
+            return []
+    
+    def get_workouts_by_category(self, user_id: str, category: str) -> List[Dict]:
+        """特定の部位のワークアウト記録を取得"""
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                    # カテゴリに応じた種目リストを定義
+                    category_exercises = {
+                        'chest': ['bench_press', 'incline_bench_press', 'decline_bench_press', 'chest_press', 'push_up', 'dips', 'dumbbell_fly', 'incline_dumbbell_fly', 'cable_crossover', 'dumbbell_pullover'],
+                        'back': ['deadlift', 'lat_pulldown', 'bent_over_row', 'one_hand_row', 'chin_up', 't_bar_row', 'shrug', 'back_extension', 'seated_row'],
+                        'shoulders': ['shoulder_press', 'arnold_press', 'upright_row', 'front_raise', 'side_raise', 'rear_raise', 'face_pull'],
+                        'biceps': ['barbell_curl', 'dumbbell_curl', 'hammer_curl', 'concentration_curl', 'preacher_curl', 'cable_curl', 'drag_curl', 'reverse_chin_up'],
+                        'triceps': ['triceps_extension', 'skull_crusher', 'narrow_bench_press', 'push_down', 'cable_extension', 'overhead_extension', 'french_press', 'press_down', 'kickback', 'reverse_push_up', 'diamond_push_up'],
+                        'forearms': ['wrist_curl', 'reverse_wrist_curl', 'farmer_walk'],
+                        'quadriceps': ['squat', 'leg_press', 'leg_extension', 'front_squat', 'goblet_squat', 'split_squat', 'lunge', 'hack_squat', 'sissy_squat'],
+                        'hamstrings': ['romanian_deadlift', 'rdl', 'leg_curl', 'good_morning', 'stiff_leg_deadlift', 'back_extension'],
+                        'glutes': ['hip_thrust', 'bulgarian_squat', 'cable_kickback', 'abduction', 'adduction', 'glute_bridge'],
+                        'calves': ['standing_calf_raise', 'seated_calf_raise'],
+                        'abs': ['crunch', 'sit_up', 'leg_raise', 'plank', 'side_plank', 'russian_twist', 'ab_roller', 'bicycle_crunch', 'mountain_climber', 'side_bend', 'knee_to_chest']
+                    }
+                    
+                    exercises = category_exercises.get(category, [])
+                    if not exercises:
+                        return []
+                    
+                    placeholders = ','.join(['%s'] * len(exercises))
+                    query = f"""
+                        SELECT * FROM workouts 
+                        WHERE user_id = %s AND exercise IN ({placeholders})
+                        ORDER BY date DESC, created_at DESC
+                    """
+                    
+                    cur.execute(query, [user_id] + exercises)
+                    workouts = cur.fetchall()
+                    return [dict(workout) for workout in workouts]
+        except Exception as e:
+            print(f"カテゴリ別ワークアウト取得エラー: {e}")
+            return []
+    
     def get_workouts_by_date_range(self, user_id: str, start_date: str, end_date: str) -> List[Dict]:
         """日付範囲でワークアウト記録を取得"""
         try:

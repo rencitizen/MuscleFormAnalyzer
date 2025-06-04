@@ -477,9 +477,44 @@ def get_workouts():
     """ワークアウト記録を取得するAPI"""
     try:
         user_id = session.get('user_email', 'default_user')
-        limit = int(request.args.get('limit', 50))
+        view_type = request.args.get('view', 'detailed')  # detailed または summary
         
-        workouts = workout_db.get_workouts_by_user(user_id, limit)
+        if view_type == 'summary':
+            # 部位別集計データを取得
+            summary = workout_db.get_workouts_summary_by_category(user_id)
+            
+            # 日付を文字列に変換
+            for item in summary:
+                if item.get('latest_date'):
+                    item['latest_date'] = item['latest_date'].strftime('%Y-%m-%d')
+            
+            return jsonify({'summary': summary})
+        else:
+            # 詳細データを取得
+            limit = int(request.args.get('limit', 50))
+            workouts = workout_db.get_workouts_by_user(user_id, limit)
+            
+            # 日付を文字列に変換
+            for workout in workouts:
+                if workout.get('date'):
+                    workout['date'] = workout['date'].strftime('%Y-%m-%d')
+                if workout.get('created_at'):
+                    workout['created_at'] = workout['created_at'].isoformat()
+                if workout.get('updated_at'):
+                    workout['updated_at'] = workout['updated_at'].isoformat()
+            
+            return jsonify({'workouts': workouts})
+        
+    except Exception as e:
+        logger.error(f"ワークアウト取得エラー: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/get_workouts_by_category/<category>', methods=['GET'])
+def get_workouts_by_category(category):
+    """特定部位のワークアウト記録を取得するAPI"""
+    try:
+        user_id = session.get('user_email', 'default_user')
+        workouts = workout_db.get_workouts_by_category(user_id, category)
         
         # 日付を文字列に変換
         for workout in workouts:
@@ -493,7 +528,7 @@ def get_workouts():
         return jsonify({'workouts': workouts})
         
     except Exception as e:
-        logger.error(f"ワークアウト取得エラー: {e}")
+        logger.error(f"カテゴリ別ワークアウト取得エラー: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/delete_workout/<int:workout_id>', methods=['DELETE'])
