@@ -30,6 +30,9 @@ def allowed_file(filename):
 
 @app.route('/')
 def index():
+    # 認証チェック
+    if not session.get('user_email'):
+        return redirect('/login')
     return render_template('index.html')
 
 @app.route('/analyze', methods=['POST'])
@@ -946,7 +949,7 @@ def login():
         return jsonify({'error': 'ログインに失敗しました'}), 500
 
 @app.route('/api/auth/logout', methods=['POST'])
-def logout():
+def api_logout():
     """ログアウト"""
     try:
         session_token = session.get('session_token')
