@@ -455,7 +455,6 @@ def add_workout():
             exercise_name=data.get('exercise_name', data['exercise']),
             weight_kg=float(data['weight']),
             reps=int(data['reps']),
-            sets=int(data['sets']),
             notes=data.get('notes'),
             form_analysis_ref=data.get('form_analysis_ref')
         )

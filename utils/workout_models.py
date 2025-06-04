@@ -147,10 +147,10 @@ class WorkoutDatabase:
                         conn.commit()
                     
                     cur.execute("""
-                        INSERT INTO workouts (user_id, date, exercise, exercise_name, weight_kg, reps, sets, notes, form_analysis_ref)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        INSERT INTO workouts (user_id, date, exercise, exercise_name, weight_kg, reps, notes, form_analysis_ref)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                         RETURNING id
-                    """, (user_id, date, exercise, exercise_name or exercise, weight_kg, reps, sets, notes, form_analysis_ref))
+                    """, (user_id, date, exercise, exercise_name or exercise, weight_kg, reps, notes, form_analysis_ref))
                     workout_id = cur.fetchone()[0]
                     conn.commit()
                     return workout_id
