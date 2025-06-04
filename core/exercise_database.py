@@ -94,8 +94,7 @@ EXERCISE_DATABASE = {
                     {"id": "straight_arm_pulldown", "name": "ストレートアームプルダウン", "type": "isolation"},
                     {"id": "t_bar_row", "name": "Tバーロウ", "type": "compound"},
                     {"id": "bent_over_row", "name": "ベントオーバーロウ", "type": "compound"},
-                    {"id": "one_hand_row", "name": "ワンハンドロウ", "type": "compound"},
-                    {"id": "reverse_grip_chinning", "name": "逆手懸垂", "type": "compound"}
+                    {"id": "one_hand_row", "name": "ワンハンドロウ", "type": "compound"}
                 ]
             },
             "traps_erectors": {
@@ -132,11 +131,11 @@ EXERCISE_DATABASE = {
             }
         }
     },
-    "arms": {
-        "name": "腕",
+    "biceps": {
+        "name": "上腕二頭筋",
         "icon": "💪",
         "subcategories": {
-            "biceps": {
+            "biceps_main": {
                 "name": "上腕二頭筋",
                 "exercises": [
                     {"id": "barbell_curl", "name": "バーベルカール", "type": "isolation"},
@@ -145,10 +144,17 @@ EXERCISE_DATABASE = {
                     {"id": "hammer_curl", "name": "ハンマーカール", "type": "isolation"},
                     {"id": "cable_curl", "name": "ケーブルカール", "type": "isolation"},
                     {"id": "concentration_curl", "name": "コンセントレーションカール", "type": "isolation"},
-                    {"id": "drag_curl", "name": "ドラッグカール", "type": "isolation"}
+                    {"id": "drag_curl", "name": "ドラッグカール", "type": "isolation"},
+                    {"id": "reverse_grip_chinning", "name": "逆手懸垂", "type": "compound"}
                 ]
-            },
-            "triceps": {
+            }
+        }
+    },
+    "triceps": {
+        "name": "上腕三頭筋",
+        "icon": "🔥",
+        "subcategories": {
+            "triceps_main": {
                 "name": "上腕三頭筋",
                 "exercises": [
                     {"id": "triceps_extension", "name": "トライセップスエクステンション", "type": "isolation"},
@@ -163,9 +169,15 @@ EXERCISE_DATABASE = {
                     {"id": "reverse_push_up", "name": "リバースプッシュアップ", "type": "compound"},
                     {"id": "diamond_push_up", "name": "ダイヤモンドプッシュアップ", "type": "compound"}
                 ]
-            },
-            "forearms": {
-                "name": "前腕",
+            }
+        }
+    },
+    "forearms": {
+        "name": "前腕",
+        "icon": "✊",
+        "subcategories": {
+            "forearms_main": {
+                "name": "前腕筋群",
                 "exercises": [
                     {"id": "wrist_curl", "name": "リストカール", "type": "isolation"},
                     {"id": "reverse_wrist_curl", "name": "リバースリストカール", "type": "isolation"},
