@@ -131,16 +131,27 @@ class WorkoutDatabase:
             return False
     
     def add_workout(self, user_id: str, date: str, exercise: str, weight_kg: float, 
-                   reps: int, sets: int, notes: str = None, form_analysis_ref: str = None):
+                   reps: int, sets: int, notes: str = None, form_analysis_ref: str = None, exercise_name: str = None):
         """ワークアウト記録を追加"""
         try:
             with self.get_connection() as conn:
                 with conn.cursor() as cur:
+                    # exercise_nameカラムが存在するかチェックし、なければ追加
                     cur.execute("""
-                        INSERT INTO workouts (user_id, date, exercise, weight_kg, reps, sets, notes, form_analysis_ref)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                        SELECT column_name FROM information_schema.columns 
+                        WHERE table_name = 'workouts' AND column_name = 'exercise_name'
+                    """)
+                    has_exercise_name = cur.fetchone()
+                    
+                    if not has_exercise_name:
+                        cur.execute("ALTER TABLE workouts ADD COLUMN exercise_name VARCHAR(255)")
+                        conn.commit()
+                    
+                    cur.execute("""
+                        INSERT INTO workouts (user_id, date, exercise, exercise_name, weight_kg, reps, sets, notes, form_analysis_ref)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                         RETURNING id
-                    """, (user_id, date, exercise, weight_kg, reps, sets, notes, form_analysis_ref))
+                    """, (user_id, date, exercise, exercise_name or exercise, weight_kg, reps, sets, notes, form_analysis_ref))
                     workout_id = cur.fetchone()[0]
                     conn.commit()
                     return workout_id
