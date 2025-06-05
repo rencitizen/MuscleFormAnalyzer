@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>データ管理 - Tenax Fit</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .data-management-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .section-card {
+            background: var(--surface-elevated);
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-color);
+        }
+        
+        .section-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .section-icon {
+            width: 24px;
+            height: 24px;
+            margin-right: 0.75rem;
+            color: var(--sub-accent);
+        }
+        
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-left: auto;
+        }
+        
+        .status-active {
+            background: #dcfce7;
+            color: #166534;
+        }
+        
+        .status-inactive {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+        
+        .status-pending {
+            background: #fef3c7;
+            color: #d97706;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .info-item {
+            text-align: center;
+            padding: 1rem;
+            background: var(--surface-bg);
+            border-radius: 0.5rem;
+        }
+        
+        .info-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--sub-accent);
+        }
+        
+        .info-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+            border: none;
+        }
+        
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+        
+        .btn-warning {
+            background: #f59e0b;
+            color: white;
+            border: none;
+        }
+        
+        .btn-warning:hover {
+            background: #d97706;
+        }
+        
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .loading-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            text-align: center;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--border-color);
+            border-top: 4px solid var(--sub-accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .export-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .export-card {
+            padding: 1rem;
+            border: 2px solid var(--border-color);
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .export-card:hover {
+            border-color: var(--sub-accent);
+            background: var(--hover-bg);
+        }
+        
+        .export-card.selected {
+            border-color: var(--sub-accent);
+            background: var(--active-bg);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="main-content">
+            <div class="data-management-container">
+                <!-- ページヘッダー -->
+                <div class="section-card">
+                    <div class="section-header">
+                        <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        </svg>
+                        <h1 class="section-title">データ管理センター</h1>
+                    </div>
+                    <p class="section-content">
+                        あなたのトレーニングデータの利用状況と管理オプションです。
+                        データのプライバシーとセキュリティを最優先に保護しています。
+                    </p>
+                </div>
+
+                <!-- 同意状況 -->
+                <div class="section-card">
+                    <div class="section-header">
+                        <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M9 12l2 2 4-4"/>
+                            <path d="M21 12c-1 0-3-1-3-3s2-3 3-3 3 1 3 3-2 3-3 3"/>
+                            <path d="M3 12c1 0 3-1 3-3s-2-3-3-3-3 1-3 3 2 3 3 3"/>
+                        </svg>
+                        <h2 class="section-title">データ利用同意状況</h2>
+                        <div class="status-badge status-pending" id="consentStatus">
+                            確認中...
+                        </div>
+                    </div>
+                    
+                    <div id="consentInfo" class="section-content">
+                        <p>同意状況を確認中です...</p>
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button class="btn" id="changeConsentBtn" style="display: none;">
+                            同意設定を変更
+                        </button>
+                        <button class="btn btn-warning" id="optOutBtn" style="display: none;">
+                            データ収集から除外
+                        </button>
+                    </div>
+                </div>
+
+                <!-- データ統計 -->
+                <div class="section-card">
+                    <div class="section-header">
+                        <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M3 3v18h18"/>
+                            <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/>
+                        </svg>
+                        <h2 class="section-title">収集データ統計</h2>
+                    </div>
+                    
+                    <div id="dataStats" class="info-grid">
+                        <div class="info-item">
+                            <div class="info-value" id="totalRecords">-</div>
+                            <div class="info-label">総記録数</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-value" id="uniqueUsers">-</div>
+                            <div class="info-label">参加ユーザー数</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-value" id="uniqueExercises">-</div>
+                            <div class="info-label">エクササイズ種類</div>
+                        </div>
+                    </div>
+                    
+                    <button class="btn" onclick="loadDataStats()">
+                        統計を更新
+                    </button>
+                </div>
+
+                <!-- データエクスポート -->
+                <div class="section-card">
+                    <div class="section-header">
+                        <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="7,10 12,15 17,10"/>
+                            <line x1="12" y1="15" x2="12" y2="3"/>
+                        </svg>
+                        <h2 class="section-title">データエクスポート</h2>
+                    </div>
+                    
+                    <p class="section-content">
+                        研究目的でのデータエクスポートが可能です。
+                        すべてのデータは匿名化されており、個人を特定することはできません。
+                    </p>
+                    
+                    <div class="export-options">
+                        <div class="export-card" onclick="selectExportFormat('csv')">
+                            <h3>CSV形式</h3>
+                            <p>スプレッドシートソフトで開けるデータ</p>
+                        </div>
+                        <div class="export-card selected" onclick="selectExportFormat('json')">
+                            <h3>JSON形式</h3>
+                            <p>プログラムで処理しやすいデータ</p>
+                        </div>
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button class="btn" onclick="exportData()">
+                            データをエクスポート
+                        </button>
+                    </div>
+                </div>
+
+                <!-- データ削除 -->
+                <div class="section-card">
+                    <div class="section-header">
+                        <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <polyline points="3,6 5,6 21,6"/>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                            <line x1="10" y1="11" x2="10" y2="17"/>
+                            <line x1="14" y1="11" x2="14" y2="17"/>
+                        </svg>
+                        <h2 class="section-title">データ削除</h2>
+                    </div>
+                    
+                    <p class="section-content">
+                        <strong>注意:</strong> この操作により、あなたに関連するすべてのトレーニングデータが完全に削除されます。
+                        この操作は取り消すことができません。
+                    </p>
+                    
+                    <div class="action-buttons">
+                        <button class="btn btn-danger" onclick="confirmDeleteUserData()">
+                            すべてのデータを削除
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ローディングオーバーレイ -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <p>処理中...</p>
+        </div>
+    </div>
+
+    <script>
+        let selectedExportFormat = 'json';
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadConsentStatus();
+            loadDataStats();
+        });
+
+        function showLoading() {
+            document.getElementById('loadingOverlay').style.display = 'flex';
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').style.display = 'none';
+        }
+
+        function loadConsentStatus() {
+            fetch('/api/data_consent/status')
+                .then(response => response.json())
+                .then(data => {
+                    const statusEl = document.getElementById('consentStatus');
+                    const infoEl = document.getElementById('consentInfo');
+                    const changeBtn = document.getElementById('changeConsentBtn');
+                    const optOutBtn = document.getElementById('optOutBtn');
+
+                    if (data.error) {
+                        statusEl.textContent = 'エラー';
+                        statusEl.className = 'status-badge status-inactive';
+                        infoEl.innerHTML = `<p>同意状況の確認中にエラーが発生しました: ${data.error}</p>`;
+                        return;
+                    }
+
+                    if (data.has_consent) {
+                        statusEl.textContent = '同意済み';
+                        statusEl.className = 'status-badge status-active';
+                        infoEl.innerHTML = `
+                            <p>データ利用に同意いただいており、トレーニングデータの収集が有効です。</p>
+                            <p><strong>同意日:</strong> ${data.consent_date ? new Date(data.consent_date).toLocaleDateString('ja-JP') : '不明'}</p>
+                        `;
+                        optOutBtn.style.display = 'inline-block';
+                    } else if (data.opted_out) {
+                        statusEl.textContent = 'オプトアウト済み';
+                        statusEl.className = 'status-badge status-inactive';
+                        infoEl.innerHTML = '<p>データ収集からオプトアウトされています。</p>';
+                        changeBtn.style.display = 'inline-block';
+                    } else {
+                        statusEl.textContent = '未同意';
+                        statusEl.className = 'status-badge status-pending';
+                        infoEl.innerHTML = '<p>まだデータ利用に同意されていません。</p>';
+                        changeBtn.style.display = 'inline-block';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById('consentStatus').textContent = 'エラー';
+                    document.getElementById('consentStatus').className = 'status-badge status-inactive';
+                });
+        }
+
+        function loadDataStats() {
+            fetch('/api/training_data/stats')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        document.getElementById('totalRecords').textContent = 'N/A';
+                        document.getElementById('uniqueUsers').textContent = 'N/A';
+                        document.getElementById('uniqueExercises').textContent = 'N/A';
+                        return;
+                    }
+
+                    document.getElementById('totalRecords').textContent = data.total_records || 0;
+                    document.getElementById('uniqueUsers').textContent = data.unique_users || 0;
+                    document.getElementById('uniqueExercises').textContent = data.unique_exercises || 0;
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById('totalRecords').textContent = 'エラー';
+                    document.getElementById('uniqueUsers').textContent = 'エラー';
+                    document.getElementById('uniqueExercises').textContent = 'エラー';
+                });
+        }
+
+        function selectExportFormat(format) {
+            selectedExportFormat = format;
+            
+            // 選択状態を更新
+            document.querySelectorAll('.export-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            event.target.closest('.export-card').classList.add('selected');
+        }
+
+        function exportData() {
+            showLoading();
+            
+            const url = `/api/training_data/export?format=${selectedExportFormat}`;
+            
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('エクスポートに失敗しました');
+                    }
+                    return response.blob();
+                })
+                .then(blob => {
+                    // ファイルダウンロード
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `training_data.${selectedExportFormat}`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                    
+                    hideLoading();
+                    alert('データのエクスポートが完了しました。');
+                })
+                .catch(error => {
+                    hideLoading();
+                    console.error('Error:', error);
+                    alert('エクスポート中にエラーが発生しました。');
+                });
+        }
+
+        function confirmDeleteUserData() {
+            const confirmed = confirm(
+                'この操作により、あなたのすべてのトレーニングデータが完全に削除されます。\n' +
+                'この操作は取り消すことができません。\n\n' +
+                '本当に削除しますか？'
+            );
+
+            if (confirmed) {
+                const doubleConfirmed = confirm(
+                    '最終確認:\n' +
+                    'すべてのデータを削除します。よろしいですか？'
+                );
+
+                if (doubleConfirmed) {
+                    deleteUserData();
+                }
+            }
+        }
+
+        function deleteUserData() {
+            showLoading();
+
+            fetch('/api/training_data/delete_user_data', {
+                method: 'DELETE'
+            })
+                .then(response => response.json())
+                .then(data => {
+                    hideLoading();
+                    
+                    if (data.success) {
+                        alert('すべてのデータが削除されました。');
+                        loadConsentStatus();
+                        loadDataStats();
+                    } else {
+                        alert('データの削除中にエラーが発生しました: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    hideLoading();
+                    console.error('Error:', error);
+                    alert('データの削除中にエラーが発生しました。');
+                });
+        }
+
+        function optOut() {
+            const confirmed = confirm(
+                'データ収集からオプトアウトしますか？\n' +
+                'この操作により、今後のデータ収集が停止されます。'
+            );
+
+            if (confirmed) {
+                showLoading();
+
+                fetch('/api/training_data/opt_out', {
+                    method: 'POST'
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        hideLoading();
+                        
+                        if (data.success) {
+                            alert('オプトアウトが完了しました。');
+                            loadConsentStatus();
+                        } else {
+                            alert('オプトアウト中にエラーが発生しました: ' + data.error);
+                        }
+                    })
+                    .catch(error => {
+                        hideLoading();
+                        console.error('Error:', error);
+                        alert('オプトアウト中にエラーが発生しました。');
+                    });
+            }
+        }
+
+        // ボタンイベントの設定
+        document.getElementById('changeConsentBtn').addEventListener('click', function() {
+            window.location.href = '/data_consent';
+        });
+
+        document.getElementById('optOutBtn').addEventListener('click', optOut);
+    </script>
+</body>
+</html>

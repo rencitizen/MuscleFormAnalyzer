@@ -27,6 +27,21 @@ except Exception as e:
     ML_ENGINE = None
     ML_AVAILABLE = False
     logger.warning(f"機械学習エンジン初期化エラー: {e}")
+
+# Training Data Collection Integration
+try:
+    from ml.data.training_data_collector import TrainingDataCollector
+    DATA_COLLECTOR = TrainingDataCollector()
+    COLLECTION_AVAILABLE = True
+    logger.info("データ収集システムが初期化されました")
+except ImportError as e:
+    DATA_COLLECTOR = None
+    COLLECTION_AVAILABLE = False
+    logger.warning(f"データ収集モジュールが利用できません: {e}")
+except Exception as e:
+    DATA_COLLECTOR = None
+    COLLECTION_AVAILABLE = False
+    logger.warning(f"データ収集システム初期化エラー: {e}")
 from core.exercise_classifier import ExerciseClassifier
 from utils.workout_models import workout_db
 from core.exercise_database import (
@@ -729,6 +744,230 @@ def ml_train_model():
         
     except Exception as e:
         logger.error(f"ML学習エラー: {e}")
+        return jsonify({'error': str(e)}), 500
+
+# ===== データ収集API =====
+
+@app.route('/data_consent')
+def data_consent_page():
+    """データ利用同意ページ"""
+    return render_template('data_consent.html')
+
+@app.route('/training_data_management')
+def training_data_management():
+    """データ管理ページ"""
+    return render_template('training_data_management.html')
+
+@app.route('/api/data_consent', methods=['POST'])
+def record_data_consent():
+    """データ利用同意を記録"""
+    try:
+        data = request.get_json()
+        consent_given = data.get('consent_given', False)
+        purpose_acknowledged = data.get('purpose_acknowledged', False)
+        
+        user_id = session.get('user_email', 'default_user')
+        
+        if COLLECTION_AVAILABLE and DATA_COLLECTOR:
+            success = DATA_COLLECTOR.record_user_consent(
+                user_id=user_id,
+                consent_given=consent_given,
+                purpose_acknowledged=purpose_acknowledged
+            )
+            
+            if success:
+                return jsonify({
+                    'success': True,
+                    'message': '同意を記録しました',
+                    'consent_given': consent_given
+                })
+            else:
+                return jsonify({
+                    'success': False,
+                    'error': '同意の記録に失敗しました'
+                }), 500
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'データ収集システムが利用できません'
+            }), 503
+            
+    except Exception as e:
+        logger.error(f"同意記録エラー: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/data_consent/status')
+def get_consent_status():
+    """ユーザーの同意状況を取得"""
+    try:
+        user_id = session.get('user_email', 'default_user')
+        
+        if COLLECTION_AVAILABLE and DATA_COLLECTOR:
+            consent_status = DATA_COLLECTOR.check_user_consent(user_id)
+            return jsonify(consent_status)
+        else:
+            return jsonify({
+                'has_consent': False,
+                'needs_consent': False,
+                'can_collect': False,
+                'error': 'データ収集システムが利用できません'
+            })
+            
+    except Exception as e:
+        logger.error(f"同意状況確認エラー: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/training_data/collect', methods=['POST'])
+def collect_training_data():
+    """トレーニングデータを収集"""
+    try:
+        data = request.get_json()
+        
+        # 必須フィールドの確認
+        required_fields = ['exercise', 'pose_data', 'metadata', 'performance']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({'error': f'{field}が必要です'}), 400
+        
+        user_id = session.get('user_email', 'default_user')
+        
+        if COLLECTION_AVAILABLE and DATA_COLLECTOR:
+            result = DATA_COLLECTOR.collect_training_data(
+                user_id=user_id,
+                exercise=data['exercise'],
+                pose_data=data['pose_data'],
+                metadata=data['metadata'],
+                performance=data['performance']
+            )
+            
+            if result.get('success'):
+                return jsonify(result)
+            else:
+                return jsonify(result), 400
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'データ収集システムが利用できません'
+            }), 503
+            
+    except Exception as e:
+        logger.error(f"データ収集エラー: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/training_data/opt_out', methods=['POST'])
+def opt_out_data_collection():
+    """データ収集からオプトアウト"""
+    try:
+        user_id = session.get('user_email', 'default_user')
+        
+        if COLLECTION_AVAILABLE and DATA_COLLECTOR:
+            success = DATA_COLLECTOR.record_opt_out(user_id)
+            
+            if success:
+                return jsonify({
+                    'success': True,
+                    'message': 'オプトアウトを記録しました'
+                })
+            else:
+                return jsonify({
+                    'success': False,
+                    'error': 'オプトアウトの記録に失敗しました'
+                }), 500
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'データ収集システムが利用できません'
+            }), 503
+            
+    except Exception as e:
+        logger.error(f"オプトアウトエラー: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/training_data/stats')
+def get_collection_stats():
+    """データ収集統計を取得（管理者用）"""
+    try:
+        # 実際の運用では管理者認証が必要
+        
+        if COLLECTION_AVAILABLE and DATA_COLLECTOR:
+            stats = DATA_COLLECTOR.get_collection_stats()
+            return jsonify(stats)
+        else:
+            return jsonify({
+                'error': 'データ収集システムが利用できません'
+            }), 503
+            
+    except Exception as e:
+        logger.error(f"統計取得エラー: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/training_data/export')
+def export_training_data():
+    """トレーニングデータをエクスポート（管理者用）"""
+    try:
+        # パラメータ取得
+        exercise_filter = request.args.get('exercise')
+        date_from = request.args.get('date_from')
+        date_to = request.args.get('date_to')
+        format_type = request.args.get('format', 'csv')
+        
+        # 実際の運用では管理者認証が必要
+        
+        if COLLECTION_AVAILABLE and DATA_COLLECTOR:
+            exported_data = DATA_COLLECTOR.export_training_data(
+                exercise_filter=exercise_filter,
+                date_from=date_from,
+                date_to=date_to,
+                format=format_type
+            )
+            
+            # レスポンスヘッダー設定
+            if format_type.lower() == 'csv':
+                response = make_response(exported_data)
+                response.headers['Content-Type'] = 'text/csv'
+                response.headers['Content-Disposition'] = 'attachment; filename=training_data.csv'
+            else:
+                response = make_response(exported_data)
+                response.headers['Content-Type'] = 'application/json'
+                response.headers['Content-Disposition'] = 'attachment; filename=training_data.json'
+            
+            return response
+        else:
+            return jsonify({
+                'error': 'データ収集システムが利用できません'
+            }), 503
+            
+    except Exception as e:
+        logger.error(f"データエクスポートエラー: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/training_data/delete_user_data', methods=['DELETE'])
+def delete_user_training_data():
+    """ユーザーのトレーニングデータを削除（GDPR対応）"""
+    try:
+        user_id = session.get('user_email', 'default_user')
+        
+        if COLLECTION_AVAILABLE and DATA_COLLECTOR:
+            success = DATA_COLLECTOR.delete_user_data(user_id)
+            
+            if success:
+                return jsonify({
+                    'success': True,
+                    'message': 'ユーザーデータを削除しました'
+                })
+            else:
+                return jsonify({
+                    'success': False,
+                    'error': 'データ削除に失敗しました'
+                }), 500
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'データ収集システムが利用できません'
+            }), 503
+            
+    except Exception as e:
+        logger.error(f"ユーザーデータ削除エラー: {e}")
         return jsonify({'error': str(e)}), 500
 
 # ===== データ可視化API =====

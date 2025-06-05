@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>データ利用同意 - Tenax Fit</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .consent-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 2rem;
+            background: var(--surface-elevated);
+            border-radius: 1rem;
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .consent-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .consent-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+        
+        .consent-subtitle {
+            color: var(--text-secondary);
+            font-size: 1rem;
+        }
+        
+        .consent-section {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: var(--surface-bg);
+            border-radius: 0.75rem;
+            border-left: 4px solid var(--sub-accent);
+        }
+        
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+        }
+        
+        .section-content {
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+        
+        .data-types {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .data-types li {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+        }
+        
+        .data-types li:last-child {
+            border-bottom: none;
+        }
+        
+        .data-icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 0.75rem;
+            color: var(--sub-accent);
+        }
+        
+        .privacy-highlight {
+            background: linear-gradient(135deg, var(--sub-accent) 0%, var(--accent-color) 100%);
+            color: white;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin: 1rem 0;
+        }
+        
+        .consent-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+        
+        .btn-consent-accept {
+            background: var(--gradient-primary);
+            color: white;
+            flex: 1;
+        }
+        
+        .btn-consent-decline {
+            background: transparent;
+            color: var(--text-secondary);
+            border: 2px solid var(--border-color);
+            flex: 1;
+        }
+        
+        .consent-checkbox-group {
+            margin: 1.5rem 0;
+            padding: 1rem;
+            background: var(--surface-elevated);
+            border-radius: 0.5rem;
+            border: 1px solid var(--border-color);
+        }
+        
+        .consent-checkbox {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+        
+        .consent-checkbox input[type="checkbox"] {
+            margin-right: 0.75rem;
+            margin-top: 0.25rem;
+        }
+        
+        .consent-checkbox label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            cursor: pointer;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 0.5rem;
+        }
+        
+        .status-secure {
+            background-color: #10b981;
+        }
+        
+        .status-anonymous {
+            background-color: var(--sub-accent);
+        }
+        
+        .footer-note {
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-light);
+            margin-top: 2rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="main-content">
+            <div class="consent-container">
+                <div class="consent-header">
+                    <h1 class="consent-title">トレーニングデータ利用のお願い</h1>
+                    <p class="consent-subtitle">より良いAI分析のために、匿名化されたデータの提供にご協力ください</p>
+                </div>
+
+                <!-- データ利用目的 -->
+                <div class="consent-section">
+                    <h2 class="section-title">
+                        <svg class="data-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                        </svg>
+                        データ利用目的
+                    </h2>
+                    <div class="section-content">
+                        <p>収集したデータは以下の目的で利用されます：</p>
+                        <ul>
+                            <li>エクササイズフォームの自動認識精度向上</li>
+                            <li>個人に最適化されたトレーニング提案の改善</li>
+                            <li>新しいエクササイズタイプの機械学習モデル開発</li>
+                            <li>安全で効果的なトレーニング支援システムの研究</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- 収集データ -->
+                <div class="consent-section">
+                    <h2 class="section-title">
+                        <svg class="data-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M20 14.66V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h5.34"/>
+                            <polygon points="18,2 22,6 12,16 8,16 8,12 18,2"/>
+                        </svg>
+                        収集するデータ
+                    </h2>
+                    <div class="section-content">
+                        <ul class="data-types">
+                            <li>
+                                <svg class="data-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                    <circle cx="12" cy="7" r="4"/>
+                                </svg>
+                                <span><strong>ポーズデータ：</strong>関節の3D座標（33ポイント）、顔や身体の識別情報は含まない</span>
+                            </li>
+                            <li>
+                                <svg class="data-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path d="M12 20h9"/>
+                                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                                </svg>
+                                <span><strong>基本情報：</strong>身長、体重、トレーニング経験レベル</span>
+                            </li>
+                            <li>
+                                <svg class="data-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path d="M9 12l2 2 4-4"/>
+                                    <path d="M21 12c-1 0-3-1-3-3s2-3 3-3 3 1 3 3-2 3-3 3"/>
+                                    <path d="M3 12c1 0 3-1 3-3s-2-3-3-3-3 1-3 3 2 3 3 3"/>
+                                </svg>
+                                <span><strong>パフォーマンス：</strong>使用重量、レップ数、フォーム評価スコア</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- プライバシー保護 -->
+                <div class="privacy-highlight">
+                    <h3 style="margin: 0 0 0.5rem 0; display: flex; align-items: center;">
+                        <span class="status-indicator status-secure"></span>
+                        <svg style="width: 20px; height: 20px; margin-right: 0.5rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        </svg>
+                        プライバシー保護
+                    </h3>
+                    <div style="font-size: 0.9rem;">
+                        <span class="status-indicator status-anonymous"></span>
+                        <strong>完全匿名化：</strong>ユーザーIDはハッシュ化され、個人特定は不可能<br>
+                        <span class="status-indicator status-secure"></span>
+                        <strong>安全な保存：</strong>暗号化されたデータベースで管理<br>
+                        <span class="status-indicator status-secure"></span>
+                        <strong>データ削除権：</strong>いつでもデータ削除を要求可能
+                    </div>
+                </div>
+
+                <!-- 同意チェックボックス -->
+                <div class="consent-checkbox-group">
+                    <div class="consent-checkbox">
+                        <input type="checkbox" id="purpose-consent" required>
+                        <label for="purpose-consent">
+                            上記のデータ利用目的を理解し、同意します
+                        </label>
+                    </div>
+                    <div class="consent-checkbox">
+                        <input type="checkbox" id="data-consent" required>
+                        <label for="data-consent">
+                            収集されるデータの種類と匿名化処理について理解し、同意します
+                        </label>
+                    </div>
+                    <div class="consent-checkbox">
+                        <input type="checkbox" id="privacy-consent" required>
+                        <label for="privacy-consent">
+                            プライバシー保護措置について確認し、同意します
+                        </label>
+                    </div>
+                    <div class="consent-checkbox">
+                        <input type="checkbox" id="withdraw-understanding">
+                        <label for="withdraw-understanding">
+                            同意はいつでも撤回でき、その場合データが削除されることを理解しています
+                        </label>
+                    </div>
+                </div>
+
+                <!-- アクションボタン -->
+                <div class="consent-actions">
+                    <button type="button" class="btn btn-lg btn-consent-decline" onclick="declineConsent()">
+                        同意しない
+                    </button>
+                    <button type="button" class="btn btn-lg btn-consent-accept" id="acceptBtn" onclick="acceptConsent()" disabled>
+                        同意して参加する
+                    </button>
+                </div>
+
+                <div class="footer-note">
+                    この同意は任意です。同意されない場合でも、Tenax Fitの基本機能は引き続きご利用いただけます。
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // チェックボックスの状態監視
+        document.addEventListener('DOMContentLoaded', function() {
+            const requiredCheckboxes = document.querySelectorAll('input[type="checkbox"][required]');
+            const acceptBtn = document.getElementById('acceptBtn');
+            
+            function updateAcceptButton() {
+                const allRequired = Array.from(requiredCheckboxes).every(cb => cb.checked);
+                acceptBtn.disabled = !allRequired;
+            }
+            
+            requiredCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', updateAcceptButton);
+            });
+        });
+
+        function acceptConsent() {
+            const purposeConsent = document.getElementById('purpose-consent').checked;
+            const dataConsent = document.getElementById('data-consent').checked;
+            const privacyConsent = document.getElementById('privacy-consent').checked;
+            
+            if (!purposeConsent || !dataConsent || !privacyConsent) {
+                alert('必須項目にすべて同意してください。');
+                return;
+            }
+            
+            // サーバーに同意を送信
+            fetch('/api/data_consent', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    consent_given: true,
+                    purpose_acknowledged: true
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('同意いただき、ありがとうございます。これで機械学習によるより良い分析が可能になります。');
+                    window.location.href = '/workout_record';
+                } else {
+                    alert('同意の記録中にエラーが発生しました。');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('同意の記録中にエラーが発生しました。');
+            });
+        }
+
+        function declineConsent() {
+            // サーバーに拒否を送信
+            fetch('/api/data_consent', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    consent_given: false,
+                    purpose_acknowledged: true
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert('承知いたしました。基本機能は引き続きご利用いただけます。');
+                window.location.href = '/workout_record';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                window.location.href = '/workout_record';
+            });
+        }
+    </script>
+</body>
+</html>
