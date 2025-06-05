@@ -758,6 +758,11 @@ def training_data_management():
     """データ管理ページ"""
     return render_template('training_data_management.html')
 
+@app.route('/data_preprocessing')
+def data_preprocessing_page():
+    """データ前処理ページ"""
+    return render_template('data_preprocessing.html')
+
 @app.route('/api/data_consent', methods=['POST'])
 def record_data_consent():
     """データ利用同意を記録"""
@@ -968,6 +973,225 @@ def delete_user_training_data():
             
     except Exception as e:
         logger.error(f"ユーザーデータ削除エラー: {e}")
+        return jsonify({'error': str(e)}), 500
+
+# ===== データ前処理API =====
+
+@app.route('/api/preprocessing/run', methods=['POST'])
+def run_preprocessing_pipeline():
+    """前処理パイプラインの実行"""
+    try:
+        data = request.get_json()
+        exercise_filter = data.get('exercise_filter')
+        data_limit = data.get('limit', 500)
+        augmentation_factor = data.get('augmentation_factor', 2)
+        
+        if COLLECTION_AVAILABLE and DATA_COLLECTOR:
+            # 前処理パイプラインを実行
+            try:
+                from ml.scripts.preprocessing import TrainingDataPreprocessor
+                
+                preprocessor = TrainingDataPreprocessor()
+                
+                # 1. 生データの読み込み
+                raw_data = preprocessor.load_raw_data(
+                    exercise_filter=exercise_filter,
+                    limit=data_limit
+                )
+                
+                if not raw_data:
+                    return jsonify({
+                        'success': False,
+                        'error': '処理対象のデータが見つかりません'
+                    }), 400
+                
+                # 2. データクリーニング
+                cleaned_data = preprocessor.clean_data(raw_data)
+                
+                # 3. 特徴量エンジニアリング
+                featured_data = preprocessor.extract_features(cleaned_data)
+                
+                # 4. 正規化
+                normalized_data = preprocessor.normalize_data(featured_data)
+                
+                # 5. データ拡張
+                augmented_data = preprocessor.augment_data(
+                    normalized_data, 
+                    augmentation_factor=augmentation_factor
+                )
+                
+                # 6. 保存
+                preprocessor.save_processed_data(augmented_data)
+                
+                return jsonify({
+                    'success': True,
+                    'message': '前処理パイプラインが完了しました',
+                    'statistics': {
+                        'raw_samples': len(raw_data),
+                        'cleaned_samples': len(cleaned_data),
+                        'featured_samples': len(featured_data),
+                        'final_samples': len(augmented_data),
+                        'processing_date': datetime.now().isoformat()
+                    }
+                })
+                
+            except ImportError:
+                return jsonify({
+                    'success': False,
+                    'error': '前処理モジュールが利用できません'
+                }), 500
+                
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'データ収集システムが利用できません'
+            }), 503
+            
+    except Exception as e:
+        logger.error(f"前処理パイプラインエラー: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/preprocessing/validate', methods=['POST'])
+def validate_processed_data():
+    """処理済みデータの品質検証"""
+    try:
+        data = request.get_json()
+        data_dir = data.get('data_dir', 'ml/data/processed')
+        
+        try:
+            from ml.scripts.data_validation import DataQualityValidator
+            
+            validator = DataQualityValidator()
+            validation_report = validator.validate_processed_data(data_dir)
+            
+            return jsonify({
+                'success': True,
+                'validation_report': validation_report
+            })
+            
+        except ImportError:
+            return jsonify({
+                'success': False,
+                'error': 'データ検証モジュールが利用できません'
+            }), 500
+            
+    except Exception as e:
+        logger.error(f"データ検証エラー: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/preprocessing/feature_engineering', methods=['POST'])
+def run_feature_engineering():
+    """高度な特徴量エンジニアリングの実行"""
+    try:
+        data = request.get_json()
+        pose_data = data.get('pose_data')
+        exercise = data.get('exercise', 'squat')
+        metadata = data.get('metadata', {})
+        
+        if not pose_data:
+            return jsonify({
+                'success': False,
+                'error': 'ポーズデータが必要です'
+            }), 400
+        
+        try:
+            from ml.scripts.feature_engineering import AdvancedFeatureEngineer
+            
+            engineer = AdvancedFeatureEngineer()
+            
+            # フォーム品質特徴量の抽出
+            form_features = engineer.extract_form_quality_features(
+                pose_data, exercise, metadata
+            )
+            
+            # 時系列特徴量の抽出（複数フレームの場合）
+            temporal_features = {}
+            if isinstance(pose_data[0], list) and len(pose_data) > 1:
+                temporal_features = engineer.extract_temporal_features(
+                    pose_data, exercise
+                )
+            
+            # 特徴量を統合
+            all_features = {**form_features, **temporal_features}
+            
+            return jsonify({
+                'success': True,
+                'features': all_features,
+                'feature_count': len(all_features),
+                'exercise': exercise
+            })
+            
+        except ImportError:
+            return jsonify({
+                'success': False,
+                'error': '特徴量エンジニアリングモジュールが利用できません'
+            }), 500
+            
+    except Exception as e:
+        logger.error(f"特徴量エンジニアリングエラー: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/preprocessing/status')
+def get_preprocessing_status():
+    """前処理パイプラインの状況確認"""
+    try:
+        status = {
+            'available_modules': {
+                'preprocessing': False,
+                'feature_engineering': False,
+                'data_validation': False
+            },
+            'processed_data_status': {},
+            'recommendations': []
+        }
+        
+        # モジュールの利用可能性チェック
+        try:
+            from ml.scripts.preprocessing import TrainingDataPreprocessor
+            status['available_modules']['preprocessing'] = True
+        except ImportError:
+            pass
+        
+        try:
+            from ml.scripts.feature_engineering import AdvancedFeatureEngineer
+            status['available_modules']['feature_engineering'] = True
+        except ImportError:
+            pass
+        
+        try:
+            from ml.scripts.data_validation import DataQualityValidator
+            status['available_modules']['data_validation'] = True
+        except ImportError:
+            pass
+        
+        # 処理済みデータの存在確認
+        processed_dir = 'ml/data/processed'
+        datasets = ['train.csv', 'val.csv', 'test.csv']
+        
+        for dataset in datasets:
+            file_path = os.path.join(processed_dir, dataset)
+            status['processed_data_status'][dataset] = {
+                'exists': os.path.exists(file_path),
+                'size': os.path.getsize(file_path) if os.path.exists(file_path) else 0,
+                'last_modified': datetime.fromtimestamp(os.path.getmtime(file_path)).isoformat() if os.path.exists(file_path) else None
+            }
+        
+        # 推奨事項の生成
+        if not any(status['available_modules'].values()):
+            status['recommendations'].append('前処理モジュールが利用できません。依存関係を確認してください。')
+        
+        if not any(ds['exists'] for ds in status['processed_data_status'].values()):
+            status['recommendations'].append('処理済みデータが見つかりません。前処理パイプラインを実行してください。')
+        
+        # データ収集統計も含める
+        if COLLECTION_AVAILABLE and DATA_COLLECTOR:
+            collection_stats = DATA_COLLECTOR.get_collection_stats()
+            status['collection_stats'] = collection_stats
+        
+        return jsonify(status)
+        
+    except Exception as e:
+        logger.error(f"前処理状況確認エラー: {e}")
         return jsonify({'error': str(e)}), 500
 
 # ===== データ可視化API =====

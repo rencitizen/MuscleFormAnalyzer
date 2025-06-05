@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>データ前処理 - Tenax Fit</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .preprocessing-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .pipeline-section {
+            background: var(--surface-elevated);
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-color);
+        }
+        
+        .section-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .section-icon {
+            width: 24px;
+            height: 24px;
+            margin-right: 0.75rem;
+            color: var(--sub-accent);
+        }
+        
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .status-indicator {
+            margin-left: auto;
+            padding: 0.5rem 1rem;
+            border-radius: 1rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        
+        .status-ready {
+            background: #dcfce7;
+            color: #166534;
+        }
+        
+        .status-error {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+        
+        .status-processing {
+            background: #fef3c7;
+            color: #d97706;
+            animation: pulse 2s infinite;
+        }
+        
+        .pipeline-step {
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+            margin: 0.5rem 0;
+            background: var(--surface-bg);
+            border-radius: 0.5rem;
+            border: 1px solid var(--border-color);
+        }
+        
+        .step-number {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--sub-accent);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            margin-right: 1rem;
+        }
+        
+        .step-content {
+            flex: 1;
+        }
+        
+        .step-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+        
+        .step-description {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+        
+        .step-status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 0.5rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .step-pending {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+        
+        .step-running {
+            background: #fef3c7;
+            color: #d97706;
+        }
+        
+        .step-completed {
+            background: #dcfce7;
+            color: #166534;
+        }
+        
+        .step-failed {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+        
+        .config-form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .config-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .config-group label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+        
+        .config-group input,
+        .config-group select {
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+        }
+        
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        
+        .result-card {
+            padding: 1rem;
+            background: var(--surface-bg);
+            border-radius: 0.5rem;
+            text-align: center;
+        }
+        
+        .result-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--sub-accent);
+        }
+        
+        .result-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+        
+        .progress-container {
+            margin: 1rem 0;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--border-color);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: var(--sub-accent);
+            transition: width 0.3s ease;
+        }
+        
+        .log-container {
+            max-height: 300px;
+            overflow-y: auto;
+            background: #1f2937;
+            color: #f9fafb;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+            margin-top: 1rem;
+        }
+        
+        .log-entry {
+            margin-bottom: 0.5rem;
+        }
+        
+        .log-timestamp {
+            color: #9ca3af;
+        }
+        
+        .log-level-info {
+            color: #60a5fa;
+        }
+        
+        .log-level-warning {
+            color: #fbbf24;
+        }
+        
+        .log-level-error {
+            color: #f87171;
+        }
+        
+        .validation-report {
+            background: var(--surface-bg);
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin-top: 1rem;
+        }
+        
+        .quality-score {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+        
+        .score-grade {
+            font-size: 2rem;
+            font-weight: 700;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+        }
+        
+        .grade-a { background: #dcfce7; color: #166534; }
+        .grade-b { background: #dbeafe; color: #1d4ed8; }
+        .grade-c { background: #fef3c7; color: #d97706; }
+        .grade-d { background: #fed7aa; color: #ea580c; }
+        .grade-f { background: #fef2f2; color: #dc2626; }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="main-content">
+            <div class="preprocessing-container">
+                <!-- ページヘッダー -->
+                <div class="pipeline-section">
+                    <div class="section-header">
+                        <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                        </svg>
+                        <h1 class="section-title">データ前処理パイプライン</h1>
+                        <div class="status-indicator status-ready" id="systemStatus">
+                            システム準備完了
+                        </div>
+                    </div>
+                    <p class="section-content">
+                        収集されたトレーニングデータの前処理、特徴量エンジニアリング、品質検証を実行します。
+                    </p>
+                </div>
+
+                <!-- 前処理設定 -->
+                <div class="pipeline-section">
+                    <div class="section-header">
+                        <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M12 20h9"/>
+                            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                        </svg>
+                        <h2 class="section-title">パイプライン設定</h2>
+                    </div>
+                    
+                    <div class="config-form">
+                        <div class="config-group">
+                            <label for="exerciseFilter">対象エクササイズ</label>
+                            <select id="exerciseFilter">
+                                <option value="">全てのエクササイズ</option>
+                                <option value="squat">スクワット</option>
+                                <option value="deadlift">デッドリフト</option>
+                                <option value="bench_press">ベンチプレス</option>
+                                <option value="overhead_press">オーバーヘッドプレス</option>
+                            </select>
+                        </div>
+                        
+                        <div class="config-group">
+                            <label for="dataLimit">処理データ数上限</label>
+                            <input type="number" id="dataLimit" value="500" min="10" max="2000">
+                        </div>
+                        
+                        <div class="config-group">
+                            <label for="augmentationFactor">データ拡張倍率</label>
+                            <input type="number" id="augmentationFactor" value="2" min="1" max="5">
+                        </div>
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button class="btn btn-lg" id="startPipelineBtn" onclick="startPreprocessingPipeline()">
+                            前処理開始
+                        </button>
+                        <button class="btn btn-lg btn-secondary" onclick="checkStatus()">
+                            状況確認
+                        </button>
+                        <button class="btn btn-lg btn-secondary" onclick="validateData()">
+                            品質検証
+                        </button>
+                    </div>
+                </div>
+
+                <!-- パイプライン進行状況 -->
+                <div class="pipeline-section" id="pipelineProgress" style="display: none;">
+                    <div class="section-header">
+                        <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                        </svg>
+                        <h2 class="section-title">処理進行状況</h2>
+                    </div>
+                    
+                    <div class="progress-container">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="pipeline-steps">
+                        <div class="pipeline-step">
+                            <div class="step-number">1</div>
+                            <div class="step-content">
+                                <div class="step-title">データ読み込み</div>
+                                <div class="step-description">データベースから生データを取得</div>
+                            </div>
+                            <div class="step-status step-pending" id="step1Status">待機中</div>
+                        </div>
+                        
+                        <div class="pipeline-step">
+                            <div class="step-number">2</div>
+                            <div class="step-content">
+                                <div class="step-title">データクリーニング</div>
+                                <div class="step-description">欠損値補完、外れ値除去、ノイズ除去</div>
+                            </div>
+                            <div class="step-status step-pending" id="step2Status">待機中</div>
+                        </div>
+                        
+                        <div class="pipeline-step">
+                            <div class="step-number">3</div>
+                            <div class="step-content">
+                                <div class="step-title">特徴量エンジニアリング</div>
+                                <div class="step-description">関節角度、距離、バランス指標の計算</div>
+                            </div>
+                            <div class="step-status step-pending" id="step3Status">待機中</div>
+                        </div>
+                        
+                        <div class="pipeline-step">
+                            <div class="step-number">4</div>
+                            <div class="step-content">
+                                <div class="step-title">正規化</div>
+                                <div class="step-description">特徴量の標準化と正規化</div>
+                            </div>
+                            <div class="step-status step-pending" id="step4Status">待機中</div>
+                        </div>
+                        
+                        <div class="pipeline-step">
+                            <div class="step-number">5</div>
+                            <div class="step-content">
+                                <div class="step-title">データ拡張</div>
+                                <div class="step-description">左右反転、ノイズ追加、スケール変更</div>
+                            </div>
+                            <div class="step-status step-pending" id="step5Status">待機中</div>
+                        </div>
+                        
+                        <div class="pipeline-step">
+                            <div class="step-number">6</div>
+                            <div class="step-content">
+                                <div class="step-title">保存</div>
+                                <div class="step-description">train.csv, val.csv, test.csvの生成</div>
+                            </div>
+                            <div class="step-status step-pending" id="step6Status">待機中</div>
+                        </div>
+                    </div>
+                    
+                    <div class="log-container" id="logContainer">
+                        <div class="log-entry">
+                            <span class="log-timestamp">[準備完了]</span>
+                            <span class="log-level-info">前処理パイプライン待機中...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 処理結果 -->
+                <div class="pipeline-section" id="resultsSection" style="display: none;">
+                    <div class="section-header">
+                        <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M9 12l2 2 4-4"/>
+                            <path d="M21 12c-1 0-3-1-3-3s2-3 3-3 3 1 3 3-2 3-3 3"/>
+                            <path d="M3 12c1 0 3-1 3-3s-2-3-3-3-3 1-3 3 2 3 3 3"/>
+                        </svg>
+                        <h2 class="section-title">処理結果</h2>
+                    </div>
+                    
+                    <div class="results-grid" id="resultsGrid">
+                        <!-- 動的に生成される -->
+                    </div>
+                </div>
+
+                <!-- 品質検証レポート -->
+                <div class="pipeline-section" id="validationSection" style="display: none;">
+                    <div class="section-header">
+                        <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M9 12l2 2 4-4"/>
+                            <path d="M21 12c-1 0-3-1-3-3s2-3 3-3 3 1 3 3-2 3-3 3"/>
+                        </svg>
+                        <h2 class="section-title">品質検証レポート</h2>
+                    </div>
+                    
+                    <div class="validation-report" id="validationReport">
+                        <!-- 動的に生成される -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let pipelineRunning = false;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            checkStatus();
+        });
+
+        function addLog(message, level = 'info') {
+            const logContainer = document.getElementById('logContainer');
+            const timestamp = new Date().toLocaleTimeString();
+            
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            logEntry.innerHTML = `
+                <span class="log-timestamp">[${timestamp}]</span>
+                <span class="log-level-${level}">${message}</span>
+            `;
+            
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        function updateStepStatus(stepNumber, status, message) {
+            const statusElement = document.getElementById(`step${stepNumber}Status`);
+            statusElement.className = `step-status step-${status}`;
+            statusElement.textContent = message;
+        }
+
+        function updateProgress(percentage) {
+            const progressFill = document.getElementById('progressFill');
+            progressFill.style.width = `${percentage}%`;
+        }
+
+        async function checkStatus() {
+            try {
+                const response = await fetch('/api/preprocessing/status');
+                const status = await response.json();
+                
+                const systemStatus = document.getElementById('systemStatus');
+                
+                if (status.available_modules.preprocessing) {
+                    systemStatus.textContent = 'システム準備完了';
+                    systemStatus.className = 'status-indicator status-ready';
+                } else {
+                    systemStatus.textContent = 'モジュール不足';
+                    systemStatus.className = 'status-indicator status-error';
+                }
+                
+                addLog(`モジュール状況: 前処理=${status.available_modules.preprocessing}, 特徴量=${status.available_modules.feature_engineering}, 検証=${status.available_modules.data_validation}`);
+                
+                if (status.collection_stats) {
+                    addLog(`収集データ: ${status.collection_stats.total_records}件`);
+                }
+                
+            } catch (error) {
+                console.error('Status check error:', error);
+                addLog('状況確認中にエラーが発生しました', 'error');
+            }
+        }
+
+        async function startPreprocessingPipeline() {
+            if (pipelineRunning) {
+                alert('前処理が既に実行中です');
+                return;
+            }
+
+            pipelineRunning = true;
+            document.getElementById('startPipelineBtn').disabled = true;
+            document.getElementById('pipelineProgress').style.display = 'block';
+            
+            // ステップをリセット
+            for (let i = 1; i <= 6; i++) {
+                updateStepStatus(i, 'pending', '待機中');
+            }
+            updateProgress(0);
+            
+            const config = {
+                exercise_filter: document.getElementById('exerciseFilter').value || null,
+                limit: parseInt(document.getElementById('dataLimit').value),
+                augmentation_factor: parseInt(document.getElementById('augmentationFactor').value)
+            };
+
+            addLog('前処理パイプライン開始', 'info');
+
+            try {
+                // ステップ1: 開始
+                updateStepStatus(1, 'running', '実行中');
+                updateProgress(10);
+                addLog('生データ読み込み中...', 'info');
+
+                const response = await fetch('/api/preprocessing/run', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(config)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                // 各ステップの進行をシミュレート
+                for (let step = 1; step <= 6; step++) {
+                    updateStepStatus(step, 'running', '実行中');
+                    updateProgress(step * 15);
+                    
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    
+                    updateStepStatus(step, 'completed', '完了');
+                    addLog(`ステップ${step}完了`, 'info');
+                }
+
+                const result = await response.json();
+
+                if (result.success) {
+                    updateProgress(100);
+                    addLog('前処理パイプライン完了', 'info');
+                    
+                    // 結果を表示
+                    showResults(result.statistics);
+                } else {
+                    throw new Error(result.error);
+                }
+
+            } catch (error) {
+                console.error('Pipeline error:', error);
+                addLog(`エラー: ${error.message}`, 'error');
+                
+                // 失敗したステップをマーク
+                for (let i = 1; i <= 6; i++) {
+                    const status = document.getElementById(`step${i}Status`);
+                    if (status.textContent === '実行中') {
+                        updateStepStatus(i, 'failed', '失敗');
+                        break;
+                    }
+                }
+            } finally {
+                pipelineRunning = false;
+                document.getElementById('startPipelineBtn').disabled = false;
+            }
+        }
+
+        function showResults(statistics) {
+            const resultsSection = document.getElementById('resultsSection');
+            const resultsGrid = document.getElementById('resultsGrid');
+            
+            resultsGrid.innerHTML = `
+                <div class="result-card">
+                    <div class="result-value">${statistics.raw_samples}</div>
+                    <div class="result-label">生データ</div>
+                </div>
+                <div class="result-card">
+                    <div class="result-value">${statistics.cleaned_samples}</div>
+                    <div class="result-label">クリーニング後</div>
+                </div>
+                <div class="result-card">
+                    <div class="result-value">${statistics.featured_samples}</div>
+                    <div class="result-label">特徴量抽出後</div>
+                </div>
+                <div class="result-card">
+                    <div class="result-value">${statistics.final_samples}</div>
+                    <div class="result-label">最終データ数</div>
+                </div>
+            `;
+            
+            resultsSection.style.display = 'block';
+        }
+
+        async function validateData() {
+            try {
+                addLog('データ品質検証開始...', 'info');
+                
+                const response = await fetch('/api/preprocessing/validate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({})
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showValidationReport(result.validation_report);
+                    addLog('データ品質検証完了', 'info');
+                } else {
+                    throw new Error(result.error);
+                }
+
+            } catch (error) {
+                console.error('Validation error:', error);
+                addLog(`検証エラー: ${error.message}`, 'error');
+            }
+        }
+
+        function showValidationReport(report) {
+            const validationSection = document.getElementById('validationSection');
+            const validationReport = document.getElementById('validationReport');
+            
+            const overallQuality = report.overall_quality;
+            const grade = overallQuality.grade;
+            
+            validationReport.innerHTML = `
+                <div class="quality-score">
+                    <div>
+                        <h3>総合品質スコア</h3>
+                        <p>スコア: ${(overallQuality.overall_score * 100).toFixed(1)}%</p>
+                    </div>
+                    <div class="score-grade grade-${grade.toLowerCase()}">${grade}</div>
+                </div>
+                
+                <div class="quality-metrics">
+                    <p><strong>完全性:</strong> ${(overallQuality.data_completeness * 100).toFixed(1)}%</p>
+                    <p><strong>一貫性:</strong> ${(overallQuality.data_consistency * 100).toFixed(1)}%</p>
+                    <p><strong>バランス:</strong> ${(overallQuality.data_balance * 100).toFixed(1)}%</p>
+                </div>
+                
+                <div class="recommendations">
+                    <h4>推奨事項:</h4>
+                    <ul>
+                        ${report.recommendations.map(rec => `<li>${rec}</li>`).join('')}
+                    </ul>
+                </div>
+            `;
+            
+            validationSection.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

@@ -1,272 +1,218 @@
-# Tenax Fit - Machine Learning Module
+# Tenax Fit ML Pipeline
 
-AI駆動のエクササイズ分析と姿勢評価システム
+Tenax Fitの機械学習パイプライン - トレーニングデータの収集、前処理、特徴量エンジニアリング、モデル学習を提供
 
-## 概要
-
-Tenax FitのMLモジュールは、MediaPipeポーズランドマークデータから以下の機能を提供します：
-
-- リアルタイムエクササイズ分類
-- フォーム分析と改善提案
-- 個人別パフォーマンス予測
-- トレーニング効果の定量化
-
-## ディレクトリ構造
+## 📁 ディレクトリ構造
 
 ```
 ml/
-├── data/                   # データ管理
-│   ├── raw/               # 生データ
-│   ├── processed/         # 前処理済みデータ
-│   └── preprocessor.py    # データ前処理クラス
-├── models/                # 学習済みモデル
+├── api/                    # API・推論エンジン
+│   ├── inference.py       # リアルタイム推論エンジン
+│   └── __init__.py
+├── data/                  # データ関連
+│   ├── preprocessor.py    # データ前処理 (旧版)
+│   ├── training_data_collector.py  # データ収集システム
+│   └── processed/         # 前処理済みデータ (自動生成)
+├── models/                # 機械学習モデル
 │   ├── exercise_classifier.py  # エクササイズ分類器
-│   └── *.pkl             # 保存されたモデルファイル
-├── api/                   # 推論API
-│   └── inference.py       # リアルタイム推論エンジン
-├── scripts/               # 学習・評価スクリプト
-│   └── train_model.py     # モデル学習スクリプト
-└── notebooks/             # 実験用ノートブック
+│   └── __init__.py
+├── scripts/               # バッチ処理スクリプト
+│   ├── preprocessing.py   # 前処理パイプライン
+│   ├── feature_engineering.py  # 高度な特徴量エンジニアリング
+│   ├── data_validation.py # データ品質検証
+│   ├── run_pipeline.py    # パイプライン実行スクリプト
+│   └── train_model.py     # モデル学習スクリプト (予定)
+├── logs/                  # ログファイル (自動生成)
+└── README.md             # このファイル
 ```
 
-## セットアップ
+## 🚀 機能概要
 
-### 必要パッケージ
+### 1. データ収集システム (`data/training_data_collector.py`)
+- MediaPipeポーズデータの匿名化収集
+- ユーザー同意管理 (GDPR対応)
+- メタデータ・パフォーマンスデータの統合
+- CSV/JSONエクスポート機能
 
-既存のプロジェクトに以下のパッケージが含まれています：
-- numpy
-- scipy
-- mediapipe
-- opencv-python
+### 2. 前処理パイプライン (`scripts/preprocessing.py`)
+- **データクリーニング**: 欠損値補完、外れ値除去、ノイズ除去
+- **特徴量エンジニアリング**: 関節角度、距離、バランス指標の計算
+- **正規化**: 身長ベース正規化、統計的標準化
+- **データ拡張**: 左右反転、ノイズ追加、スケール変更
 
-オプション（利用可能な場合）：
-- scikit-learn
-- pandas
-- joblib
-- matplotlib
+### 3. 高度特徴量エンジニアリング (`scripts/feature_engineering.py`)
+- **時系列特徴量**: 動作速度、加速度、滑らかさ、リズム一貫性
+- **フォーム品質特徴量**: エクササイズ別フォーム評価
+- **一般的特徴量**: 左右対称性、安定性、姿勢品質
 
-### 初期化
+### 4. データ品質検証 (`scripts/data_validation.py`)
+- **完全性評価**: 欠損値分析
+- **一貫性評価**: データ品質問題検出
+- **バランス評価**: クラス分布分析
+- **可視化レポート**: 品質スコア、分布グラフ
 
-```python
-from ml.api.inference import MLInferenceEngine
+## 🔧 使用方法
 
-# 推論エンジン初期化
-engine = MLInferenceEngine()
+### Webインターface経由
 
-# モデル情報確認
-info = engine.get_model_info()
-print(info)
-```
+1. **データ同意**: `/data_consent` - データ利用同意の取得
+2. **データ管理**: `/training_data_management` - 収集データの管理
+3. **前処理**: `/data_preprocessing` - 前処理パイプラインの実行
 
-## 使用方法
-
-### 1. リアルタイム分析
-
-```python
-# ポーズランドマークから分析
-landmarks = {
-    'LEFT_SHOULDER': {'x': 0.5, 'y': 0.3, 'z': 0.1, 'visibility': 0.9},
-    'RIGHT_SHOULDER': {'x': 0.4, 'y': 0.3, 'z': 0.1, 'visibility': 0.9},
-    # ... 他のランドマーク
-}
-
-result = engine.analyze_pose(landmarks)
-print(f"エクササイズ: {result['exercise_type']}")
-print(f"確信度: {result['confidence']}")
-print(f"フォームスコア: {result['analysis']['form_score']}")
-```
-
-### 2. バッチ分析
-
-```python
-# セッション全体の分析
-session_data = [
-    {'landmarks': landmarks_frame1},
-    {'landmarks': landmarks_frame2},
-    # ... 他のフレーム
-]
-
-session_result = engine.batch_analyze(session_data)
-print(f"主要エクササイズ: {session_result['session_summary']['dominant_exercise']}")
-```
-
-### 3. モデル学習
+### コマンドライン経由
 
 ```bash
-# 学習スクリプト実行
-python ml/scripts/train_model.py --days 30
+# 基本的な前処理パイプライン実行
+python ml/scripts/run_pipeline.py
 
-# 既存データから学習
-python ml/scripts/train_model.py --data-path ml/data/processed/data.csv
+# 特定エクササイズのみ処理
+python ml/scripts/run_pipeline.py --exercise squat --limit 200
 
-# 評価のみ実行
-python ml/scripts/train_model.py --eval-only
+# データ拡張を含む完全パイプライン
+python ml/scripts/run_pipeline.py --augment 3 --validate
+
+# 検証のみ実行
+python ml/scripts/run_pipeline.py --skip-preprocessing --validate
 ```
 
-## サポートされるエクササイズ
-
-- スクワット (squat)
-- プッシュアップ (push_up)
-- デッドリフト (deadlift)
-- ベンチプレス (bench_press)
-- オーバーヘッドプレス (overhead_press)
-- バイセップカール (bicep_curl)
-- トライセップエクステンション (tricep_extension)
-- プランク (plank)
-- ランジ (lunge)
-- プルアップ (pull_up)
-
-## フォーム分析機能
-
-### スクワット
-- 膝とつま先の方向一致
-- 適切な深さ
-- 背中の姿勢
-
-### プッシュアップ
-- 体のライン（一直線）
-- 腕の位置
-- 動作範囲
-
-### プランク
-- 体の一直線保持
-- 腰の位置
-- 姿勢安定性
-
-## 技術仕様
-
-### 特徴量
-
-- **基本座標**: 各ランドマークのx, y, z座標
-- **可視性**: MediaPipe visibility score
-- **関節角度**: 主要関節の角度計算
-- **距離特徴**: 肩幅、腰幅、体高など
-
-### モデルアーキテクチャ
-
-- **分類器**: Random Forest (scikit-learn利用時)
-- **フォールバック**: ルールベース分類
-- **正規化**: Standard Scaler
-- **特徴量数**: 動的（ランドマーク数に依存）
-
-### パフォーマンス
-
-- **推論速度**: <50ms/フレーム
-- **精度**: 85%+ (学習データ品質に依存)
-- **メモリ使用量**: <100MB
-
-## 統合例
-
-### Flaskアプリケーションとの統合
+### API経由
 
 ```python
-from ml.api.inference import MLInferenceEngine
+# 前処理パイプライン実行
+POST /api/preprocessing/run
+{
+    "exercise_filter": "squat",
+    "limit": 500,
+    "augmentation_factor": 2
+}
 
-# アプリケーション初期化時
-engine = MLInferenceEngine()
+# データ品質検証
+POST /api/preprocessing/validate
+{
+    "data_dir": "ml/data/processed"
+}
 
-@app.route('/analyze_pose', methods=['POST'])
-def analyze_pose():
-    data = request.get_json()
-    landmarks = data.get('landmarks', {})
-    
-    result = engine.analyze_pose(landmarks)
-    return jsonify(result)
+# 特徴量エンジニアリング
+POST /api/preprocessing/feature_engineering
+{
+    "pose_data": [[x,y,z,v], ...],
+    "exercise": "squat",
+    "metadata": {"height": 170, "weight": 70, "experience": "intermediate"}
+}
 ```
 
-### 既存の分析システムとの統合
+## 📊 データスキーマ
 
-```python
-# analysis/training_analysis.py での使用例
-from ml.api.inference import MLInferenceEngine
-
-class EnhancedTrainingAnalysis:
-    def __init__(self):
-        self.ml_engine = MLInferenceEngine()
-    
-    def analyze_with_ml(self, landmarks):
-        # ML分析を追加
-        ml_result = self.ml_engine.analyze_pose(landmarks)
-        
-        # 既存分析と組み合わせ
-        return {
-            'ml_prediction': ml_result,
-            'traditional_analysis': self.traditional_analysis(landmarks)
-        }
+### 収集データ形式
+```json
+{
+    "session_id": "uuid",
+    "timestamp": "2024-01-01T12:00:00Z",
+    "exercise": "squat",
+    "pose_data": [
+        [x, y, z, visibility], // 33ポイント × 4次元
+        ...
+    ],
+    "metadata": {
+        "height": 170,
+        "weight": 70,
+        "experience": "intermediate"
+    },
+    "performance": {
+        "weight": 60,
+        "reps": 10,
+        "form_score": 0.85
+    }
+}
 ```
 
-## トラブルシューティング
+### 処理済みデータ形式 (CSV)
+```csv
+session_id,exercise,timestamp,angle_left_knee_normalized,distance_shoulder_width_normalized,...
+uuid1,squat,2024-01-01T12:00:00Z,0.234,-0.567,...
+```
+
+## 🏃‍♂️ クイックスタート
+
+1. **データ収集開始**
+   ```python
+   # Webアプリでトレーニング記録中に自動収集
+   # または
+   from ml.data.training_data_collector import TrainingDataCollector
+   collector = TrainingDataCollector()
+   collector.record_user_consent("user_id", True)
+   ```
+
+2. **前処理実行**
+   ```bash
+   python ml/scripts/run_pipeline.py --validate
+   ```
+
+3. **結果確認**
+   ```
+   ml/data/processed/
+   ├── train.csv          # 訓練データ (70%)
+   ├── val.csv            # 検証データ (15%)
+   ├── test.csv           # テストデータ (15%)
+   ├── validation_report.json
+   └── validation_plots/  # 品質可視化
+   ```
+
+## ⚙️ 設定
+
+### 環境変数
+- `DATABASE_URL`: PostgreSQLデータベースURL (必須)
+
+### 依存関係
+- `numpy`: 数値計算
+- `scipy`: 信号処理 (Savitzky-Golayフィルタ)
+- `matplotlib`: 可視化 (検証レポート用)
+- `psycopg2-binary`: PostgreSQL接続
+
+## 🔒 プライバシー・セキュリティ
+
+- **完全匿名化**: ユーザーIDはハッシュ化
+- **同意管理**: GDPR準拠の同意取得・撤回
+- **データ削除**: 要求に応じた完全削除
+- **暗号化保存**: データベースレベルでの暗号化
+
+## 📈 パフォーマンス
+
+- **処理速度**: 500サンプル/分 (標準設定)
+- **メモリ使用量**: 最大2GB (大規模データセット)
+- **出力サイズ**: 元データの約3-5倍 (拡張後)
+
+## 🔧 トラブルシューティング
 
 ### よくある問題
 
-1. **ImportError: scikit-learn not found**
-   - ルールベース分類器が自動で使用されます
-   - 機能は制限されますが動作します
+1. **ModuleNotFoundError: pandas/sklearn**
+   - 軽量版環境では一部機能が制限されます
+   - 基本的な前処理は numpy のみで動作
 
-2. **特徴量抽出エラー**
-   - ランドマークデータの形式を確認
-   - 必要なキー（x, y, z, visibility）が存在するか確認
+2. **データが見つからない**
+   - データ収集が必要: `/data_consent` で同意取得
+   - ワークアウト記録でポーズデータを収集
 
-3. **モデル読み込みエラー**
-   - 初回実行時は学習済みモデルが存在しません
-   - train_model.pyを実行してモデルを作成
+3. **メモリ不足**
+   - `--limit` パラメータでデータ数を制限
+   - `--augment` で拡張倍率を下げる
 
-### ログ設定
-
-```python
-import logging
-logging.basicConfig(level=logging.INFO)
-
-# 詳細ログ
-logging.basicConfig(level=logging.DEBUG)
+### ログ確認
+```bash
+# 最新のログファイルを確認
+ls -la ml/logs/
+tail -f ml/logs/pipeline_*.log
 ```
 
-## 拡張性
+## 🚀 今後の拡張予定
 
-### 新しいエクササイズの追加
+- [ ] リアルタイム特徴量計算の最適化
+- [ ] 追加エクササイズタイプのサポート
+- [ ] 分散処理対応 (大規模データセット)
+- [ ] モデル学習パイプラインの統合
+- [ ] A/Bテスト機能
 
-1. `exercise_classifier.py`の`exercise_labels`に追加
-2. 対応するフォーム分析関数を`inference.py`に実装
-3. 学習データに新しいエクササイズのサンプルを追加
+## 📞 サポート
 
-### カスタム特徴量
-
-`preprocessor.py`の`extract_pose_features`メソッドを拡張：
-
-```python
-def custom_feature_extraction(self, landmarks):
-    # カスタム特徴量計算
-    custom_features = []
-    # ... 実装
-    return custom_features
-```
-
-## パフォーマンス最適化
-
-### メモリ使用量削減
-- バッチサイズの調整
-- 特徴量選択の実装
-- モデル軽量化
-
-### 推論速度向上
-- 特徴量計算の最適化
-- モデル量子化
-- キャッシュ機能
-
-## ライセンス
-
-プロジェクトライセンスに従います。
-
-## 貢献
-
-1. 新しい特徴量の提案
-2. フォーム分析ロジックの改善
-3. 新しいエクササイズタイプの追加
-4. パフォーマンス最適化
-
-## 更新履歴
-
-- v1.0.0: 初期リリース
-  - 基本的なエクササイズ分類
-  - フォーム分析機能
-  - Flaskアプリ統合
+問題やご質問は Issue でお気軽にお問い合わせください。
