@@ -4,7 +4,34 @@
 """
 
 import numpy as np
-import pandas as pd
+# pandas import を条件付きに変更
+try:
+    import pandas as pd
+    PANDAS_AVAILABLE = True
+except ImportError:
+    PANDAS_AVAILABLE = False
+    # パンダス無しでも動作するようにダミークラスを定義
+    class MockDataFrame:
+        def __init__(self, data=None):
+            self.data = data or []
+            self.shape = (len(data) if data else 0, 0)
+        
+        def to_csv(self, filepath, index=False):
+            import json
+            with open(filepath.replace('.csv', '.json'), 'w') as f:
+                json.dump(self.data, f, indent=2)
+        
+        @staticmethod
+        def read_csv(filepath):
+            import json
+            try:
+                with open(filepath.replace('.csv', '.json'), 'r') as f:
+                    data = json.load(f)
+                return MockDataFrame(data)
+            except:
+                return MockDataFrame()
+    
+    pd = type('MockPandas', (), {'DataFrame': MockDataFrame, 'read_csv': MockDataFrame.read_csv})()
 from typing import Dict, List, Tuple, Optional
 import json
 import logging

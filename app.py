@@ -6,7 +6,27 @@ import logging
 import shutil
 from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
+
+# ログ設定を先に行う
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+
 from analysis.training_analysis import TrainingAnalyzer
+
+# Machine Learning Integration
+try:
+    from ml.api.inference import MLInferenceEngine
+    ML_ENGINE = MLInferenceEngine()
+    ML_AVAILABLE = True
+    logger.info("機械学習エンジンが初期化されました")
+except ImportError as e:
+    ML_ENGINE = None
+    ML_AVAILABLE = False
+    logger.warning(f"機械学習モジュールが利用できません: {e}")
+except Exception as e:
+    ML_ENGINE = None
+    ML_AVAILABLE = False
+    logger.warning(f"機械学習エンジン初期化エラー: {e}")
 from core.exercise_classifier import ExerciseClassifier
 from utils.workout_models import workout_db
 from core.exercise_database import (
@@ -586,6 +606,129 @@ def get_max_weights():
         
     except Exception as e:
         logger.error(f"最大重量取得エラー: {e}")
+        return jsonify({'error': str(e)}), 500
+
+# ===== 機械学習API =====
+
+@app.route('/api/ml/analyze_pose', methods=['POST'])
+def ml_analyze_pose():
+    """機械学習によるポーズ分析API"""
+    try:
+        data = request.get_json()
+        landmarks = data.get('landmarks', {})
+        
+        if not landmarks:
+            return jsonify({'error': 'ランドマークデータが必要です'}), 400
+        
+        if ML_AVAILABLE and ML_ENGINE:
+            result = ML_ENGINE.analyze_pose(landmarks)
+        else:
+            # フォールバック: 基本的な分析
+            result = {
+                'success': True,
+                'exercise_type': 'unknown',
+                'confidence': 0.5,
+                'quality': 'basic',
+                'analysis': {
+                    'form_score': 70,
+                    'feedback': ['基本的な分析を実行中'],
+                    'corrections': []
+                },
+                'timestamp': datetime.now().isoformat(),
+                'note': '機械学習エンジンが利用できません'
+            }
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        logger.error(f"ML分析エラー: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/ml/batch_analyze', methods=['POST'])
+def ml_batch_analyze():
+    """セッション全体のバッチ分析API"""
+    try:
+        data = request.get_json()
+        session_data = data.get('session_data', [])
+        
+        if not session_data:
+            return jsonify({'error': 'セッションデータが必要です'}), 400
+        
+        if ML_AVAILABLE and ML_ENGINE:
+            result = ML_ENGINE.batch_analyze(session_data)
+        else:
+            # フォールバック: 基本的な統計
+            result = {
+                'success': True,
+                'session_summary': {
+                    'total_frames': len(session_data),
+                    'dominant_exercise': 'unknown',
+                    'average_confidence': 0.5,
+                    'session_quality': 'basic'
+                },
+                'timestamp': datetime.now().isoformat(),
+                'note': '機械学習エンジンが利用できません'
+            }
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        logger.error(f"MLバッチ分析エラー: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/ml/model_info')
+def ml_model_info():
+    """機械学習モデル情報取得API"""
+    try:
+        if ML_AVAILABLE and ML_ENGINE:
+            result = ML_ENGINE.get_model_info()
+        else:
+            result = {
+                'is_initialized': False,
+                'model_type': 'none',
+                'supported_exercises': [],
+                'note': '機械学習エンジンが利用できません',
+                'timestamp': datetime.now().isoformat()
+            }
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        logger.error(f"MLモデル情報取得エラー: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/ml/train', methods=['POST'])
+def ml_train_model():
+    """モデル学習API（管理者用）"""
+    try:
+        data = request.get_json()
+        days = data.get('days', 30)
+        
+        # 実際のプロダクション環境では認証が必要
+        # セキュリティチェック
+        
+        if not ML_AVAILABLE:
+            return jsonify({
+                'success': False,
+                'error': '機械学習モジュールが利用できません'
+            }), 400
+        
+        # バックグラウンドでの学習実行（実際の実装では非同期処理を推奨）
+        try:
+            from ml.scripts.train_model import ModelTrainer
+            trainer = ModelTrainer()
+            result = trainer.full_training_pipeline(days)
+            
+            return jsonify(result)
+            
+        except ImportError:
+            return jsonify({
+                'success': False,
+                'error': '学習スクリプトモジュールが利用できません'
+            }), 500
+        
+    except Exception as e:
+        logger.error(f"ML学習エラー: {e}")
         return jsonify({'error': str(e)}), 500
 
 # ===== データ可視化API =====

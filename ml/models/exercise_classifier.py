@@ -4,7 +4,31 @@
 """
 
 import numpy as np
-import pandas as pd
+# pandas import を条件付きに変更
+try:
+    import pandas as pd
+    PANDAS_AVAILABLE = True
+except ImportError:
+    PANDAS_AVAILABLE = False
+    # パンダス無しでも動作するようにダミークラスを定義
+    class MockDataFrame:
+        def __init__(self, data=None):
+            self.data = data or {}
+            self.columns = []
+            self.shape = (0, 0)
+        
+        def empty(self):
+            return len(self.data) == 0
+        
+        def __getitem__(self, key):
+            return self.data.get(key, [])
+        
+        def values(self):
+            return []
+    
+    # モック関数を定義
+    def pd_DataFrame(data=None):
+        return MockDataFrame(data)
 from typing import Dict, List, Optional, Tuple
 import json
 import logging
@@ -54,7 +78,7 @@ class ExerciseClassifier:
             self.scaler = StandardScaler()
             self.label_encoder = LabelEncoder()
         
-    def prepare_training_data(self, data: pd.DataFrame) -> Tuple[np.ndarray, np.ndarray]:
+    def prepare_training_data(self, data) -> Tuple[np.ndarray, np.ndarray]:
         """
         学習用データの準備
         
@@ -64,7 +88,11 @@ class ExerciseClassifier:
         Returns:
             特徴量とラベルのタプル
         """
-        if data.empty:
+        if not PANDAS_AVAILABLE:
+            # パンダス無しの場合は基本的な辞書データとして処理
+            if not data or (hasattr(data, 'empty') and data.empty()):
+                raise ValueError("データが空です")
+        elif hasattr(data, 'empty') and data.empty:
             raise ValueError("データが空です")
         
         # 特徴量列を抽出
