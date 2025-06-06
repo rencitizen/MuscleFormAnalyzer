@@ -1,0 +1,94 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.venv
+
+# Environment variables
+.env
+.env.local
+.env.production
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Frontend
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/build/
+frontend/dist/
+frontend/.env.local
+frontend/.env.production
+
+# Test
+coverage/
+.coverage
+.pytest_cache/
+htmlcov/
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.cache
+
+# Static files
+static/videos/
+static/analysis_results/
+results/
+
+# Upload directories
+uploads/
+media/
+
+# Firebase
+firebase-debug.log
+.firebase/
+
+# ML Models
+*.h5
+*.pkl
+*.joblib
+models/*.pth
+models/*.onnx
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Package files
+*.egg-info/
+dist/
+build/
+
+# Lock files (keep only one)
+package-lock.json
+yarn.lock
+
+# Debug files
+start_debug.bat
