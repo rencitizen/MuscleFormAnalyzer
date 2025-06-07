@@ -1,0 +1,474 @@
+{% extends "base.html" %}
+
+{% block title %}栄養トラッキング - BodyScale{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1>栄養トラッキング</h1>
+        <p class="subtitle">日々の栄養摂取を管理</p>
+    </div>
+
+    <!-- 日付選択 -->
+    <div class="date-selector mb-4">
+        <button class="btn btn-secondary" onclick="changeDate(-1)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+        </button>
+        <input type="date" id="selectedDate" class="form-control" style="max-width: 200px;">
+        <button class="btn btn-secondary" onclick="changeDate(1)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+        </button>
+    </div>
+
+    <!-- 今日のサマリー -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2>今日の栄養摂取</h2>
+        </div>
+        <div class="card-body">
+            <div class="daily-summary">
+                <div class="calorie-meter">
+                    <canvas id="calorieChart" width="200" height="200"></canvas>
+                    <div class="meter-center">
+                        <span class="current">1,850</span>
+                        <span class="target">/ 2,500 kcal</span>
+                    </div>
+                </div>
+                
+                <div class="macro-breakdown">
+                    <div class="macro-item protein">
+                        <h4>タンパク質</h4>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 70%"></div>
+                        </div>
+                        <span class="macro-value">84g / 120g</span>
+                    </div>
+                    <div class="macro-item carbs">
+                        <h4>炭水化物</h4>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 60%"></div>
+                        </div>
+                        <span class="macro-value">225g / 375g</span>
+                    </div>
+                    <div class="macro-item fat">
+                        <h4>脂質</h4>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 80%"></div>
+                        </div>
+                        <span class="macro-value">68g / 85g</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 食事記録 -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2>食事記録</h2>
+            <button class="btn btn-primary btn-sm" onclick="addMealModal()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                食事を追加
+            </button>
+        </div>
+        <div class="card-body">
+            <div class="meal-timeline">
+                <!-- 朝食 -->
+                <div class="meal-section">
+                    <h3>朝食</h3>
+                    <div class="meal-items">
+                        <div class="meal-item">
+                            <span class="item-name">オートミール</span>
+                            <span class="item-calories">180 kcal</span>
+                        </div>
+                        <div class="meal-item">
+                            <span class="item-name">バナナ</span>
+                            <span class="item-calories">105 kcal</span>
+                        </div>
+                        <div class="meal-item">
+                            <span class="item-name">プロテインシェイク</span>
+                            <span class="item-calories">120 kcal</span>
+                        </div>
+                    </div>
+                    <div class="meal-total">合計: 405 kcal</div>
+                </div>
+                
+                <!-- 昼食 -->
+                <div class="meal-section">
+                    <h3>昼食</h3>
+                    <div class="meal-items">
+                        <div class="meal-item">
+                            <span class="item-name">鶏胸肉のグリル</span>
+                            <span class="item-calories">284 kcal</span>
+                        </div>
+                        <div class="meal-item">
+                            <span class="item-name">玄米</span>
+                            <span class="item-calories">218 kcal</span>
+                        </div>
+                        <div class="meal-item">
+                            <span class="item-name">ブロッコリー</span>
+                            <span class="item-calories">55 kcal</span>
+                        </div>
+                    </div>
+                    <div class="meal-total">合計: 557 kcal</div>
+                </div>
+                
+                <!-- 間食 -->
+                <div class="meal-section">
+                    <h3>間食</h3>
+                    <div class="meal-items">
+                        <div class="meal-item">
+                            <span class="item-name">アーモンド</span>
+                            <span class="item-calories">164 kcal</span>
+                        </div>
+                    </div>
+                    <div class="meal-total">合計: 164 kcal</div>
+                </div>
+                
+                <!-- 夕食 -->
+                <div class="meal-section">
+                    <h3>夕食</h3>
+                    <div class="meal-items">
+                        <div class="meal-item">
+                            <span class="item-name">サーモン</span>
+                            <span class="item-calories">367 kcal</span>
+                        </div>
+                        <div class="meal-item">
+                            <span class="item-name">キヌア</span>
+                            <span class="item-calories">222 kcal</span>
+                        </div>
+                        <div class="meal-item">
+                            <span class="item-name">アボカドサラダ</span>
+                            <span class="item-calories">135 kcal</span>
+                        </div>
+                    </div>
+                    <div class="meal-total">合計: 724 kcal</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 週間サマリー -->
+    <div class="card">
+        <div class="card-header">
+            <h2>週間サマリー</h2>
+        </div>
+        <div class="card-body">
+            <canvas id="weeklyChart" height="100"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- 食事追加モーダル -->
+<div id="addMealModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeMealModal()">&times;</span>
+        <h2>食事を追加</h2>
+        
+        <div class="meal-type-selector">
+            <button class="meal-type-btn active" data-type="breakfast">朝食</button>
+            <button class="meal-type-btn" data-type="lunch">昼食</button>
+            <button class="meal-type-btn" data-type="dinner">夕食</button>
+            <button class="meal-type-btn" data-type="snack">間食</button>
+        </div>
+        
+        <div class="add-meal-options">
+            <button class="option-btn" onclick="window.location.href='/meal_analysis'">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                    <polyline points="21 15 16 10 5 21"></polyline>
+                </svg>
+                写真から追加
+            </button>
+            
+            <button class="option-btn" onclick="showFoodSearch()">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <path d="m21 21-4.35-4.35"></path>
+                </svg>
+                検索して追加
+            </button>
+            
+            <button class="option-btn" onclick="showQuickAdd()">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+                    <polyline points="13 2 13 9 20 9"></polyline>
+                </svg>
+                手動で追加
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+.date-selector {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    justify-content: center;
+}
+
+.daily-summary {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 40px;
+    align-items: center;
+}
+
+.calorie-meter {
+    position: relative;
+    width: 200px;
+    height: 200px;
+    margin: 0 auto;
+}
+
+.meter-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+}
+
+.meter-center .current {
+    display: block;
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--primary-color, #007bff);
+}
+
+.meter-center .target {
+    display: block;
+    font-size: 0.9rem;
+    color: var(--text-muted, #6c757d);
+}
+
+.macro-breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.macro-item h4 {
+    margin: 0 0 8px 0;
+    font-size: 1rem;
+}
+
+.progress-bar {
+    height: 10px;
+    background: #e0e0e0;
+    border-radius: 5px;
+    overflow: hidden;
+    margin-bottom: 5px;
+}
+
+.progress-fill {
+    height: 100%;
+    transition: width 0.3s ease;
+}
+
+.macro-item.protein .progress-fill {
+    background: #ff6b6b;
+}
+
+.macro-item.carbs .progress-fill {
+    background: #45b7d1;
+}
+
+.macro-item.fat .progress-fill {
+    background: #4ecdc4;
+}
+
+.macro-value {
+    font-size: 0.9rem;
+    color: var(--text-muted, #6c757d);
+}
+
+.meal-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+.meal-section h3 {
+    font-size: 1.2rem;
+    margin-bottom: 15px;
+    color: var(--primary-color, #007bff);
+}
+
+.meal-items {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.meal-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 15px;
+    background: var(--hover-bg, #f8f9fa);
+    border-radius: 8px;
+}
+
+.meal-total {
+    text-align: right;
+    font-weight: bold;
+    color: var(--text-muted, #6c757d);
+}
+
+.meal-type-selector {
+    display: flex;
+    gap: 10px;
+    margin: 20px 0;
+}
+
+.meal-type-btn {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid var(--border-color, #ddd);
+    background: white;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.meal-type-btn:hover {
+    background: var(--hover-bg, #f8f9fa);
+}
+
+.meal-type-btn.active {
+    background: var(--primary-color, #007bff);
+    color: white;
+    border-color: var(--primary-color, #007bff);
+}
+
+.add-meal-options {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.option-btn {
+    padding: 30px 20px;
+    border: 2px solid var(--border-color, #ddd);
+    background: white;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+}
+
+.option-btn:hover {
+    border-color: var(--primary-color, #007bff);
+    transform: translateY(-2px);
+}
+
+.option-btn svg {
+    display: block;
+    margin: 0 auto 10px;
+    color: var(--primary-color, #007bff);
+}
+
+@media (max-width: 768px) {
+    .daily-summary {
+        grid-template-columns: 1fr;
+    }
+    
+    .add-meal-options {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+
+<script>
+// 日付の初期化
+document.getElementById('selectedDate').valueAsDate = new Date();
+
+// カロリーメーターの描画
+const ctx = document.getElementById('calorieChart').getContext('2d');
+drawCalorieMeter(ctx, 1850, 2500);
+
+function drawCalorieMeter(ctx, current, target) {
+    const centerX = 100;
+    const centerY = 100;
+    const radius = 80;
+    const percentage = Math.min(current / target, 1);
+    
+    // 背景円
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+    ctx.strokeStyle = '#e0e0e0';
+    ctx.lineWidth = 15;
+    ctx.stroke();
+    
+    // 進捗円
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, -Math.PI/2, -Math.PI/2 + (2 * Math.PI * percentage));
+    ctx.strokeStyle = percentage > 1 ? '#ff6b6b' : '#4ecdc4';
+    ctx.lineWidth = 15;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+}
+
+// 週間チャート
+const weeklyCtx = document.getElementById('weeklyChart').getContext('2d');
+drawWeeklyChart(weeklyCtx);
+
+function drawWeeklyChart(ctx) {
+    // ここでChart.jsなどを使って週間グラフを描画
+    // 簡易的な実装
+    ctx.fillStyle = '#007bff';
+    ctx.fillRect(0, 80, 50, 20);
+}
+
+function changeDate(days) {
+    const dateInput = document.getElementById('selectedDate');
+    const currentDate = new Date(dateInput.value);
+    currentDate.setDate(currentDate.getDate() + days);
+    dateInput.valueAsDate = currentDate;
+    // データを再読み込み
+    loadNutritionData(currentDate);
+}
+
+function addMealModal() {
+    document.getElementById('addMealModal').style.display = 'block';
+}
+
+function closeMealModal() {
+    document.getElementById('addMealModal').style.display = 'none';
+}
+
+// 食事タイプボタンのイベント
+document.querySelectorAll('.meal-type-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('.meal-type-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+    });
+});
+
+function showFoodSearch() {
+    // 食品検索UIを表示
+    alert('食品検索機能は準備中です');
+}
+
+function showQuickAdd() {
+    // 手動入力UIを表示
+    alert('手動入力機能は準備中です');
+}
+
+function loadNutritionData(date) {
+    // APIから指定日の栄養データを取得
+    console.log('Loading nutrition data for:', date);
+}
+</script>
+{% endblock %}

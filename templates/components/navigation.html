@@ -1,0 +1,235 @@
+<!-- 統一ナビゲーションメニュー -->
+<nav class="unified-nav">
+    <div class="nav-header">
+        <h1 class="nav-logo">BodyScale</h1>
+        <button class="nav-toggle" onclick="toggleMenu()">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="3" y1="12" x2="21" y2="12"></line>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+        </button>
+    </div>
+    
+    <div class="nav-menu" id="navMenu">
+        <!-- メイン機能 -->
+        <div class="nav-section">
+            <h3 class="nav-section-title">トレーニング分析</h3>
+            <a href="/" class="nav-item {% if request.endpoint == 'index' %}active{% endif %}">
+                <span class="nav-icon">🏋️</span>
+                <span>フォーム分析</span>
+            </a>
+            <a href="/workout_record" class="nav-item {% if request.endpoint == 'workout_record' %}active{% endif %}">
+                <span class="nav-icon">📝</span>
+                <span>ワークアウト記録</span>
+            </a>
+            <a href="/exercise_database" class="nav-item {% if request.endpoint == 'exercise_database_page' %}active{% endif %}">
+                <span class="nav-icon">📚</span>
+                <span>エクササイズDB</span>
+            </a>
+            <a href="/progress" class="nav-item {% if request.endpoint == 'statistics' %}active{% endif %}">
+                <span class="nav-icon">📊</span>
+                <span>進捗統計</span>
+            </a>
+        </div>
+
+        <!-- 栄養管理 -->
+        <div class="nav-section">
+            <h3 class="nav-section-title">栄養管理</h3>
+            <a href="/meal_analysis" class="nav-item {% if request.endpoint == 'meal_analysis' %}active{% endif %}">
+                <span class="nav-icon">🍽️</span>
+                <span>食事分析</span>
+            </a>
+            <a href="/nutrition_tracking" class="nav-item {% if request.endpoint == 'nutrition_tracking' %}active{% endif %}">
+                <span class="nav-icon">📈</span>
+                <span>栄養トラッキング</span>
+            </a>
+        </div>
+
+        <!-- データ管理 -->
+        <div class="nav-section">
+            <h3 class="nav-section-title">データ管理</h3>
+            <a href="/simple_training" class="nav-item {% if request.endpoint == 'simple_training' %}active{% endif %}">
+                <span class="nav-icon">🎯</span>
+                <span>簡易トレーニング</span>
+            </a>
+            <a href="/data_consent" class="nav-item {% if request.endpoint == 'data_consent_page' %}active{% endif %}">
+                <span class="nav-icon">✅</span>
+                <span>データ利用同意</span>
+            </a>
+            <a href="/training_data" class="nav-item {% if request.endpoint == 'training_data' %}active{% endif %}">
+                <span class="nav-icon">💾</span>
+                <span>トレーニングデータ</span>
+            </a>
+            <a href="/data_preprocessing" class="nav-item {% if request.endpoint == 'data_preprocessing_page' %}active{% endif %}">
+                <span class="nav-icon">⚙️</span>
+                <span>データ前処理</span>
+            </a>
+        </div>
+
+        <!-- 設定・その他 -->
+        <div class="nav-section">
+            <h3 class="nav-section-title">設定</h3>
+            <a href="/settings" class="nav-item {% if request.endpoint == 'settings' %}active{% endif %}">
+                <span class="nav-icon">⚙️</span>
+                <span>設定</span>
+            </a>
+            <a href="/dashboard" class="nav-item {% if request.endpoint == 'dashboard' %}active{% endif %}">
+                <span class="nav-icon">🏠</span>
+                <span>ダッシュボード</span>
+            </a>
+            {% if session.get('user_email') %}
+            <a href="/logout" class="nav-item">
+                <span class="nav-icon">🚪</span>
+                <span>ログアウト</span>
+            </a>
+            {% else %}
+            <a href="/login" class="nav-item">
+                <span class="nav-icon">🔐</span>
+                <span>ログイン</span>
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</nav>
+
+<style>
+.unified-nav {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 250px;
+    height: 100vh;
+    background: var(--card-bg, #fff);
+    box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+    z-index: 1000;
+    overflow-y: auto;
+    transition: transform 0.3s ease;
+}
+
+.nav-header {
+    padding: 20px;
+    border-bottom: 1px solid var(--border-color, #e0e0e0);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.nav-logo {
+    font-size: 24px;
+    font-weight: bold;
+    color: var(--primary-color, #007bff);
+    margin: 0;
+}
+
+.nav-toggle {
+    display: none;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 5px;
+}
+
+.nav-menu {
+    padding: 20px 0;
+}
+
+.nav-section {
+    margin-bottom: 30px;
+    padding: 0 20px;
+}
+
+.nav-section-title {
+    font-size: 12px;
+    text-transform: uppercase;
+    color: var(--text-muted, #6c757d);
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 15px;
+    color: var(--text-color, #333);
+    text-decoration: none;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    margin-bottom: 5px;
+}
+
+.nav-item:hover {
+    background: var(--hover-bg, #f0f0f0);
+    transform: translateX(5px);
+}
+
+.nav-item.active {
+    background: var(--primary-color, #007bff);
+    color: white;
+}
+
+.nav-icon {
+    margin-right: 12px;
+    font-size: 18px;
+    width: 24px;
+    text-align: center;
+}
+
+/* メインコンテンツのマージン調整 */
+body.with-nav .main-content,
+body.with-nav .container {
+    margin-left: 250px;
+    transition: margin-left 0.3s ease;
+}
+
+/* モバイル対応 */
+@media (max-width: 768px) {
+    .unified-nav {
+        transform: translateX(-100%);
+    }
+    
+    .unified-nav.active {
+        transform: translateX(0);
+    }
+    
+    .nav-toggle {
+        display: block !important;
+    }
+    
+    body.with-nav .main-content,
+    body.with-nav .container {
+        margin-left: 0;
+    }
+    
+    .nav-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 999;
+        display: none;
+    }
+    
+    .nav-overlay.active {
+        display: block;
+    }
+}
+</style>
+
+<div class="nav-overlay" onclick="toggleMenu()"></div>
+
+<script>
+function toggleMenu() {
+    const nav = document.querySelector('.unified-nav');
+    const overlay = document.querySelector('.nav-overlay');
+    nav.classList.toggle('active');
+    overlay.classList.toggle('active');
+}
+
+// 現在のページをアクティブにする
+document.addEventListener('DOMContentLoaded', function() {
+    document.body.classList.add('with-nav');
+});
+</script>

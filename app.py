@@ -1,4 +1,11 @@
 from flask import Flask, render_template, request, redirect, url_for, jsonify, send_from_directory, flash, session, make_response
+
+# flask-corsが利用できない場合の対応
+try:
+    from flask_cors import CORS
+    CORS_AVAILABLE = True
+except ImportError:
+    CORS_AVAILABLE = False
 import os
 import json
 import uuid
@@ -51,7 +58,28 @@ from core.exercise_database import (
 from utils.auth_models import AuthManager
 auth_manager = AuthManager()
 
+# Import meal analysis blueprint
+try:
+    from ml.api.simple_meal_analysis import meal_bp
+    MEAL_ANALYSIS_AVAILABLE = True
+    logger.info("食事分析モジュールが初期化されました")
+except ImportError as e:
+    meal_bp = None
+    MEAL_ANALYSIS_AVAILABLE = False
+    logger.warning(f"食事分析モジュールが利用できません: {e}")
+except Exception as e:
+    meal_bp = None
+    MEAL_ANALYSIS_AVAILABLE = False
+    logger.warning(f"食事分析モジュール初期化エラー: {e}")
+
 app = Flask(__name__)
+
+# CORS設定（利用可能な場合のみ）
+if CORS_AVAILABLE:
+    CORS(app, origins=['http://localhost:3000', 'http://localhost:3001'], supports_credentials=True)
+    logger.info("CORS設定が適用されました")
+else:
+    logger.warning("CORS設定がスキップされました（flask-cors未インストール）")
 app.config['UPLOAD_FOLDER'] = 'static/videos'
 app.config['ALLOWED_EXTENSIONS'] = {'mp4', 'mov', 'avi', 'webm'}
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
@@ -60,6 +88,11 @@ app.secret_key = os.environ.get("SESSION_SECRET", "development_key")
 RESULTS_DIR = 'results'
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Register meal analysis blueprint
+if MEAL_ANALYSIS_AVAILABLE and meal_bp:
+    app.register_blueprint(meal_bp, url_prefix='/meal')
+    logger.info("食事分析ブループリントを登録しました")
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
@@ -746,12 +779,145 @@ def ml_train_model():
         logger.error(f"ML学習エラー: {e}")
         return jsonify({'error': str(e)}), 500
 
+# ===== New ML Model APIs =====
+
+@app.route('/api/ml/classify_exercise', methods=['POST'])
+def ml_classify_exercise():
+    """Exercise classification API"""
+    try:
+        from ml.models.exercise_classifier import ExerciseClassifier
+        
+        data = request.get_json()
+        landmarks = data.get('landmarks', [])
+        
+        if not landmarks:
+            return jsonify({'error': 'Landmarks data required'}), 400
+        
+        # Initialize classifier
+        classifier = ExerciseClassifier(use_ml=False)  # Start with rule-based
+        
+        # Classify single frame
+        result = classifier.classify_exercise(landmarks)
+        
+        return jsonify({
+            'success': True,
+            'exercise': result['exercise'],
+            'confidence': result['confidence'],
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"Exercise classification error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/ml/detect_phases', methods=['POST'])
+def ml_detect_phases():
+    """Phase detection API"""
+    try:
+        from ml.models.phase_detector import PhaseDetector, analyze_exercise_phases
+        
+        data = request.get_json()
+        landmark_sequence = data.get('landmark_sequence', [])
+        exercise_type = data.get('exercise_type', 'squat')
+        fps = data.get('fps', 30.0)
+        
+        if not landmark_sequence:
+            return jsonify({'error': 'Landmark sequence required'}), 400
+        
+        # Convert to numpy arrays
+        import numpy as np
+        landmark_arrays = []
+        for frame in landmark_sequence:
+            if isinstance(frame, list) and len(frame) == 33:
+                landmark_arrays.append(np.array(frame))
+        
+        if not landmark_arrays:
+            return jsonify({'error': 'Invalid landmark data format'}), 400
+        
+        # Analyze phases
+        results = analyze_exercise_phases(
+            landmark_arrays,
+            exercise_type,
+            fps
+        )
+        
+        return jsonify({
+            'success': True,
+            **results,
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"Phase detection error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/ml/evaluate_form', methods=['POST'])
+def ml_evaluate_form():
+    """Form evaluation API"""
+    try:
+        from ml.models.form_evaluator import FormEvaluator, evaluate_exercise_sequence
+        
+        data = request.get_json()
+        landmarks = data.get('landmarks', None)
+        landmark_sequence = data.get('landmark_sequence', None)
+        exercise_type = data.get('exercise_type', 'squat')
+        phase = data.get('phase', None)
+        
+        if landmarks:
+            # Single frame evaluation
+            import numpy as np
+            landmarks_array = np.array(landmarks)
+            
+            evaluator = FormEvaluator(exercise_type)
+            result = evaluator.evaluate_form(landmarks_array, phase)
+            
+            return jsonify({
+                'success': True,
+                'type': 'single_frame',
+                **result,
+                'timestamp': datetime.now().isoformat()
+            })
+            
+        elif landmark_sequence:
+            # Sequence evaluation
+            import numpy as np
+            landmark_arrays = []
+            for frame in landmark_sequence:
+                if isinstance(frame, list) and len(frame) == 33:
+                    landmark_arrays.append(np.array(frame))
+            
+            if not landmark_arrays:
+                return jsonify({'error': 'Invalid landmark sequence format'}), 400
+            
+            results = evaluate_exercise_sequence(
+                landmark_arrays,
+                exercise_type
+            )
+            
+            return jsonify({
+                'success': True,
+                'type': 'sequence',
+                **results,
+                'timestamp': datetime.now().isoformat()
+            })
+        else:
+            return jsonify({'error': 'Either landmarks or landmark_sequence required'}), 400
+        
+    except Exception as e:
+        logger.error(f"Form evaluation error: {e}")
+        return jsonify({'error': str(e)}), 500
+
 # ===== データ収集API =====
 
 @app.route('/data_consent')
 def data_consent_page():
     """データ利用同意ページ"""
     return render_template('data_consent.html')
+
+@app.route('/training_data')
+def training_data():
+    """データ管理ページ（エイリアス）"""
+    return render_template('training_data_management.html')
 
 @app.route('/training_data_management')
 def training_data_management():
@@ -762,6 +928,21 @@ def training_data_management():
 def data_preprocessing_page():
     """データ前処理ページ"""
     return render_template('data_preprocessing.html')
+
+@app.route('/exercise_database')
+def exercise_database_page():
+    """エクササイズデータベースページ"""
+    return render_template('exercise_database.html')
+
+@app.route('/meal_analysis')
+def meal_analysis_page():
+    """食事分析ページ"""
+    return render_template('meal_analysis.html')
+
+@app.route('/nutrition_tracking')
+def nutrition_tracking_page():
+    """栄養トラッキングページ"""
+    return render_template('nutrition_tracking.html')
 
 @app.route('/api/data_consent', methods=['POST'])
 def record_data_consent():
@@ -1516,6 +1697,223 @@ def get_weight_suggestions_api():
     except Exception as e:
         logger.error(f"重量候補取得エラー: {e}")
         return jsonify({'error': str(e)}), 500
+
+# ===== リアルタイムポーズ分析API =====
+
+@app.route('/api/analyze', methods=['POST'])
+def analyze_pose():
+    """リアルタイムポーズ分析API"""
+    try:
+        data = request.get_json()
+        
+        # 必須フィールドの検証
+        if not data or 'landmarks' not in data:
+            return jsonify({'error': 'ランドマークデータが必要です'}), 400
+        
+        landmarks = data['landmarks']
+        exercise_type = data.get('exercise_type', 'squat')
+        frame_number = data.get('frame_number', 0)
+        
+        # 角度計算
+        angles = {}
+        
+        # MediaPipeのランドマークインデックス
+        LEFT_SHOULDER = 11
+        LEFT_ELBOW = 13
+        LEFT_WRIST = 15
+        LEFT_HIP = 23
+        LEFT_KNEE = 25
+        LEFT_ANKLE = 27
+        RIGHT_SHOULDER = 12
+        RIGHT_ELBOW = 14
+        RIGHT_WRIST = 16
+        RIGHT_HIP = 24
+        RIGHT_KNEE = 26
+        RIGHT_ANKLE = 28
+        
+        # 膝角度の計算
+        if all(str(i) in landmarks for i in [LEFT_HIP, LEFT_KNEE, LEFT_ANKLE]):
+            angles['left_knee'] = calculate_angle(
+                landmarks[str(LEFT_HIP)],
+                landmarks[str(LEFT_KNEE)],
+                landmarks[str(LEFT_ANKLE)]
+            )
+        
+        if all(str(i) in landmarks for i in [RIGHT_HIP, RIGHT_KNEE, RIGHT_ANKLE]):
+            angles['right_knee'] = calculate_angle(
+                landmarks[str(RIGHT_HIP)],
+                landmarks[str(RIGHT_KNEE)],
+                landmarks[str(RIGHT_ANKLE)]
+            )
+        
+        # 股関節角度の計算
+        if all(str(i) in landmarks for i in [LEFT_SHOULDER, LEFT_HIP, LEFT_KNEE]):
+            angles['left_hip'] = calculate_angle(
+                landmarks[str(LEFT_SHOULDER)],
+                landmarks[str(LEFT_HIP)],
+                landmarks[str(LEFT_KNEE)]
+            )
+        
+        if all(str(i) in landmarks for i in [RIGHT_SHOULDER, RIGHT_HIP, RIGHT_KNEE]):
+            angles['right_hip'] = calculate_angle(
+                landmarks[str(RIGHT_SHOULDER)],
+                landmarks[str(RIGHT_HIP)],
+                landmarks[str(RIGHT_KNEE)]
+            )
+        
+        # 肘角度の計算（ベンチプレス用）
+        if exercise_type == 'bench_press':
+            if all(str(i) in landmarks for i in [LEFT_SHOULDER, LEFT_ELBOW, LEFT_WRIST]):
+                angles['left_elbow'] = calculate_angle(
+                    landmarks[str(LEFT_SHOULDER)],
+                    landmarks[str(LEFT_ELBOW)],
+                    landmarks[str(LEFT_WRIST)]
+                )
+            
+            if all(str(i) in landmarks for i in [RIGHT_SHOULDER, RIGHT_ELBOW, RIGHT_WRIST]):
+                angles['right_elbow'] = calculate_angle(
+                    landmarks[str(RIGHT_SHOULDER)],
+                    landmarks[str(RIGHT_ELBOW)],
+                    landmarks[str(RIGHT_WRIST)]
+                )
+        
+        # 背中の傾き計算
+        if all(str(i) in landmarks for i in [LEFT_SHOULDER, LEFT_HIP]):
+            back_angle = calculate_back_angle(
+                landmarks[str(LEFT_SHOULDER)],
+                landmarks[str(LEFT_HIP)]
+            )
+            angles['back_angle'] = back_angle
+        
+        # フォーム評価
+        form_score = evaluate_form(angles, exercise_type)
+        
+        # フィードバック生成
+        feedback = generate_feedback(angles, exercise_type)
+        
+        # 結果を返す
+        result = {
+            'success': True,
+            'frame_number': frame_number,
+            'exercise_type': exercise_type,
+            'angles': angles,
+            'form_score': form_score,
+            'feedback': feedback,
+            'timestamp': datetime.now().isoformat()
+        }
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        logger.error(f"ポーズ分析エラー: {e}")
+        return jsonify({'error': str(e)}), 500
+
+def calculate_angle(point1, point2, point3):
+    """3点から角度を計算"""
+    import numpy as np
+    
+    # ベクトルを計算
+    a = np.array([point1['x'], point1['y']])
+    b = np.array([point2['x'], point2['y']])
+    c = np.array([point3['x'], point3['y']])
+    
+    ba = a - b
+    bc = c - b
+    
+    # 角度を計算
+    cosine_angle = np.dot(ba, bc) / (np.linalg.norm(ba) * np.linalg.norm(bc))
+    angle = np.arccos(np.clip(cosine_angle, -1.0, 1.0))
+    
+    return np.degrees(angle)
+
+def calculate_back_angle(shoulder, hip):
+    """背中の傾きを計算"""
+    import numpy as np
+    
+    # 垂直線からの角度を計算
+    dx = hip['x'] - shoulder['x']
+    dy = hip['y'] - shoulder['y']
+    
+    angle = np.degrees(np.arctan2(dx, dy))
+    return abs(angle)
+
+def evaluate_form(angles, exercise_type):
+    """フォームスコアを評価"""
+    score = 100
+    
+    if exercise_type == 'squat':
+        # スクワットの評価基準
+        if 'left_knee' in angles and 'right_knee' in angles:
+            avg_knee_angle = (angles['left_knee'] + angles['right_knee']) / 2
+            
+            # 理想的な膝角度は90度
+            if avg_knee_angle < 80:
+                score -= 20  # 深すぎる
+            elif avg_knee_angle > 100:
+                score -= 15  # 浅すぎる
+        
+        # 背中の傾き評価
+        if 'back_angle' in angles:
+            if angles['back_angle'] > 45:
+                score -= 15  # 前傾しすぎ
+    
+    elif exercise_type == 'bench_press':
+        # ベンチプレスの評価基準
+        if 'left_elbow' in angles and 'right_elbow' in angles:
+            avg_elbow_angle = (angles['left_elbow'] + angles['right_elbow']) / 2
+            
+            # 理想的な肘角度は90度
+            if avg_elbow_angle < 70:
+                score -= 15  # 深すぎる
+            elif avg_elbow_angle > 110:
+                score -= 10  # 浅すぎる
+    
+    elif exercise_type == 'deadlift':
+        # デッドリフトの評価基準
+        if 'back_angle' in angles:
+            if angles['back_angle'] > 60:
+                score -= 20  # 背中が丸まりすぎ
+        
+        if 'left_hip' in angles and 'right_hip' in angles:
+            avg_hip_angle = (angles['left_hip'] + angles['right_hip']) / 2
+            if avg_hip_angle < 90:
+                score -= 10  # 股関節が開きすぎ
+    
+    return max(0, score)
+
+def generate_feedback(angles, exercise_type):
+    """フィードバックメッセージを生成"""
+    feedback = []
+    
+    if exercise_type == 'squat':
+        if 'left_knee' in angles and 'right_knee' in angles:
+            avg_knee_angle = (angles['left_knee'] + angles['right_knee']) / 2
+            
+            if avg_knee_angle < 80:
+                feedback.append("膝が深く曲がりすぎています。股関節の柔軟性を確認してください。")
+            elif avg_knee_angle > 100:
+                feedback.append("もう少し深くしゃがみましょう。太ももが床と平行になるまで下げます。")
+        
+        if 'back_angle' in angles and angles['back_angle'] > 45:
+            feedback.append("上体が前傾しすぎています。胸を張って背筋を伸ばしましょう。")
+    
+    elif exercise_type == 'bench_press':
+        if 'left_elbow' in angles and 'right_elbow' in angles:
+            avg_elbow_angle = (angles['left_elbow'] + angles['right_elbow']) / 2
+            
+            if avg_elbow_angle < 70:
+                feedback.append("バーを下げすぎています。肘は90度程度で止めましょう。")
+            elif avg_elbow_angle > 110:
+                feedback.append("可動域が狭いです。もう少しバーを下げましょう。")
+    
+    elif exercise_type == 'deadlift':
+        if 'back_angle' in angles and angles['back_angle'] > 60:
+            feedback.append("背中が丸まっています。胸を張って背筋を伸ばしましょう。")
+    
+    if not feedback:
+        feedback.append("良いフォームです！この調子で続けましょう。")
+    
+    return feedback
 
 # ===== 認証機能 =====
 
