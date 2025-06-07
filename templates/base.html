@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>{% block title %}BodyScale - AI筋トレフォーム分析{% endblock %}</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    {% block extra_css %}{% endblock %}
+    <script src="/static/js/i18n.js"></script>
+</head>
+<body>
+    <!-- 統一ナビゲーション -->
+    {% include 'components/navigation.html' %}
+    
+    <!-- メインコンテンツ -->
+    <div class="main-wrapper">
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- 共通JavaScript -->
+    <script>
+        // セッション管理
+        function checkSession() {
+            fetch('/api/check_session')
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.authenticated && !window.location.pathname.includes('/login')) {
+                        // 未認証でログインページ以外の場合
+                        console.log('セッションが無効です');
+                    }
+                });
+        }
+        
+        // 定期的にセッションチェック
+        setInterval(checkSession, 300000); // 5分ごと
+        
+        // 初回チェック
+        checkSession();
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

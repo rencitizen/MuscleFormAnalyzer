@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Activity, BarChart3, Camera, Dumbbell, Target, Trophy } from 'lucide-react'
+import { Activity, BarChart3, Camera, Dumbbell, Target, Trophy, Utensils } from 'lucide-react'
 import Link from 'next/link'
 
 export default function HomePage() {
@@ -92,7 +92,7 @@ export default function HomePage() {
           </Card>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <Link href="/analyze">
             <Card className="cursor-pointer hover:shadow-lg transition-shadow">
               <CardHeader>
@@ -124,6 +124,25 @@ export default function HomePage() {
               <CardContent>
                 <Button variant="outline" className="w-full">
                   ダッシュボードへ
+                </Button>
+              </CardContent>
+            </Card>
+          </Link>
+
+          <Link href="/nutrition">
+            <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Utensils className="w-5 h-5" />
+                  食事管理
+                </CardTitle>
+                <CardDescription>
+                  写真から食事を分析してカロリーを記録
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button variant="outline" className="w-full">
+                  食事を記録
                 </Button>
               </CardContent>
             </Card>
