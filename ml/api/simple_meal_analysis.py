@@ -6,6 +6,7 @@ from werkzeug.utils import secure_filename
 import cv2
 from typing import List, Dict
 import logging
+from datetime import datetime
 
 # Import calorie calculator
 try:
@@ -359,4 +360,100 @@ def calculate_daily_needs():
             })
     except Exception as e:
         logger.error(f"Daily needs calculation error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@meal_bp.route('/api/meal/nutrition-advice', methods=['POST'])
+def get_nutrition_advice():
+    """Get personalized nutrition advice"""
+    try:
+        from ml.nutrition.nutrition_advisor import NutritionAdvisor, NutritionGoals
+        
+        data = request.get_json()
+        current_nutrition = data.get('current_nutrition', {})
+        goals = data.get('goals', {})
+        meal_history = data.get('meal_history', [])
+        
+        advisor = NutritionAdvisor()
+        
+        # Create goals object
+        nutrition_goals = NutritionGoals(
+            daily_calories=goals.get('calories', 2000),
+            protein_g=goals.get('protein', 60),
+            carbs_g=goals.get('carbs', 250),
+            fat_g=goals.get('fat', 65),
+            fiber_g=goals.get('fiber', 25)
+        )
+        
+        # Get advice
+        advice_list = advisor.analyze_nutrition_status(
+            current_nutrition,
+            nutrition_goals,
+            meal_history
+        )
+        
+        # Convert to JSON-serializable format
+        advice_data = []
+        for advice in advice_list:
+            advice_data.append({
+                'category': advice.category,
+                'priority': advice.priority,
+                'message': advice.message,
+                'action_items': advice.action_items,
+                'food_suggestions': advice.food_suggestions
+            })
+        
+        return jsonify({
+            'success': True,
+            'advice': advice_data
+        })
+        
+    except Exception as e:
+        logger.error(f"Nutrition advice error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@meal_bp.route('/api/meal/training-nutrition', methods=['POST'])
+def get_training_nutrition_plan():
+    """Get nutrition plan optimized for training"""
+    try:
+        from ml.integration.training_nutrition_link import TrainingNutritionIntegrator, TrainingSession
+        
+        data = request.get_json()
+        user_profile = data.get('user_profile', {})
+        training_data = data.get('training_session', {})
+        base_goals = data.get('base_nutrition_goals', {})
+        
+        integrator = TrainingNutritionIntegrator()
+        
+        # Create training session
+        session = TrainingSession(
+            date=datetime.fromisoformat(training_data.get('date', datetime.now().isoformat())),
+            exercise_type=training_data.get('exercise_type', 'squat'),
+            duration_minutes=training_data.get('duration', 60),
+            intensity=training_data.get('intensity', 'moderate'),
+            volume=training_data.get('volume', {}),
+            calories_burned=0  # Will be calculated
+        )
+        
+        # Create nutrition plan
+        plan = integrator.create_training_day_nutrition_plan(
+            user_profile,
+            session,
+            base_goals
+        )
+        
+        return jsonify({
+            'success': True,
+            'nutrition_plan': {
+                'date': plan.date.isoformat(),
+                'base_calories': plan.base_calories,
+                'training_calories': plan.training_calories,
+                'total_calories': plan.total_calories,
+                'macro_targets': plan.macro_targets,
+                'meal_timing': plan.meal_timing,
+                'supplements': plan.supplements
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Training nutrition plan error: {e}")
         return jsonify({'error': str(e)}), 500

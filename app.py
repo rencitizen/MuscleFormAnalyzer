@@ -1915,6 +1915,83 @@ def generate_feedback(angles, exercise_type):
     
     return feedback
 
+@app.route('/api/analyze/enhanced', methods=['POST'])
+def analyze_pose_enhanced():
+    """拡張ポーズ分析API（新しいFormAnalyzerを使用）"""
+    try:
+        data = request.get_json()
+        
+        # 必須フィールドの検証
+        if not data or 'landmarks' not in data:
+            return jsonify({'error': 'ランドマークデータが必要です'}), 400
+        
+        landmarks = data['landmarks']
+        exercise_type = data.get('exercise_type', 'squat')
+        frame_number = data.get('frame_number', 0)
+        model_mode = data.get('model_mode', 'lite')
+        user_profile = data.get('user_profile', None)
+        landmark_sequence = data.get('landmark_sequence', [])
+        
+        # FormAnalyzerのインポートと使用
+        try:
+            from ml.models.form_analyzer import FormAnalyzerFactory
+            
+            # 環境変数を一時的に設定
+            import os
+            original_mode = os.getenv('MODEL_MODE')
+            os.environ['MODEL_MODE'] = model_mode
+            
+            # アナライザーを作成
+            analyzer = FormAnalyzerFactory.create_analyzer()
+            
+            # ランドマークデータを変換（APIフォーマットから内部フォーマットへ）
+            formatted_landmarks = []
+            for lm in landmarks:
+                formatted_landmarks.append({
+                    'x': lm.get('x', 0),
+                    'y': lm.get('y', 0),
+                    'z': lm.get('z', 0),
+                    'visibility': lm.get('visibility', 0)
+                })
+            
+            # 分析を実行
+            pose_data = {
+                'landmarks': formatted_landmarks,
+                'exercise_type': exercise_type,
+                'frame_number': frame_number
+            }
+            
+            # シーケンスデータがある場合は追加
+            if landmark_sequence:
+                pose_data['landmark_sequence'] = landmark_sequence
+            
+            # 分析実行
+            result = analyzer.analyze(pose_data, user_profile)
+            
+            # 環境変数を元に戻す
+            if original_mode:
+                os.environ['MODEL_MODE'] = original_mode
+            else:
+                del os.environ['MODEL_MODE']
+            
+            # タイムスタンプを追加
+            result['timestamp'] = datetime.now().isoformat()
+            
+            return jsonify(result)
+            
+        except ImportError as e:
+            logger.error(f"FormAnalyzerのインポートエラー: {e}")
+            # フォールバック：通常の分析を実行
+            return analyze_pose()
+        except Exception as e:
+            logger.error(f"拡張分析エラー: {e}")
+            # フォールバック：通常の分析を実行
+            return analyze_pose()
+            
+    except Exception as e:
+        logger.error(f"拡張ポーズ分析APIエラー: {e}")
+        return jsonify({'error': str(e)}), 500
+
 # ===== 認証機能 =====
 
 def get_current_user():
