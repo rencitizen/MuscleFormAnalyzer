@@ -29,3 +29,4 @@ pillow>=10.0.0
 # Additional utilities
 python-dotenv>=1.0.0
 flask-cors>=4.0.0
+watchdog>=3.0.0  # For file watching in development

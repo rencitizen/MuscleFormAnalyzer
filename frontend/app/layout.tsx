@@ -4,6 +4,7 @@ import './globals.css'
 import { Toaster } from '@/components/ui/toaster'
 import { AuthProvider } from '@/components/providers/AuthProvider'
 import { ThemeProvider } from '@/components/providers/ThemeProvider'
+import { MobileNav } from '@/components/layout/MobileNav'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -30,7 +31,10 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider>
-            {children}
+            <div className="pb-16 md:pb-0">
+              {children}
+            </div>
+            <MobileNav />
             <Toaster />
           </AuthProvider>
         </ThemeProvider>
