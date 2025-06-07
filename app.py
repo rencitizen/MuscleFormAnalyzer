@@ -1,5 +1,11 @@
 from flask import Flask, render_template, request, redirect, url_for, jsonify, send_from_directory, flash, session, make_response
-from flask_cors import CORS
+
+# flask-corsが利用できない場合の対応
+try:
+    from flask_cors import CORS
+    CORS_AVAILABLE = True
+except ImportError:
+    CORS_AVAILABLE = False
 import os
 import json
 import uuid
@@ -67,7 +73,13 @@ except Exception as e:
     logger.warning(f"食事分析モジュール初期化エラー: {e}")
 
 app = Flask(__name__)
-CORS(app, origins=['http://localhost:3000', 'http://localhost:3001'], supports_credentials=True)
+
+# CORS設定（利用可能な場合のみ）
+if CORS_AVAILABLE:
+    CORS(app, origins=['http://localhost:3000', 'http://localhost:3001'], supports_credentials=True)
+    logger.info("CORS設定が適用されました")
+else:
+    logger.warning("CORS設定がスキップされました（flask-cors未インストール）")
 app.config['UPLOAD_FOLDER'] = 'static/videos'
 app.config['ALLOWED_EXTENSIONS'] = {'mp4', 'mov', 'avi', 'webm'}
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
