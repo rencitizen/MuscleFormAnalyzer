@@ -106,118 +106,279 @@ def index():
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
-    analysis_type = request.form.get('analysis_type', 'body_metrics')
+    """動画分析エンドポイント - 包括的エラーハンドリング付き"""
+    response_data = {
+        'success': False,
+        'error': None,
+        'data': None,
+        'debug_info': {}
+    }
+    
     try:
-        height = float(request.form.get('height', 170))
-    except ValueError:
-        return jsonify({"error": "身長の値が無効です"}), 400
+        # 1. リクエストデータの検証
+        analysis_type = request.form.get('analysis_type', 'body_metrics')
+        logger.info(f"分析開始: type={analysis_type}")
+        
+        try:
+            height = float(request.form.get('height', 170))
+            if height < 100 or height > 250:
+                raise ValueError("身長は100-250cmの範囲で入力してください")
+        except ValueError as e:
+            response_data['error'] = f"身長の値が無効です: {str(e)}"
+            return jsonify(response_data), 400
 
-    file = request.files.get('video')
-    if not file or file.filename == '':
-        logger.info("ファイルなし、サンプル使用")
-        return redirect(url_for('training_results', mode='sample'))
+        # 2. ファイル検証
+        file = request.files.get('video')
+        if not file or file.filename == '':
+            logger.info("ファイルなし、サンプル使用")
+            return redirect(url_for('training_results', mode='sample'))
 
-    if allowed_file(file.filename):
-        filename = secure_filename(file.filename)
-        unique_id = str(uuid.uuid4())
-        new_filename = f"upload_{unique_id}_{filename}"
-        os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-        os.makedirs(RESULTS_DIR, exist_ok=True)
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], new_filename)
-        file.save(filepath)
-        logger.info(f"アップロード完了: {filepath}")
+        if not allowed_file(file.filename):
+            response_data['error'] = "サポートされていないファイル形式です"
+            return jsonify(response_data), 400
+
+        # 3. ファイル保存処理
+        try:
+            filename = secure_filename(file.filename or "video")
+            unique_id = str(uuid.uuid4())
+            new_filename = f"upload_{unique_id}_{filename}"
+            
+            # ディレクトリ作成
+            os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+            os.makedirs(RESULTS_DIR, exist_ok=True)
+            
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], new_filename)
+            file.save(filepath)
+            logger.info(f"アップロード完了: {filepath}")
+            
+            # ファイルサイズチェック
+            file_size = os.path.getsize(filepath)
+            if file_size > app.config.get('MAX_CONTENT_LENGTH', 50 * 1024 * 1024):
+                os.remove(filepath)
+                response_data['error'] = "ファイルサイズが大きすぎます"
+                return jsonify(response_data), 400
+                
+        except Exception as e:
+            logger.error(f"ファイル保存エラー: {e}")
+            response_data['error'] = "ファイルの保存に失敗しました"
+            return jsonify(response_data), 500
 
         if analysis_type == 'training':
             exercise_type = request.form.get('exercise_type', 'squat')
             
-            # まず身体寸法を測定
-            from core.analysis import BodyAnalyzer
-            body_analyzer = BodyAnalyzer(user_height_cm=height)
-            body_metrics = {}
-            
+            # 4. MediaPipe初期化とエラーハンドリング
             try:
-                # 動画から身体寸法を分析
+                from core.analysis import BodyAnalyzer
+                body_analyzer = BodyAnalyzer(user_height_cm=height)
+                body_metrics = {}
+                
+                # MediaPipeとOpenCVの安全な初期化
                 import cv2
                 import mediapipe as mp
                 
-                cap = cv2.VideoCapture(filepath)
-                mp_pose = mp.solutions.pose
-                pose = mp_pose.Pose(static_image_mode=False, model_complexity=2)
+                # OpenCVバージョン確認
+                cv_version = cv2.__version__
+                logger.info(f"OpenCV version: {cv_version}")
                 
-                # 複数フレームを取得して身体寸法を測定（精度向上）
+                # MediaPipe初期化
+                mp_pose = mp.solutions.pose
+                pose_config = {
+                    'static_image_mode': False,
+                    'model_complexity': 1,  # 軽量化
+                    'enable_segmentation': False,
+                    'min_detection_confidence': 0.5,
+                    'min_tracking_confidence': 0.5
+                }
+                
+                pose = mp_pose.Pose(**pose_config)
+                logger.info("MediaPise初期化完了")
+                
+            except ImportError as e:
+                logger.error(f"依存関係の読み込みエラー: {e}")
+                response_data['error'] = "必要なライブラリが見つかりません"
+                response_data['debug_info']['missing_dependency'] = str(e)
+                return jsonify(response_data), 500
+            except Exception as e:
+                logger.error(f"MediaPipe初期化エラー: {e}")
+                response_data['error'] = "姿勢推定システムの初期化に失敗しました"
+                response_data['debug_info']['mediapipe_error'] = str(e)
+                return jsonify(response_data), 500
+            
+            # 5. 動画処理とフレーム分析
+            try:
+                cap = cv2.VideoCapture(filepath)
+                if not cap.isOpened():
+                    raise ValueError("動画ファイルを開けませんでした")
+                
+                # 動画情報取得
+                fps = cap.get(cv2.CAP_PROP_FPS) or 30
+                frame_count_total = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+                duration = frame_count_total / fps if fps > 0 else 0
+                
+                logger.info(f"動画情報: FPS={fps}, フレーム数={frame_count_total}, 時間={duration:.1f}秒")
+                
+                # メモリ使用量監視
+                import psutil
+                process = psutil.Process()
+                initial_memory = process.memory_info().rss / 1024 / 1024  # MB
+                
                 measurements = []
                 frame_count = 0
-                max_frames = 5  # 最大5フレームで測定
+                max_frames = min(10, frame_count_total // 10)  # 動画の10%または最大10フレーム
+                skip_frames = max(1, frame_count_total // max_frames) if max_frames > 0 else 1
                 
                 while frame_count < max_frames:
+                    # フレームスキップで効率化
+                    cap.set(cv2.CAP_PROP_POS_FRAMES, frame_count * skip_frames)
                     ret, frame = cap.read()
-                    if not ret:
-                        break
-                        
-                    frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                    results_pose = pose.process(frame_rgb)
                     
-                    if results_pose.pose_landmarks:
-                        # ランドマークを辞書形式に変換
-                        landmarks = {}
-                        h, w, _ = frame.shape
-                        for idx, landmark in enumerate(results_pose.pose_landmarks.landmark):
-                            landmarks[idx] = {
-                                'x': landmark.x * w,
-                                'y': landmark.y * h,
-                                'z': landmark.z,
-                                'visibility': landmark.visibility
-                            }
+                    if not ret:
+                        logger.warning(f"フレーム{frame_count * skip_frames}の読み込み失敗")
+                        break
+                    
+                    # メモリチェック
+                    current_memory = process.memory_info().rss / 1024 / 1024
+                    if current_memory - initial_memory > 500:  # 500MB制限
+                        logger.warning("メモリ使用量が制限を超えました")
+                        break
+                    
+                    try:
+                        # フレーム前処理
+                        if frame.shape[0] > 720:  # 解像度制限
+                            scale = 720 / frame.shape[0]
+                            new_width = int(frame.shape[1] * scale)
+                            frame = cv2.resize(frame, (new_width, 720))
                         
-                        # 身体寸法を分析
-                        measurement = body_analyzer.analyze_landmarks(landmarks, (w, h))
-                        measurements.append(measurement)
+                        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                        results_pose = pose.process(frame_rgb)
+                        
+                        if results_pose.pose_landmarks:
+                            # ランドマークを辞書形式に変換
+                            landmarks = {}
+                            h, w, _ = frame.shape
+                            
+                            for idx, landmark in enumerate(results_pose.pose_landmarks.landmark):
+                                if landmark.visibility > 0.5:  # 可視性チェック
+                                    landmarks[idx] = {
+                                        'x': max(0, min(w, landmark.x * w)),
+                                        'y': max(0, min(h, landmark.y * h)),
+                                        'z': landmark.z,
+                                        'visibility': landmark.visibility
+                                    }
+                            
+                            if len(landmarks) > 20:  # 十分なランドマークがある場合のみ
+                                # 身体寸法を分析
+                                measurement = body_analyzer.analyze_landmarks(landmarks, (w, h))
+                                if measurement and any(v > 0 for v in measurement.values() if isinstance(v, (int, float))):
+                                    measurements.append(measurement)
+                                    logger.debug(f"フレーム{frame_count}測定完了")
+                            
                         frame_count += 1
-                
-                # 複数測定の平均値を計算
-                if measurements:
-                    body_metrics = {
-                        'user_height_cm': height,
-                        'left_arm_cm': sum(m.get('left_arm_cm', 0) for m in measurements) / len(measurements),
-                        'right_arm_cm': sum(m.get('right_arm_cm', 0) for m in measurements) / len(measurements),
-                        'left_leg_cm': sum(m.get('left_leg_cm', 0) for m in measurements) / len(measurements),
-                        'right_leg_cm': sum(m.get('right_leg_cm', 0) for m in measurements) / len(measurements),
-                        'measurements_count': len(measurements)
-                    }
-                    logger.info(f"身体寸法測定完了（{len(measurements)}フレーム平均）: {body_metrics}")
                         
+                    except Exception as frame_error:
+                        logger.warning(f"フレーム{frame_count}処理エラー: {frame_error}")
+                        continue
+                
+                # リソース解放
                 cap.release()
+                pose.close()
+                
+                # 測定結果の統計処理
+                if measurements:
+                    valid_measurements = [m for m in measurements if m and isinstance(m, dict)]
+                    if valid_measurements:
+                        body_metrics = {
+                            'user_height_cm': height,
+                            'measurements_count': len(valid_measurements),
+                            'video_duration': duration,
+                            'processed_frames': frame_count
+                        }
+                        
+                        # 各測定値の平均計算（ゼロ除外）
+                        for key in ['left_arm_cm', 'right_arm_cm', 'left_leg_cm', 'right_leg_cm']:
+                            values = [m.get(key, 0) for m in valid_measurements if m.get(key, 0) > 0]
+                            body_metrics[key] = sum(values) / len(values) if values else 0
+                        
+                        logger.info(f"身体寸法測定完了（{len(valid_measurements)}フレーム平均）: {body_metrics}")
+                    else:
+                        logger.warning("有効な測定データがありません")
+                        body_metrics = {'user_height_cm': height, 'measurements_count': 0}
+                else:
+                    logger.warning("身体寸法の測定に失敗しました")
+                    body_metrics = {'user_height_cm': height, 'measurements_count': 0}
+                
+            except cv2.error as cv_error:
+                logger.error(f"OpenCV処理エラー: {cv_error}")
+                response_data['error'] = "動画処理中にエラーが発生しました"
+                response_data['debug_info']['opencv_error'] = str(cv_error)
+                return jsonify(response_data), 500
+            except Exception as e:
+                logger.error(f"動画分析エラー: {e}")
+                response_data['error'] = "動画の分析に失敗しました"
+                response_data['debug_info']['analysis_error'] = str(e)
+                return jsonify(response_data), 500
+            finally:
+                # 確実なリソース解放
+                try:
+                    if 'cap' in locals() and cap.isOpened():
+                        cap.release()
+                    if 'pose' in locals():
+                        pose.close()
+                except:
+                    pass
+            
+            # 6. トレーニング分析の実行
+            try:
+                analyzer = TrainingAnalyzer(exercise_type=exercise_type, body_metrics=body_metrics)
+                results = analyzer.analyze_video(filepath)
+                
+                # 身長情報と身体寸法情報を結果に追加
+                if 'user_data' not in results:
+                    results['user_data'] = {}
+                results['user_data']['height_cm'] = height
+                results['user_data']['body_metrics'] = body_metrics
+                
+                # 結果保存
+                result_file = os.path.join(RESULTS_DIR, f"training_result_{unique_id}.json")
+                with open(result_file, 'w', encoding='utf-8') as f:
+                    json.dump(results, f, ensure_ascii=False, indent=2)
+                
+                response_data['success'] = True
+                response_data['data'] = {
+                    'result_file': f"training_result_{unique_id}.json",
+                    'analysis_type': analysis_type,
+                    'exercise_type': exercise_type
+                }
+                
+                return redirect(url_for('training_results', mode='processed', result_file=f"training_result_{unique_id}.json"))
                 
             except Exception as e:
-                logger.warning(f"身体寸法測定中にエラー: {e}")
-            
-            # 身体寸法データを使ってトレーニング分析を実行
-            analyzer = TrainingAnalyzer(exercise_type=exercise_type, body_metrics=body_metrics)
-            results = analyzer.analyze_video(filepath)
-            
-            # 身長情報と身体寸法情報を結果に追加
-            if 'user_data' not in results:
-                results['user_data'] = {}
-            results['user_data']['height_cm'] = height
-            results['user_data']['body_metrics'] = body_metrics
-            
-            result_file = os.path.join(RESULTS_DIR, f"training_result_{unique_id}.json")
-            with open(result_file, 'w', encoding='utf-8') as f:
-                json.dump(results, f, ensure_ascii=False, indent=2)
-            return redirect(url_for('training_results', mode='processed', result_file=f"training_result_{unique_id}.json"))
+                logger.error(f"トレーニング分析エラー: {e}")
+                response_data['error'] = "トレーニング分析に失敗しました"
+                response_data['debug_info']['training_analysis_error'] = str(e)
+                return jsonify(response_data), 500
         
         elif analysis_type == 'body_metrics':
-            # 身体寸法分析の処理
-            from core.analysis import BodyAnalyzer
-            body_analyzer = BodyAnalyzer(user_height_cm=height)
+            # 身体寸法分析の処理（簡易版）
             try:
-                # 動画から身体寸法を分析
+                from core.analysis import BodyAnalyzer
+                body_analyzer = BodyAnalyzer(user_height_cm=height)
+                
+                # MediaPipe初期化
                 import cv2
                 import mediapipe as mp
                 
                 cap = cv2.VideoCapture(filepath)
+                if not cap.isOpened():
+                    response_data['error'] = "動画ファイルを開けませんでした"
+                    return jsonify(response_data), 400
+                
                 mp_pose = mp.solutions.pose
-                pose = mp_pose.Pose(static_image_mode=False, model_complexity=2)
+                pose = mp_pose.Pose(
+                    static_image_mode=False, 
+                    model_complexity=1,
+                    min_detection_confidence=0.5
+                )
                 
                 # 最初のフレームを取得して分析
                 ret, frame = cap.read()
@@ -230,36 +391,83 @@ def analyze():
                         landmarks = {}
                         h, w, _ = frame.shape
                         for idx, landmark in enumerate(results_pose.pose_landmarks.landmark):
-                            landmarks[idx] = {
-                                'x': landmark.x * w,
-                                'y': landmark.y * h,
-                                'z': landmark.z,
-                                'visibility': landmark.visibility
+                            if landmark.visibility > 0.3:
+                                landmarks[idx] = {
+                                    'x': landmark.x * w,
+                                    'y': landmark.y * h,
+                                    'z': landmark.z,
+                                    'visibility': landmark.visibility
+                                }
+                        
+                        if len(landmarks) > 15:  # 十分なランドマークがある場合
+                            # 身体寸法を分析
+                            body_results = body_analyzer.analyze_landmarks(landmarks, (w, h))
+                            result_filename = f"body_metrics_{unique_id}.json"
+                            result_file = os.path.join(RESULTS_DIR, result_filename)
+                            body_analyzer.save_results(body_results, result_filename)
+                            
+                            response_data['success'] = True
+                            response_data['data'] = {
+                                'result_file': result_filename,
+                                'analysis_type': analysis_type
                             }
-                        
-                        # 身体寸法を分析
-                        body_results = body_analyzer.analyze_landmarks(landmarks, (w, h))
-                        result_filename = f"body_metrics_{unique_id}.json"
-                        result_file = os.path.join(RESULTS_DIR, result_filename)
-                        body_analyzer.save_results(body_results, result_filename)
-                        
-                        cap.release()
-                        return redirect(url_for('body_metrics_results', result_file=f"body_metrics_{unique_id}.json"))
+                            
+                            cap.release()
+                            pose.close()
+                            return redirect(url_for('body_metrics_results', result_file=result_filename))
+                        else:
+                            cap.release()
+                            pose.close()
+                            response_data['error'] = "十分なポーズデータが検出されませんでした"
+                            return jsonify(response_data), 400
                     else:
                         cap.release()
-                        return jsonify({"error": "ポーズが検出されませんでした"}), 400
+                        pose.close()
+                        response_data['error'] = "ポーズが検出されませんでした"
+                        return jsonify(response_data), 400
                 else:
                     cap.release()
-                    return jsonify({"error": "動画の読み込みに失敗しました"}), 400
+                    pose.close()
+                    response_data['error'] = "動画の読み込みに失敗しました"
+                    return jsonify(response_data), 400
                     
             except Exception as e:
                 logger.error(f"身体寸法分析エラー: {e}")
-                return jsonify({"error": f"分析エラー: {str(e)}"}), 500
+                response_data['error'] = "身体寸法分析に失敗しました"
+                response_data['debug_info']['body_metrics_error'] = str(e)
+                return jsonify(response_data), 500
+            finally:
+                # リソース解放
+                try:
+                    if 'cap' in locals() and cap.isOpened():
+                        cap.release()
+                    if 'pose' in locals():
+                        pose.close()
+                except:
+                    pass
         
         else:
-            return jsonify({"error": "不明な分析タイプです"}), 400
+            response_data['error'] = "サポートされていない分析タイプです"
+            return jsonify(response_data), 400
 
-    return jsonify({"error": "不正なファイル形式"}), 400
+    except Exception as global_error:
+        logger.error(f"分析処理全体エラー: {global_error}")
+        response_data['error'] = "システムエラーが発生しました"
+        response_data['debug_info']['global_error'] = str(global_error)
+        return jsonify(response_data), 500
+    finally:
+        # クリーンアップ処理
+        try:
+            # 一時ファイルの削除（必要に応じて）
+            if 'filepath' in locals() and os.path.exists(filepath):
+                # 分析完了後、一定時間後に削除するか判断
+                pass
+        except:
+            pass
+
+    # デフォルトエラー
+    response_data['error'] = "予期しないエラーが発生しました"
+    return jsonify(response_data), 500
 
 @app.route('/training_results')
 def training_results():
@@ -1155,6 +1363,164 @@ def delete_user_training_data():
     except Exception as e:
         logger.error(f"ユーザーデータ削除エラー: {e}")
         return jsonify({'error': str(e)}), 500
+
+# ===== システム監視・ヘルスチェックAPI =====
+
+@app.route('/api/health')
+def health_check():
+    """システムヘルスチェックエンドポイント"""
+    try:
+        from ml.api.health_check import health_checker
+        health_status = health_checker.run_all_checks()
+        
+        # HTTPステータスコードを健全性に基づいて設定
+        if health_status['overall_status'] == 'healthy':
+            status_code = 200
+        elif health_status['overall_status'] == 'degraded':
+            status_code = 206  # Partial Content
+        else:
+            status_code = 503  # Service Unavailable
+        
+        return jsonify(health_status), status_code
+        
+    except Exception as e:
+        logger.error(f"ヘルスチェックエラー: {e}")
+        return jsonify({
+            'overall_status': 'error',
+            'error': 'Health check system failure',
+            'timestamp': datetime.now().isoformat()
+        }), 500
+
+@app.route('/api/health/quick')
+def quick_health_check():
+    """軽量ヘルスチェックエンドポイント"""
+    try:
+        from ml.api.health_check import health_checker
+        quick_status = health_checker.get_quick_status()
+        return jsonify(quick_status)
+        
+    except Exception as e:
+        logger.error(f"クイックヘルスチェックエラー: {e}")
+        return jsonify({
+            'status': 'error',
+            'error': str(e),
+            'timestamp': datetime.now().isoformat()
+        }), 500
+
+@app.route('/api/system/diagnostics', methods=['POST'])
+def run_system_diagnostics():
+    """システム診断とトラブルシューティング"""
+    try:
+        data = request.get_json() or {}
+        diagnostic_type = data.get('type', 'comprehensive')
+        
+        from ml.api.health_check import health_checker
+        
+        if diagnostic_type == 'mediapipe':
+            # MediaPipe専用診断
+            result = health_checker._check_mediapipe()
+            opencv_result = health_checker._check_opencv()
+            
+            return jsonify({
+                'diagnostic_type': 'mediapipe',
+                'mediapipe_status': result,
+                'opencv_status': opencv_result,
+                'recommendations': _generate_mediapipe_recommendations(result, opencv_result),
+                'timestamp': datetime.now().isoformat()
+            })
+            
+        elif diagnostic_type == 'memory':
+            # メモリ関連診断
+            memory_result = health_checker._check_memory()
+            
+            return jsonify({
+                'diagnostic_type': 'memory',
+                'memory_status': memory_result,
+                'recommendations': _generate_memory_recommendations(memory_result),
+                'timestamp': datetime.now().isoformat()
+            })
+            
+        else:
+            # 包括的診断
+            full_health = health_checker.run_all_checks()
+            return jsonify({
+                'diagnostic_type': 'comprehensive',
+                'health_status': full_health,
+                'recommendations': _generate_comprehensive_recommendations(full_health),
+                'timestamp': datetime.now().isoformat()
+            })
+            
+    except Exception as e:
+        logger.error(f"システム診断エラー: {e}")
+        return jsonify({
+            'error': 'System diagnostics failed',
+            'details': str(e),
+            'timestamp': datetime.now().isoformat()
+        }), 500
+
+def _generate_mediapipe_recommendations(mediapipe_result, opencv_result):
+    """MediaPipe関連の推奨事項を生成"""
+    recommendations = []
+    
+    if mediapipe_result['status'] == 'error':
+        recommendations.append("MediaPipeの再インストールが必要です")
+        recommendations.append("pip install mediapipe でインストールしてください")
+    elif mediapipe_result['status'] == 'warning':
+        recommendations.append("MediaPipeの設定を確認してください")
+        recommendations.append("model_complexityを下げて軽量化を検討してください")
+    
+    if opencv_result['status'] == 'error':
+        recommendations.append("OpenCVの再インストールが必要です")
+        recommendations.append("pip install opencv-python でインストールしてください")
+    elif opencv_result['status'] == 'warning':
+        recommendations.append("OpenCVの動作を確認してください")
+    
+    if not recommendations:
+        recommendations.append("MediaPipeとOpenCVは正常に動作しています")
+    
+    return recommendations
+
+def _generate_memory_recommendations(memory_result):
+    """メモリ関連の推奨事項を生成"""
+    recommendations = []
+    
+    if memory_result['status'] == 'error':
+        recommendations.append("メモリ使用量が危険レベルです")
+        recommendations.append("不要なプロセスを終了してください")
+        recommendations.append("動画解像度を下げることを検討してください")
+    elif memory_result['status'] == 'warning':
+        recommendations.append("メモリ使用量が高めです")
+        recommendations.append("処理フレーム数を制限することを検討してください")
+        recommendations.append("model_complexityを1に設定してください")
+    else:
+        recommendations.append("メモリ使用量は正常範囲内です")
+    
+    return recommendations
+
+def _generate_comprehensive_recommendations(health_status):
+    """包括的な推奨事項を生成"""
+    recommendations = []
+    
+    if health_status['overall_status'] == 'unhealthy':
+        recommendations.append("システムに重大な問題があります")
+        recommendations.append("エラーログを確認してください")
+        recommendations.append("必要に応じてサービスを再起動してください")
+    elif health_status['overall_status'] == 'degraded':
+        recommendations.append("システムパフォーマンスが低下しています")
+        recommendations.append("警告項目を確認して対処してください")
+    else:
+        recommendations.append("システムは正常に動作しています")
+    
+    # 個別の問題に対する推奨事項
+    for error in health_status.get('errors', []):
+        if 'memory' in error.lower():
+            recommendations.append("メモリ使用量を最適化してください")
+        elif 'mediapipe' in error.lower():
+            recommendations.append("MediaPipeの再設定が必要です")
+        elif 'opencv' in error.lower():
+            recommendations.append("OpenCVの問題を解決してください")
+    
+    return list(set(recommendations))  # 重複除去
 
 # ===== データ前処理API =====
 
