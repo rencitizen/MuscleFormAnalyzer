@@ -2,5 +2,11 @@
   "buildCommand": "cd frontend && npm install && npm run build",
   "outputDirectory": "frontend/.next",
   "installCommand": "cd frontend && npm install",
-  "framework": "nextjs"
+  "framework": "nextjs",
+  "rewrites": [
+    {
+      "source": "/api/backend/(.*)",
+      "destination": "https://muscleformanalyzer-production.up.railway.app/$1"
+    }
+  ]
 }
