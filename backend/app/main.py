@@ -1,0 +1,219 @@
+"""
+MuscleFormAnalyzer Backend - FastAPI Main Application
+Railway deployment optimized
+"""
+from fastapi import FastAPI, HTTPException, Depends, UploadFile, File, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from fastapi.responses import JSONResponse
+from contextlib import asynccontextmanager
+import os
+import logging
+import uvicorn
+from typing import Optional
+
+from .config import settings
+from .database import engine, get_db
+from .models import user, workout, nutrition, progress
+from .api import auth, form_analysis, height_measurement, nutrition_api, progress_api
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan context manager"""
+    # Startup
+    logger.info("Starting MuscleFormAnalyzer Backend...")
+    
+    # Create database tables
+    try:
+        user.Base.metadata.create_all(bind=engine)
+        workout.Base.metadata.create_all(bind=engine)
+        nutrition.Base.metadata.create_all(bind=engine)
+        progress.Base.metadata.create_all(bind=engine)
+        logger.info("Database tables created successfully")
+    except Exception as e:
+        logger.error(f"Failed to create database tables: {e}")
+    
+    yield
+    
+    # Shutdown
+    logger.info("Shutting down MuscleFormAnalyzer Backend...")
+
+# FastAPI application initialization
+app = FastAPI(
+    title="MuscleFormAnalyzer API",
+    description="AI-powered fitness form analysis and nutrition management system",
+    version="1.0.0",
+    docs_url="/docs" if settings.ENVIRONMENT != "production" else None,
+    redoc_url="/redoc" if settings.ENVIRONMENT != "production" else None,
+    lifespan=lifespan
+)
+
+# Security middleware
+app.add_middleware(
+    TrustedHostMiddleware,
+    allowed_hosts=settings.ALLOWED_HOSTS
+)
+
+# CORS middleware configuration
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["*"],
+    expose_headers=["*"]
+)
+
+# Request logging middleware
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    """Log all requests for monitoring"""
+    start_time = time.time()
+    
+    response = await call_next(request)
+    
+    process_time = time.time() - start_time
+    logger.info(
+        f"{request.method} {request.url.path} - "
+        f"Status: {response.status_code} - "
+        f"Time: {process_time:.3f}s"
+    )
+    
+    return response
+
+# Root endpoint
+@app.get("/")
+async def root():
+    """Root endpoint"""
+    return {
+        "message": "MuscleFormAnalyzer Backend API",
+        "version": "1.0.0",
+        "status": "healthy",
+        "environment": settings.ENVIRONMENT
+    }
+
+# Health check endpoint
+@app.get("/health")
+async def health_check():
+    """Comprehensive health check"""
+    try:
+        # Test database connection
+        db = next(get_db())
+        db.execute("SELECT 1")
+        db_status = "healthy"
+    except Exception as e:
+        logger.error(f"Database health check failed: {e}")
+        db_status = "unhealthy"
+    
+    health_status = {
+        "status": "healthy" if db_status == "healthy" else "degraded",
+        "service": "MuscleFormAnalyzer Backend",
+        "version": "1.0.0",
+        "environment": settings.ENVIRONMENT,
+        "database": db_status,
+        "timestamp": datetime.utcnow().isoformat()
+    }
+    
+    status_code = 200 if health_status["status"] == "healthy" else 503
+    return JSONResponse(content=health_status, status_code=status_code)
+
+# Ready check for Railway
+@app.get("/ready")
+async def ready_check():
+    """Readiness probe endpoint"""
+    return {"status": "ready"}
+
+# API router registration
+app.include_router(
+    auth.router, 
+    prefix="/api/auth", 
+    tags=["Authentication"]
+)
+
+app.include_router(
+    form_analysis.router, 
+    prefix="/api/form", 
+    tags=["Form Analysis"]
+)
+
+app.include_router(
+    height_measurement.router, 
+    prefix="/api/height", 
+    tags=["Height Measurement"]
+)
+
+app.include_router(
+    nutrition_api.router, 
+    prefix="/api/nutrition", 
+    tags=["Nutrition Management"]
+)
+
+app.include_router(
+    progress_api.router, 
+    prefix="/api/progress", 
+    tags=["Progress Tracking"]
+)
+
+# Global exception handlers
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    """Handle HTTP exceptions"""
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "error": True,
+            "message": exc.detail,
+            "status_code": exc.status_code,
+            "path": str(request.url.path)
+        }
+    )
+
+@app.exception_handler(Exception)
+async def general_exception_handler(request: Request, exc: Exception):
+    """Handle general exceptions"""
+    logger.error(f"Unhandled exception: {exc}", exc_info=True)
+    
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error": True,
+            "message": "Internal server error",
+            "status_code": 500,
+            "path": str(request.url.path)
+        }
+    )
+
+# Rate limiting for production
+if settings.ENVIRONMENT == "production":
+    from slowapi import Limiter, _rate_limit_exceeded_handler
+    from slowapi.util import get_remote_address
+    from slowapi.errors import RateLimitExceeded
+    
+    limiter = Limiter(key_func=get_remote_address)
+    app.state.limiter = limiter
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# Startup event
+@app.on_event("startup")
+async def startup_event():
+    """Additional startup configuration"""
+    logger.info(f"Starting in {settings.ENVIRONMENT} environment")
+    logger.info(f"Database URL: {settings.DATABASE_URL[:20]}...")
+    logger.info(f"CORS Origins: {settings.CORS_ORIGINS}")
+
+if __name__ == "__main__":
+    # Development server
+    uvicorn.run(
+        "app.main:app",
+        host="0.0.0.0",
+        port=int(os.environ.get("PORT", 8000)),
+        reload=settings.ENVIRONMENT == "development",
+        log_level="info"
+    )
