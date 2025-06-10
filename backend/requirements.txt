@@ -1,0 +1,85 @@
+# FastAPI and web framework
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+python-multipart==0.0.6
+
+# Database
+sqlalchemy==2.0.23
+psycopg2-binary==2.9.9
+alembic==1.12.1
+
+# Authentication
+firebase-admin==6.2.0
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+
+# Data validation and serialization
+pydantic==2.5.0
+pydantic-settings==2.1.0
+
+# Media processing
+opencv-python-headless==4.8.1.78
+mediapipe==0.10.8
+numpy==1.24.3
+Pillow==10.1.0
+
+# HTTP client and utilities
+httpx==0.25.2
+requests==2.31.0
+
+# Rate limiting and caching
+slowapi==0.1.9
+redis==5.0.1
+hiredis==2.2.3
+
+# Background tasks
+celery==5.3.4
+
+# Monitoring and logging
+structlog==23.2.0
+
+# Development and testing
+pytest==7.4.3
+pytest-asyncio==0.21.1
+pytest-mock==3.12.0
+
+# Environment and configuration
+python-dotenv==1.0.0
+
+# Image processing and AI
+scikit-image==0.22.0
+scipy==1.11.4
+
+# Data science (optional, for analytics)
+pandas==2.1.4
+
+# CORS support
+python-cors==1.0.1
+
+# File handling
+aiofiles==23.2.1
+
+# Type hints
+typing-extensions==4.8.0
+
+# JSON handling
+orjson==3.9.10
+
+# Async support
+asyncio==3.4.3
+
+# Security
+cryptography==41.0.8
+
+# Date/time handling
+python-dateutil==2.8.2
+pytz==2023.3
+
+# Validation
+email-validator==2.1.0
+
+# Performance monitoring
+prometheus-client==0.19.0
+
+# Health checks
+py-healthcheck==1.10.1

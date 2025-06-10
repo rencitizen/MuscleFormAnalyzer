@@ -10,12 +10,14 @@ from contextlib import asynccontextmanager
 import os
 import logging
 import uvicorn
+import time
 from typing import Optional
+from datetime import datetime
 
 from .config import settings
 from .database import engine, get_db
-from .models import user, workout, nutrition, progress
-from .api import auth, form_analysis, height_measurement, nutrition_api, progress_api
+from ..models import user, workout, nutrition, progress
+from ..api import auth, form_analysis, height_measurement, nutrition_api, progress_api
 
 # Configure logging
 logging.basicConfig(

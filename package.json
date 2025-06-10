@@ -1,47 +1,15 @@
 {
-  "name": "bodyscale-pose-analyzer",
+  "name": "muscle-form-analyzer",
   "version": "1.0.0",
-  "description": "BodyScale Pose Analyzer - AI-powered exercise form analysis",
-  "main": "app.py",
+  "private": true,
   "scripts": {
-    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
-    "dev:frontend": "cd frontend && npm run dev",
-    "dev:backend": "python app_local.py",
-    "install:all": "npm install && cd frontend && npm install && cd .. && pip install -r requirements.txt",
-    "install:frontend": "cd frontend && npm install",
-    "install:backend": "pip install -r requirements.txt",
+    "dev": "cd frontend && npm run dev",
     "build": "cd frontend && npm run build",
-    "start": "npm run start:prod",
-    "start:prod": "concurrently \"npm run start:frontend\" \"npm run start:backend\"",
-    "start:frontend": "cd frontend && npm start",
-    "start:backend": "gunicorn -w 4 -b 0.0.0.0:5000 app:app",
-    "clean": "rm -rf frontend/node_modules frontend/.next node_modules",
-    "setup": "npm run install:all && npm run setup:env",
-    "setup:env": "cp .env.example .env.local",
-    "test": "npm run test:frontend && npm run test:backend",
-    "test:frontend": "cd frontend && npm test",
-    "test:backend": "python -m pytest"
-  },
-  "keywords": [
-    "pose-analysis",
-    "exercise",
-    "fitness",
-    "AI",
-    "mediapipe",
-    "computer-vision"
-  ],
-  "author": "BodyScale Team",
-  "license": "MIT",
-  "dependencies": {
-    "concurrently": "^8.2.2",
-    "cross-env": "^7.0.3"
-  },
-  "devDependencies": {
-    "nodemon": "^3.0.2"
+    "start": "cd frontend && npm run start",
+    "install": "cd frontend && npm install"
   },
   "engines": {
     "node": ">=18.0.0",
-    "npm": ">=9.0.0",
-    "python": ">=3.8"
+    "npm": ">=9.0.0"
   }
 }
