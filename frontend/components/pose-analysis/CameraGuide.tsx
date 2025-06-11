@@ -1,9 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Card } from '@/components/ui/card'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Progress } from '@/components/ui/progress'
+import { Card } from '../ui/card'
+import { Alert, AlertDescription } from '../ui/alert'
+import { Progress } from '../ui/progress'
 import { 
   Camera, 
   Move, 

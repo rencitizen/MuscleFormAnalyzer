@@ -1,5 +1,5 @@
-import { UserCalibration, Landmark, PoseLandmark } from '@/lib/mediapipe/types'
-import { calculateAngle, getDistance } from '@/lib/analysis/utils'
+import { UserCalibration, Landmark, PoseLandmark } from '../mediapipe/types'
+import { calculateAngle, getDistance } from '../analysis/utils'
 
 export interface PersonalizedRecommendation {
   exercise: 'squat' | 'deadlift' | 'bench_press'

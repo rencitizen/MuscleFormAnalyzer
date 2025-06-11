@@ -10,7 +10,7 @@ import {
   GoogleAuthProvider,
   signInWithPopup
 } from 'firebase/auth'
-import { auth } from '@/lib/firebase'
+import { auth } from '../../lib/firebase'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 

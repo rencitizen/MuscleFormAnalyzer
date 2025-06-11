@@ -1,4 +1,4 @@
-import { Landmark } from '@/lib/mediapipe/types'
+import { Landmark } from '../mediapipe/types'
 
 /**
  * 3点間の角度を計算

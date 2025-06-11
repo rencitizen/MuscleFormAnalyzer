@@ -6,11 +6,11 @@ import { Pose, Results } from '@mediapipe/pose'
 import { drawConnectors, drawLandmarks } from '@mediapipe/drawing_utils'
 import { POSE_CONNECTIONS } from '@mediapipe/pose'
 import { CameraGuide } from './CameraGuide'
-import { Card } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Card } from '../ui/card'
+import { Button } from '../ui/button'
+import { Badge } from '../ui/badge'
+import { Progress } from '../ui/progress'
+import { Alert, AlertDescription } from '../ui/alert'
 import { 
   Camera as CameraIcon, 
   Play, 

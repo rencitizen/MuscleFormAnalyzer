@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Button } from '@/components/ui/button'
+import { Button } from '../ui/button'
 import {
   Dialog,
   DialogContent,
@@ -9,11 +9,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Slider } from '@/components/ui/slider'
-import { UserCalibration } from '@/lib/mediapipe/types'
+} from '../ui/dialog'
+import { Input } from '../ui/input'
+import { Label } from '../ui/label'
+import { Slider } from '../ui/slider'
+import { UserCalibration } from '../../lib/mediapipe/types'
 import toast from 'react-hot-toast'
 
 interface CalibrationModalProps {

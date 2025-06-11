@@ -1,10 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
+import { Button } from '../ui/button'
 import { Calendar, List, TrendingUp, Edit2, Trash2, Coffee, Sun, Moon, Cookie } from 'lucide-react'
-import { MealStorage, type MealRecord, type DailyStats } from '@/lib/storage/mealStorage'
+import { MealStorage, type MealRecord, type DailyStats } from '../../lib/storage/mealStorage'
 import { format, startOfWeek, addDays, isSameDay } from 'date-fns'
 import { ja } from 'date-fns/locale'
 

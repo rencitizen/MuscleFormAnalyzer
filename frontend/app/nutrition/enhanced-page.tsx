@@ -1,16 +1,16 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Progress } from '@/components/ui/progress'
+import { Button } from '../../components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card'
+import { Input } from '../../components/ui/input'
+import { Label } from '../../components/ui/label'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs'
+import { Progress } from '../../components/ui/progress'
 import { Camera, Upload, Loader2, Plus, Star, Search, TrendingUp } from 'lucide-react'
 import Image from 'next/image'
 import { useToast } from '@/hooks/use-toast'
-import { MealStorage, type FoodItem, type MealRecord } from '@/lib/storage/mealStorage'
+import { MealStorage, type FoodItem, type MealRecord } from '../../lib/storage/mealStorage'
 
 interface NutritionTotal {
   calories: number

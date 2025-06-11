@@ -1,9 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Progress } from '@/components/ui/progress'
-import { MealStorage, type DailyStats } from '@/lib/storage/mealStorage'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
+import { Progress } from '../ui/progress'
+import { MealStorage, type DailyStats } from '../../lib/storage/mealStorage'
 import { Line, Bar } from 'react-chartjs-2'
 import {
   Chart as ChartJS,

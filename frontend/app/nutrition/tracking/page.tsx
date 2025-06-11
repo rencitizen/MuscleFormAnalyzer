@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { MealHistory } from '@/components/nutrition/MealHistory'
-import { NutritionDashboard } from '@/components/nutrition/NutritionDashboard'
+import { NutritionDashboard } from '../../../components/nutrition/NutritionDashboard'
 import { Button } from '@/components/ui/button'
 import { Plus, BarChart3, Calendar } from 'lucide-react'
 import Link from 'next/link'
