@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "check-env": "node scripts/check-env.js",
+    "prebuild": "node scripts/check-env.js"
   },
   "dependencies": {
     "next": "14.1.0",
