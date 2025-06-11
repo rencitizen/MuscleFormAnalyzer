@@ -2,9 +2,9 @@
 const nextConfig = {
   reactStrictMode: true,
   
-  // ESMモジュールの外部化設定を無効化（undici問題の回避）
+  // ESMモジュールの外部化設定
   experimental: {
-    esmExternals: false,
+    esmExternals: 'loose',
   },
   
   // 画像最適化
@@ -110,6 +110,12 @@ const nextConfig = {
         }
       )
     );
+    
+    // ajvモジュールの外部化
+    config.externals = config.externals || [];
+    if (!isServer) {
+      config.externals.push('ajv');
+    }
     
     return config;
   },

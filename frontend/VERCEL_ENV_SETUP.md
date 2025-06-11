@@ -7,8 +7,9 @@ Vercelのダッシュボードで以下の環境変数を設定してくださ�
 ### Node.js関連
 ```
 NODE_VERSION=20.9.0
-NODE_OPTIONS=--openssl-legacy-provider
+NODE_OPTIONS=--max-old-space-size=4096
 NPM_CONFIG_LEGACY_PEER_DEPS=true
+SKIP_BUILD_STATIC_GENERATION=true
 ```
 
 ### Firebase設定（必須）
