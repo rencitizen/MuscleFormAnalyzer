@@ -1,4 +1,4 @@
-import { PoseResults, Landmark, PoseLandmark } from '../mediapipe/types'
+import { PoseResults, Landmark, PoseLandmark } from '@/lib/mediapipe/types'
 import { calculateAngle, getDistance } from './utils'
 
 export function analyzeExercise(
