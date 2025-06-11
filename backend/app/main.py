@@ -17,7 +17,7 @@ from datetime import datetime
 from .config import settings
 from .database import engine, get_db
 from ..models import user, workout, nutrition, progress
-from ..api import auth, form_analysis, height_measurement, nutrition_api, progress_api
+from ..api import auth, form_analysis, height_measurement, nutrition_api, progress_api, health_check
 
 # Configure logging
 logging.basicConfig(
@@ -31,16 +31,28 @@ async def lifespan(app: FastAPI):
     """Application lifespan context manager"""
     # Startup
     logger.info("Starting MuscleFormAnalyzer Backend...")
+    logger.info(f"Environment: {settings.ENVIRONMENT}")
+    logger.info(f"Database URL configured: {'Yes' if settings.DATABASE_URL else 'No'}")
     
-    # Create database tables
-    try:
-        user.Base.metadata.create_all(bind=engine)
-        workout.Base.metadata.create_all(bind=engine)
-        nutrition.Base.metadata.create_all(bind=engine)
-        progress.Base.metadata.create_all(bind=engine)
-        logger.info("Database tables created successfully")
-    except Exception as e:
-        logger.error(f"Failed to create database tables: {e}")
+    # Check database connection first
+    from .database import check_database_connection
+    db_connected = check_database_connection()
+    
+    if db_connected:
+        # Create database tables
+        try:
+            user.Base.metadata.create_all(bind=engine)
+            workout.Base.metadata.create_all(bind=engine)
+            nutrition.Base.metadata.create_all(bind=engine)
+            progress.Base.metadata.create_all(bind=engine)
+            logger.info("Database tables created successfully")
+        except Exception as e:
+            logger.error(f"Failed to create database tables: {e}")
+            logger.error(f"Error type: {type(e).__name__}")
+            logger.error(f"Error details: {str(e)}")
+    else:
+        logger.warning("Database connection failed - running in degraded mode")
+        logger.warning("Database-dependent features will not be available")
     
     yield
     
@@ -101,36 +113,13 @@ async def root():
         "environment": settings.ENVIRONMENT
     }
 
-# Health check endpoint
-@app.get("/health")
-async def health_check():
-    """Comprehensive health check"""
-    try:
-        # Test database connection
-        db = next(get_db())
-        db.execute("SELECT 1")
-        db_status = "healthy"
-    except Exception as e:
-        logger.error(f"Database health check failed: {e}")
-        db_status = "unhealthy"
-    
-    health_status = {
-        "status": "healthy" if db_status == "healthy" else "degraded",
-        "service": "MuscleFormAnalyzer Backend",
-        "version": "1.0.0",
-        "environment": settings.ENVIRONMENT,
-        "database": db_status,
-        "timestamp": datetime.utcnow().isoformat()
-    }
-    
-    status_code = 200 if health_status["status"] == "healthy" else 503
-    return JSONResponse(content=health_status, status_code=status_code)
+# Remove duplicate health check endpoints since they're now in health_check.py
 
-# Ready check for Railway
-@app.get("/ready")
-async def ready_check():
-    """Readiness probe endpoint"""
-    return {"status": "ready"}
+# Health check router (no prefix for direct access)
+app.include_router(
+    health_check.router,
+    tags=["Health Check"]
+)
 
 # API router registration
 app.include_router(

@@ -12,8 +12,15 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
     DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"
     
-    # Database
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./muscle_analyzer.db")
+    # Database - with multiple fallback options
+    DATABASE_URL: str = os.getenv("DATABASE_URL") or os.getenv("DATABASE_PRIVATE_URL") or "sqlite:///./muscle_analyzer.db"
+    
+    # Railway-specific database URLs (fallback)
+    PGHOST: str = os.getenv("PGHOST", "")
+    PGPORT: str = os.getenv("PGPORT", "5432")
+    PGDATABASE: str = os.getenv("PGDATABASE", "")
+    PGUSER: str = os.getenv("PGUSER", "")
+    PGPASSWORD: str = os.getenv("PGPASSWORD", "")
     
     # Security
     SECRET_KEY: str = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
@@ -59,11 +66,29 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
     
     @validator("DATABASE_URL")
-    def validate_database_url(cls, v):
+    def validate_database_url(cls, v, values):
         """Validate and transform database URL for Railway PostgreSQL"""
+        # If DATABASE_URL is not set but individual PG variables are, construct it
+        if v == "sqlite:///./muscle_analyzer.db" and values.get("PGHOST"):
+            host = values.get("PGHOST")
+            port = values.get("PGPORT", "5432")
+            database = values.get("PGDATABASE")
+            user = values.get("PGUSER")
+            password = values.get("PGPASSWORD")
+            
+            if all([host, database, user, password]):
+                v = f"postgresql://{user}:{password}@{host}:{port}/{database}"
+                print(f"Constructed DATABASE_URL from individual PG variables")
+        
+        # Railway uses postgresql:// but SQLAlchemy needs postgresql+psycopg2://
         if v.startswith("postgresql://"):
-            # Railway uses postgresql:// but some libraries expect postgresql+psycopg2://
-            return v.replace("postgresql://", "postgresql+psycopg2://", 1)
+            v = v.replace("postgresql://", "postgresql+psycopg2://", 1)
+        
+        # Add SSL mode for Railway PostgreSQL
+        if "railway.app" in v and "sslmode" not in v:
+            separator = "?" if "?" not in v else "&"
+            v += f"{separator}sslmode=require"
+        
         return v
     
     @validator("CORS_ORIGINS", pre=True)

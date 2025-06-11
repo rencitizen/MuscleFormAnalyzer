@@ -4,15 +4,29 @@ Supports both SQLite (development) and PostgreSQL (production)
 """
 import os
 import logging
-from sqlalchemy import create_engine, MetaData
+from sqlalchemy import create_engine, MetaData, inspect, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy.pool import StaticPool
+from sqlalchemy.pool import StaticPool, NullPool
 from typing import Generator
+import ssl
 
 from .config import settings
 
 logger = logging.getLogger(__name__)
+
+# Log database configuration
+logger.info("=== Database Configuration ===")
+if settings.DATABASE_URL:
+    # Mask sensitive parts of the URL for security
+    url_parts = settings.DATABASE_URL.split('@')
+    if len(url_parts) > 1:
+        masked_url = url_parts[0][:20] + '***@' + url_parts[1]
+    else:
+        masked_url = settings.DATABASE_URL[:30] + '...'
+    logger.info(f"DATABASE_URL: {masked_url}")
+else:
+    logger.error("DATABASE_URL not found in environment variables!")
 
 # Database engine configuration
 if settings.DATABASE_URL.startswith("sqlite"):
@@ -27,14 +41,34 @@ if settings.DATABASE_URL.startswith("sqlite"):
     )
 else:
     # PostgreSQL configuration for production (Railway)
-    engine = create_engine(
-        settings.DATABASE_URL,
-        pool_pre_ping=True,
-        pool_recycle=300,
-        pool_size=10,
-        max_overflow=20,
-        echo=settings.DEBUG
-    )
+    connect_args = {}
+    
+    # Add SSL configuration for Railway PostgreSQL
+    if "railway.app" in settings.DATABASE_URL:
+        logger.info("Configuring SSL for Railway PostgreSQL")
+        connect_args["sslmode"] = "require"
+    
+    try:
+        engine = create_engine(
+            settings.DATABASE_URL,
+            pool_pre_ping=True,
+            pool_recycle=300,
+            pool_size=10,
+            max_overflow=20,
+            echo=settings.DEBUG,
+            connect_args=connect_args
+        )
+        logger.info("PostgreSQL engine created successfully")
+    except Exception as e:
+        logger.error(f"Failed to create PostgreSQL engine: {e}")
+        # Try with NullPool as fallback
+        logger.info("Attempting to create engine with NullPool...")
+        engine = create_engine(
+            settings.DATABASE_URL,
+            poolclass=NullPool,
+            echo=settings.DEBUG,
+            connect_args=connect_args
+        )
 
 # Session configuration
 SessionLocal = sessionmaker(
@@ -93,12 +127,21 @@ def check_database_connection() -> bool:
     """
     try:
         with engine.connect() as connection:
-            result = connection.execute("SELECT 1")
+            result = connection.execute(text("SELECT 1"))
             result.fetchone()
         logger.info("Database connection successful")
         return True
     except Exception as e:
         logger.error(f"Database connection failed: {e}")
+        logger.error(f"Error type: {type(e).__name__}")
+        logger.error(f"Error details: {str(e)}")
+        
+        # Additional debug information
+        if "server on socket" in str(e) and "/var/run/postgresql/" in str(e):
+            logger.error("ERROR: Trying to connect to local PostgreSQL socket instead of Railway database!")
+            logger.error("Please ensure DATABASE_URL environment variable is properly set.")
+            logger.error(f"Current DATABASE_URL starts with: {settings.DATABASE_URL[:30] if settings.DATABASE_URL else 'None'}")
+        
         return False
 
 # Database migration utilities
@@ -198,7 +241,7 @@ async def database_health_check() -> dict:
     try:
         # Test basic connection
         with engine.connect() as conn:
-            result = conn.execute("SELECT 1")
+            result = conn.execute(text("SELECT 1"))
             result.fetchone()
         
         # Get basic stats
