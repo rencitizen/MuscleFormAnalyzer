@@ -1,12 +1,12 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Progress } from '@/components/ui/progress'
+import { Button } from '../ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
+import { Progress } from '../ui/progress'
 import { CheckCircle, XCircle, AlertCircle, Home, Download } from 'lucide-react'
-import { PoseResults } from '@/lib/mediapipe/types'
-import { analyzeExercise } from '@/lib/analysis/exerciseAnalyzer'
+import { PoseResults } from '../../lib/mediapipe/types'
+import { analyzeExercise } from '../../lib/analysis/exerciseAnalyzer'
 import Link from 'next/link'
 
 interface AnalysisResultsProps {

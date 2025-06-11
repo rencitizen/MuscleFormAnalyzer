@@ -4,7 +4,7 @@ const nextConfig = {
   
   // 実験的機能
   experimental: {
-    appDir: true,
+    // appDir is now stable in Next.js 14
   },
   
   // 画像最適化
@@ -66,6 +66,13 @@ const nextConfig = {
         tls: false
       };
     }
+    
+    // パスエイリアスの設定
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@': __dirname,
+    };
+    
     return config;
   },
   
