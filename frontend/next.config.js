@@ -2,9 +2,9 @@
 const nextConfig = {
   reactStrictMode: true,
   
-  // 実験的機能
+  // ESMモジュールの外部化設定を無効化（undici問題の回避）
   experimental: {
-    // appDir is now stable in Next.js 14
+    esmExternals: false,
   },
   
   // 画像最適化
@@ -56,14 +56,25 @@ const nextConfig = {
     ]
   },
   
-  // MediaPipeの静的ファイルを適切に扱うための設定
-  webpack: (config, { isServer }) => {
+  // Firebaseとundiciのトランスパイル設定
+  transpilePackages: [
+    '@firebase/auth',
+    'firebase',
+    'undici'
+  ],
+  
+  // webpack設定
+  webpack: (config, { isServer, webpack }) => {
+    // クライアントサイドでのポリフィル設定
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
         fs: false,
         net: false,
-        tls: false
+        tls: false,
+        crypto: false,
+        stream: false,
+        buffer: false,
       };
     }
     
@@ -72,6 +83,33 @@ const nextConfig = {
       ...config.resolve.alias,
       '@': __dirname,
     };
+    
+    // undiciのprivateフィールド構文を処理するための設定
+    config.module.rules.push({
+      test: /\.js$/,
+      include: /node_modules\/(undici|@firebase)/,
+      use: {
+        loader: 'babel-loader',
+        options: {
+          presets: ['@babel/preset-env'],
+          plugins: [
+            '@babel/plugin-proposal-private-methods',
+            '@babel/plugin-proposal-class-properties',
+            '@babel/plugin-proposal-private-property-in-object'
+          ]
+        }
+      }
+    });
+    
+    // Node.js組み込みモジュールのポリフィル
+    config.plugins.push(
+      new webpack.NormalModuleReplacementPlugin(
+        /^node:/,
+        (resource) => {
+          resource.request = resource.request.replace(/^node:/, '');
+        }
+      )
+    );
     
     return config;
   },
@@ -91,12 +129,8 @@ const nextConfig = {
     removeConsole: process.env.NODE_ENV === 'production',
   },
   
-  // PWA設定（将来的に追加予定）
-  // pwa: {
-  //   dest: 'public',
-  //   register: true,
-  //   skipWaiting: true,
-  // }
+  // swcMinify設定
+  swcMinify: true,
 }
 
 module.exports = nextConfig
