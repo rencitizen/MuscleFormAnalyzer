@@ -1,9 +1,0 @@
-{
-  "framework": "nextjs",
-  "rewrites": [
-    {
-      "source": "/api/backend/(.*)",
-      "destination": "https://muscleformanalyzer-production.up.railway.app/$1"
-    }
-  ]
-}
