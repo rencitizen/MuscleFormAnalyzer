@@ -43,6 +43,7 @@ export interface KeyPoint {
 export interface PoseData {
   timestamp: number
   landmarks: Landmark[]
+  confidence?: number
 }
 
 // メインの分析関数
@@ -299,6 +300,38 @@ function analyzeBenchPress(frames: PoseResults[]): AnalysisResult {
 
 // ExerciseAnalyzerクラス（互換性のため）
 export class ExerciseAnalyzer {
+  static analyze(poseData: PoseData): AnalysisResult {
+    // デモ用の分析結果を返す
+    const score = Math.floor(Math.random() * (100 - 70) + 70) // 70-100のランダムスコア
+    
+    const feedback = [
+      'フォームが良好です',
+      '姿勢を保持してください',
+      '動作のリズムが安定しています'
+    ]
+    
+    const suggestions = [
+      '背筋を伸ばしてください',
+      '膝の角度に注意してください',
+      '呼吸を意識しましょう'
+    ]
+
+    return {
+      exercise: 'general',
+      repCount: 1,
+      reps: [],
+      overallScore: score,
+      scores: {
+        depth: score,
+        form: score + 5,
+        tempo: score - 5,
+        balance: score + 2
+      },
+      feedback: feedback.slice(0, 2),
+      keyPoints: []
+    }
+  }
+  
   analyze(exercise: string, frames: PoseResults[]): AnalysisResult | null {
     return analyzeExercise(exercise as any, frames)
   }
