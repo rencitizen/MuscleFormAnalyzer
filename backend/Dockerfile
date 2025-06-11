@@ -20,6 +20,7 @@ RUN apt-get update && apt-get install -y \
     libxext6 \
     libxrender-dev \
     libgomp1 \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user
@@ -46,5 +47,5 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
-# Default command - use startup script for better environment handling
-CMD ["python", "-m", "startup"]
+# Default command - use absolute path to startup script
+CMD ["python", "startup.py"]

@@ -69,7 +69,7 @@ def start_server():
     
     # Run uvicorn
     uvicorn.run(
-        "backend.app.main:app",
+        "app.main:app",
         host="0.0.0.0",
         port=port,
         log_level="info",
