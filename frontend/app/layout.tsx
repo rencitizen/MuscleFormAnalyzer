@@ -12,8 +12,6 @@ export const metadata: Metadata = {
   title: 'MuscleFormAnalyzer - Tenax Fit',
   description: 'AIを活用した筋トレフォーム分析アプリ',
   manifest: '/manifest.json',
-  themeColor: '#000000',
-  viewport: 'width=device-width, initial-scale=1, maximum-scale=1',
   icons: {
     icon: [
       { url: '/favicon.ico' },
@@ -29,6 +27,13 @@ export const metadata: Metadata = {
     statusBarStyle: 'default',
     title: 'Tenax Fit'
   }
+}
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  themeColor: '#000000',
 }
 
 export default function RootLayout({

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 // モックデータストア
-let sessions: any[] = []
+export let sessions: any[] = []
 
 export async function GET(request: NextRequest) {
   try {
