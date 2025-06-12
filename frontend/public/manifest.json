@@ -1,17 +1,56 @@
 {
-  "name": "Muscle Form Analyzer",
-  "short_name": "MuscleForm",
+  "name": "Tenax Fit - MuscleFormAnalyzer",
+  "short_name": "Tenax Fit",
   "description": "AIを活用した筋トレフォーム分析アプリ",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "theme_color": "#000000",
   "background_color": "#ffffff",
   "orientation": "portrait",
+  "dir": "ltr",
+  "lang": "ja",
   "permissions": [
     "camera",
     "geolocation"
   ],
   "icons": [
+    {
+      "src": "/icon-72x72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-128x128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-152x152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
     {
       "src": "/icon-192x192.png",
       "sizes": "192x192",
@@ -19,12 +58,68 @@
       "purpose": "maskable"
     },
     {
+      "src": "/icon-384x384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
       "src": "/icon-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
+    },
+    {
+      "src": "/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
-  "categories": ["health", "fitness", "lifestyle"],
-  "prefer_related_applications": false
+  "categories": ["health", "fitness", "lifestyle", "sports"],
+  "screenshots": [
+    {
+      "src": "/screenshots/screenshot-1.png",
+      "type": "image/png",
+      "sizes": "1080x1920",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "/screenshots/screenshot-2.png",
+      "type": "image/png",
+      "sizes": "1080x1920",
+      "form_factor": "narrow"
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false,
+  "shortcuts": [
+    {
+      "name": "新規トレーニング",
+      "short_name": "トレーニング",
+      "description": "新しいトレーニングセッションを開始",
+      "url": "/training/new",
+      "icons": [
+        {
+          "src": "/icons/training-icon-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "分析履歴",
+      "short_name": "履歴",
+      "description": "過去の分析結果を確認",
+      "url": "/history",
+      "icons": [
+        {
+          "src": "/icons/history-icon-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ],
+  "launch_handler": {
+    "client_mode": "navigate-new"
+  }
 }

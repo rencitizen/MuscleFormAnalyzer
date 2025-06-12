@@ -8,7 +8,8 @@ import {
   signOut,
   onAuthStateChanged,
   GoogleAuthProvider,
-  signInWithPopup
+  signInWithPopup,
+  getRedirectResult
 } from 'firebase/auth'
 import { auth } from '../../lib/firebase'
 import { useRouter } from 'next/navigation'
@@ -50,13 +51,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return
     }
 
+    // リダイレクト結果のチェック
+    const checkRedirectResult = async () => {
+      try {
+        const result = await getRedirectResult(auth)
+        if (result) {
+          console.log('Found redirect result:', result.user?.email)
+          toast.success('Googleアカウントでログインしました')
+          // /auth/callbackからのリダイレクトを防ぐ
+          if (window.location.pathname === '/auth/callback') {
+            router.push('/')
+          }
+        }
+      } catch (error) {
+        console.error('Redirect result error:', error)
+      }
+    }
+
+    checkRedirectResult()
+
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user)
       setLoading(false)
     })
 
     return unsubscribe
-  }, [isDemoMode])
+  }, [isDemoMode, router])
 
   const signIn = async (email: string, password: string) => {
     // デモモードの場合
@@ -101,42 +121,91 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log('🔍 Google Sign-in Debug:')
       console.log('Auth instance:', auth)
-      console.log('Firebase app initialized:', !!auth?.app)
+      console.log('Firebase app:', auth?.app?.name)
+      console.log('Current domain:', window.location.hostname)
+      console.log('Protocol:', window.location.protocol)
       
       const provider = new GoogleAuthProvider()
-      console.log('GoogleAuthProvider created:', provider)
+      provider.setCustomParameters({
+        prompt: 'select_account'
+      })
       
-      // ポップアップの代わりにリダイレクトを試すオプション
-      console.log('Attempting signInWithPopup...')
-      const result = await signInWithPopup(auth, provider)
+      console.log('GoogleAuthProvider created with custom parameters')
       
-      console.log('Google sign-in successful:', result.user?.email)
-      toast.success('Googleアカウントでログインしました')
-      router.push('/')
+      // モバイルデバイスの検出
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+      console.log('Is mobile device:', isMobile)
+      
+      try {
+        console.log('Attempting signInWithPopup...')
+        const result = await signInWithPopup(auth, provider)
+        
+        console.log('Google sign-in successful:', result.user?.email)
+        toast.success('Googleアカウントでログインしました')
+        router.push('/')
+      } catch (popupError: any) {
+        console.error('Popup error:', popupError)
+        
+        // ポップアップがブロックされた場合、リダイレクトを試行
+        if (popupError.code === 'auth/popup-blocked' || 
+            popupError.code === 'auth/popup-closed-by-user' ||
+            isMobile) {
+          console.log('Falling back to redirect method...')
+          toast.info('リダイレクト方式でログインを試行します...')
+          
+          const { signInWithRedirect } = await import('firebase/auth')
+          await signInWithRedirect(auth, provider)
+        } else {
+          throw popupError
+        }
+      }
     } catch (error: any) {
       console.error('❌ Google Sign-in Error:')
       console.error('Error code:', error.code)
       console.error('Error message:', error.message)
       console.error('Full error:', error)
       
-      // より詳細なエラーメッセージ
-      let errorMessage = 'Googleログインに失敗しました'
-      
-      if (error.code === 'auth/popup-blocked') {
-        errorMessage = 'ポップアップがブロックされました。ブラウザの設定を確認してください'
-      } else if (error.code === 'auth/popup-closed-by-user') {
-        errorMessage = 'ログインがキャンセルされました'
-      } else if (error.code === 'auth/unauthorized-domain') {
-        errorMessage = 'このドメインは認証されていません。Firebase Consoleで設定してください'
-      } else if (error.code === 'auth/operation-not-allowed') {
-        errorMessage = 'Google認証が有効になっていません。Firebase Consoleで設定してください'
-      } else if (error.code === 'auth/configuration-not-found') {
-        errorMessage = 'Firebase設定が見つかりません。環境変数を確認してください'
-      } else if (error.message?.includes('domain is not authorized')) {
-        errorMessage = '認証ドメインエラー: Firebase ConsoleとGoogle Cloud Consoleで以下を設定してください:\n1. Firebase → Authentication → Settings → Authorized domains に muscle-form-analyzer.vercel.app を追加\n2. Google Cloud Console → APIs & Services → Credentials → OAuth 2.0 Client IDs で Authorized JavaScript origins と Authorized redirect URIs を設定'
+      // エラーメッセージマッピング
+      const errorMessages: Record<string, string> = {
+        'auth/popup-blocked': 'ポップアップがブロックされました。リダイレクト方式を試します。',
+        'auth/popup-closed-by-user': 'ログインがキャンセルされました',
+        'auth/unauthorized-domain': `認証ドメインエラー: Firebase Consoleで ${window.location.hostname} を追加してください`,
+        'auth/operation-not-allowed': 'Google認証が無効です。Firebase Consoleで有効化してください',
+        'auth/configuration-not-found': 'Firebase設定エラー。環境変数を確認してください',
+        'auth/invalid-api-key': 'APIキーが無効です。Firebase設定を確認してください',
+        'auth/internal-error': 'Firebase内部エラー。設定を確認してください'
       }
       
-      toast.error(errorMessage)
+      let errorMessage = errorMessages[error.code] || 'Googleログインに失敗しました'
+      
+      // ドメイン認証エラーの詳細判定
+      if (error.message?.includes('unauthorized') || 
+          error.message?.includes('not authorized') ||
+          error.code === 'auth/unauthorized-domain') {
+        errorMessage = `
+🚨 認証ドメインエラー
+
+必要な設定:
+1. Firebase Console → Authentication → Settings → Authorized domains
+   追加: ${window.location.hostname}
+
+2. Google Cloud Console → APIs & Services → Credentials
+   OAuth 2.0 Client ID 設定:
+   - Authorized JavaScript origins: ${window.location.origin}
+   - Authorized redirect URIs: ${window.location.origin}/__/auth/handler
+
+3. 環境変数の確認:
+   - NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN が正しく設定されているか
+        `
+      }
+      
+      toast.error(errorMessage, {
+        duration: 10000,
+        style: {
+          maxWidth: '500px',
+          whiteSpace: 'pre-line'
+        }
+      })
       throw error
     }
   }
