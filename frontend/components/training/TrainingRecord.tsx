@@ -5,7 +5,7 @@ import { Button } from '../ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
 import { Input } from '../ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
-import { Plus, Check, X, PlayCircle, StopCircle } from 'lucide-react'
+import { Plus, Check, X, PlayCircle, StopCircle, Dumbbell } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 interface TrainingSet {

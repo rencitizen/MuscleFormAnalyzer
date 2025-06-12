@@ -25,6 +25,11 @@ jobs:
           cd frontend
           npm ci
       
+      - name: Validate UI Components
+        run: |
+          cd frontend
+          node scripts/validate-components.js
+      
       - name: Type check
         run: |
           cd frontend
