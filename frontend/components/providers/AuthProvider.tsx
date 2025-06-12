@@ -99,12 +99,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithGoogle = async () => {
     try {
+      console.log('🔍 Google Sign-in Debug:')
+      console.log('Auth instance:', auth)
+      console.log('Firebase app initialized:', !!auth?.app)
+      
       const provider = new GoogleAuthProvider()
-      await signInWithPopup(auth, provider)
+      console.log('GoogleAuthProvider created:', provider)
+      
+      // ポップアップの代わりにリダイレクトを試すオプション
+      console.log('Attempting signInWithPopup...')
+      const result = await signInWithPopup(auth, provider)
+      
+      console.log('Google sign-in successful:', result.user?.email)
       toast.success('Googleアカウントでログインしました')
       router.push('/')
     } catch (error: any) {
-      toast.error(error.message || 'Googleログインに失敗しました')
+      console.error('❌ Google Sign-in Error:')
+      console.error('Error code:', error.code)
+      console.error('Error message:', error.message)
+      console.error('Full error:', error)
+      
+      // より詳細なエラーメッセージ
+      let errorMessage = 'Googleログインに失敗しました'
+      
+      if (error.code === 'auth/popup-blocked') {
+        errorMessage = 'ポップアップがブロックされました。ブラウザの設定を確認してください'
+      } else if (error.code === 'auth/popup-closed-by-user') {
+        errorMessage = 'ログインがキャンセルされました'
+      } else if (error.code === 'auth/unauthorized-domain') {
+        errorMessage = 'このドメインは認証されていません。Firebase Consoleで設定してください'
+      } else if (error.code === 'auth/operation-not-allowed') {
+        errorMessage = 'Google認証が有効になっていません。Firebase Consoleで設定してください'
+      } else if (error.code === 'auth/configuration-not-found') {
+        errorMessage = 'Firebase設定が見つかりません。環境変数を確認してください'
+      } else if (error.message?.includes('domain is not authorized')) {
+        errorMessage = '認証ドメインエラー: Firebase ConsoleとGoogle Cloud Consoleで以下を設定してください:\n1. Firebase → Authentication → Settings → Authorized domains に muscle-form-analyzer.vercel.app を追加\n2. Google Cloud Console → APIs & Services → Credentials → OAuth 2.0 Client IDs で Authorized JavaScript origins と Authorized redirect URIs を設定'
+      }
+      
+      toast.error(errorMessage)
       throw error
     }
   }

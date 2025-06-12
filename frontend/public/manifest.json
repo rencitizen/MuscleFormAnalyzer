@@ -1,0 +1,30 @@
+{
+  "name": "Muscle Form Analyzer",
+  "short_name": "MuscleForm",
+  "description": "AIを活用した筋トレフォーム分析アプリ",
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#000000",
+  "background_color": "#ffffff",
+  "orientation": "portrait",
+  "permissions": [
+    "camera",
+    "geolocation"
+  ],
+  "icons": [
+    {
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["health", "fitness", "lifestyle"],
+  "prefer_related_applications": false
+}

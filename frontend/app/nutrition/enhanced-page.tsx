@@ -7,10 +7,17 @@ import { Input } from '../../components/ui/input'
 import { Label } from '../../components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs'
 import { Progress } from '../../components/ui/progress'
-import { Camera, Upload, Loader2, Plus, Star, Search, TrendingUp } from 'lucide-react'
+import { Camera, Upload, Loader2, Plus, Star, Search, TrendingUp, X } from 'lucide-react'
 import Image from 'next/image'
 import { useToast } from '@/hooks/use-toast'
 import { MealStorage, type FoodItem, type MealRecord } from '../../lib/storage/mealStorage'
+import { CameraCapture } from '../../components/camera/CameraCapture'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '../../components/ui/dialog'
 
 interface NutritionTotal {
   calories: number
@@ -48,6 +55,7 @@ export default function EnhancedNutritionPage() {
   const [foodSuggestions, setFoodSuggestions] = useState<FoodItem[]>([])
   const [favoriteFoods, setFavoriteFoods] = useState<FoodItem[]>([])
   const [showAddFood, setShowAddFood] = useState(false)
+  const [showCamera, setShowCamera] = useState(false)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -70,6 +78,17 @@ export default function EnhancedNutritionPage() {
       }
       reader.readAsDataURL(file)
     }
+  }
+
+  const handleCameraCapture = (imageData: string, file: File) => {
+    setSelectedImage(imageData)
+    setImageFile(file)
+    setShowCamera(false)
+    
+    toast({
+      title: '撮影完了',
+      description: '写真を撮影しました。分析を開始してください。',
+    })
   }
 
   const handleAnalyze = async () => {
@@ -245,6 +264,11 @@ export default function EnhancedNutritionPage() {
     }
   }
 
+  const clearImage = () => {
+    setSelectedImage(null)
+    setImageFile(null)
+  }
+
   return (
     <div className="container mx-auto p-4 max-w-6xl">
       <h1 className="text-3xl font-bold mb-6">食事管理 / Meal Management</h1>
@@ -289,19 +313,36 @@ export default function EnhancedNutritionPage() {
                     fill
                     className="object-cover rounded-lg"
                   />
+                  <Button
+                    onClick={clearImage}
+                    size="icon"
+                    variant="secondary"
+                    className="absolute top-2 right-2"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
                 </div>
               ) : (
                 <div className="w-full h-64 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center">
                   <div className="text-center">
                     <Upload className="mx-auto h-12 w-12 text-gray-400" />
                     <p className="mt-2 text-sm text-gray-600">
-                      写真をアップロード
+                      写真を撮影またはアップロード
                     </p>
                   </div>
                 </div>
               )}
               
               <div className="flex gap-2">
+                <Button
+                  onClick={() => setShowCamera(true)}
+                  className="flex-1"
+                  variant="outline"
+                >
+                  <Camera className="w-4 h-4 mr-2" />
+                  カメラで撮影
+                </Button>
+                
                 <Input
                   type="file"
                   accept="image/*"
@@ -311,25 +352,27 @@ export default function EnhancedNutritionPage() {
                 />
                 <Label
                   htmlFor="meal-upload"
-                  className="cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                  className="cursor-pointer inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 flex-1"
                 >
-                  <Camera className="w-4 h-4 mr-2" />
-                  写真を選択
+                  <Upload className="w-4 h-4 mr-2" />
+                  ファイル選択
                 </Label>
-                <Button
-                  onClick={handleAnalyze}
-                  disabled={!selectedImage || isAnalyzing}
-                >
-                  {isAnalyzing ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      分析中...
-                    </>
-                  ) : (
-                    '分析開始'
-                  )}
-                </Button>
               </div>
+              
+              <Button
+                onClick={handleAnalyze}
+                disabled={!selectedImage || isAnalyzing}
+                className="w-full"
+              >
+                {isAnalyzing ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    分析中...
+                  </>
+                ) : (
+                  '分析開始'
+                )}
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -561,6 +604,20 @@ export default function EnhancedNutritionPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Camera Dialog */}
+      <Dialog open={showCamera} onOpenChange={setShowCamera}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>食事を撮影</DialogTitle>
+          </DialogHeader>
+          <CameraCapture
+            onCapture={handleCameraCapture}
+            onClose={() => setShowCamera(false)}
+            aspectRatio="4/3"
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
