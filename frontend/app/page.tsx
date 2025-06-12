@@ -271,24 +271,24 @@ export default function HomePage() {
               </CardContent>
             </Card>
 
-            {/* Training Data Collection */}
+            {/* Training Record */}
             <Card className="border-2 border-dashed">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
-                  <FileText className="w-5 h-5 text-blue-500" />
-                  トレーニングデータ管理
+                  <Dumbbell className="w-5 h-5 text-blue-500" />
+                  トレーニング記録
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">
-                  AIモデル改善のためのデータ収集と管理
+                  セット数、重量、レップ数を記録して進捗を確認
                 </p>
                 <Button 
                   className="w-full mt-4" 
                   variant="outline"
-                  onClick={() => router.push('/training_data_management')}
+                  onClick={() => router.push('/training')}
                 >
-                  データ管理へ
+                  記録を開始
                 </Button>
               </CardContent>
             </Card>

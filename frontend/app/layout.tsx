@@ -9,11 +9,26 @@ import { MobileNav } from '../components/layout/MobileNav'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'BodyScale - AI Pose Analyzer',
-  description: 'ジム通いの筋トレ中級者向けBIG3フォーム分析アプリ',
+  title: 'MuscleFormAnalyzer - Tenax Fit',
+  description: 'AIを活用した筋トレフォーム分析アプリ',
   manifest: '/manifest.json',
   themeColor: '#000000',
   viewport: 'width=device-width, initial-scale=1, maximum-scale=1',
+  icons: {
+    icon: [
+      { url: '/favicon.ico' },
+      { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
+      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' }
+    ],
+    apple: [
+      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }
+    ]
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Tenax Fit'
+  }
 }
 
 export default function RootLayout({

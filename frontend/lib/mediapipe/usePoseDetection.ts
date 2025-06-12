@@ -13,6 +13,7 @@ interface UsePoseDetectionOptions {
   minDetectionConfidence?: number
   minTrackingConfidence?: number
   modelComplexity?: 0 | 1 | 2
+  facingMode?: 'user' | 'environment'
 }
 
 export function usePoseDetection(options: UsePoseDetectionOptions = {}) {
@@ -21,6 +22,7 @@ export function usePoseDetection(options: UsePoseDetectionOptions = {}) {
     minDetectionConfidence = 0.5,
     minTrackingConfidence = 0.5,
     modelComplexity = 1,
+    facingMode = 'environment',
   } = options
 
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -31,6 +33,7 @@ export function usePoseDetection(options: UsePoseDetectionOptions = {}) {
   const [isLoading, setIsLoading] = useState(true)
   const [isDetecting, setIsDetecting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [currentFacingMode, setCurrentFacingMode] = useState(facingMode)
   
   // デモモードチェック
   const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
@@ -130,6 +133,20 @@ export function usePoseDetection(options: UsePoseDetectionOptions = {}) {
         // クリーンアップ用に保存
         cameraRef.current = { stop: () => clearInterval(demoInterval) } as any
       } else {
+        // カメラの制約を設定
+        const constraints = {
+          video: {
+            facingMode: currentFacingMode,
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          },
+          audio: false
+        }
+
+        // カメラストリームを取得
+        const stream = await navigator.mediaDevices.getUserMedia(constraints)
+        videoRef.current.srcObject = stream
+
         // 通常のカメラを初期化
         const camera = new Camera(videoRef.current, {
           onFrame: async () => {
@@ -152,7 +169,7 @@ export function usePoseDetection(options: UsePoseDetectionOptions = {}) {
       setIsLoading(false)
       toast.error(errorMessage)
     }
-  }, [minDetectionConfidence, minTrackingConfidence, modelComplexity, onResultsCallback, isDemoMode])
+  }, [minDetectionConfidence, minTrackingConfidence, modelComplexity, onResultsCallback, isDemoMode, currentFacingMode])
 
   // デモ用ランドマーク生成関数
   const generateDemoLandmarks = (): Landmark[] => {
@@ -211,7 +228,28 @@ export function usePoseDetection(options: UsePoseDetectionOptions = {}) {
       cameraRef.current.stop()
       setIsDetecting(false)
     }
+    // ビデオストリームも停止
+    if (videoRef.current && videoRef.current.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream
+      stream.getTracks().forEach(track => track.stop())
+      videoRef.current.srcObject = null
+    }
   }, [])
+
+  // カメラ切り替え機能
+  const switchCamera = useCallback(async () => {
+    const newFacingMode = currentFacingMode === 'user' ? 'environment' : 'user'
+    setCurrentFacingMode(newFacingMode)
+    
+    // 現在のカメラを停止
+    stopDetection()
+    
+    // 少し待ってから新しいカメラで再初期化
+    setTimeout(async () => {
+      await initializePose()
+      await startDetection()
+    }, 100)
+  }, [currentFacingMode, stopDetection, initializePose, startDetection])
 
   // クリーンアップ
   useEffect(() => {
@@ -234,5 +272,7 @@ export function usePoseDetection(options: UsePoseDetectionOptions = {}) {
     startDetection,
     stopDetection,
     initializePose,
+    switchCamera,
+    currentFacingMode,
   }
 }
