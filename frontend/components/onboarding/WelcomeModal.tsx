@@ -68,7 +68,7 @@ export function WelcomeModal() {
           <div className="flex items-center gap-2 mb-2">
             <Dumbbell className="w-6 h-6 text-primary" />
             <DialogTitle className="text-xl">
-              BodyScale Pose Analyzerへようこそ！
+              TENAX FITへようこそ！
             </DialogTitle>
           </div>
           <DialogDescription>

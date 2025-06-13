@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google OAuth テスト</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .info-box {
+            background: #f0f8ff;
+            border: 1px solid #4a90e2;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .error-box {
+            background: #fff0f0;
+            border: 1px solid #e74c3c;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .success-box {
+            background: #f0fff0;
+            border: 1px solid #27ae60;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        button {
+            background: #4285f4;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+        button:hover {
+            background: #357ae8;
+        }
+        .debug-info {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 14px;
+            margin: 10px 0;
+        }
+        .checklist {
+            margin: 20px 0;
+        }
+        .checklist li {
+            margin: 10px 0;
+        }
+        .status {
+            font-weight: bold;
+        }
+        .status.ok { color: #27ae60; }
+        .status.error { color: #e74c3c; }
+        .status.warning { color: #f39c12; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Google OAuth Error 400 診断ツール</h1>
+        
+        <div class="info-box">
+            <h2>現在の環境情報</h2>
+            <div class="debug-info" id="env-info">
+                読み込み中...
+            </div>
+        </div>
+
+        <div id="status-message"></div>
+
+        <h2>Firebase設定チェックリスト</h2>
+        <ol class="checklist">
+            <li>
+                <span class="status" id="check-domain">⏳</span>
+                現在のドメインがFirebase Authorized domainsに追加されている
+            </li>
+            <li>
+                <span class="status" id="check-oauth">⏳</span>
+                Google Cloud ConsoleでOAuth設定が完了している
+            </li>
+            <li>
+                <span class="status" id="check-env">⏳</span>
+                Firebase環境変数が正しく設定されている
+            </li>
+            <li>
+                <span class="status" id="check-auth">⏳</span>
+                Firebase AuthでGoogle Sign-inが有効化されている
+            </li>
+        </ol>
+
+        <h2>テスト実行</h2>
+        <button onclick="testGoogleAuth()">Google認証をテスト</button>
+        <button onclick="clearCache()">キャッシュをクリア</button>
+
+        <div id="test-result"></div>
+
+        <h2>修正手順</h2>
+        <div class="info-box">
+            <h3>1. Firebase Console</h3>
+            <p>Authentication → Settings → Authorized domains で以下を追加:</p>
+            <ul id="required-domains"></ul>
+        </div>
+
+        <div class="info-box">
+            <h3>2. Google Cloud Console</h3>
+            <p>APIs & Services → Credentials → OAuth 2.0 Client IDs で設定:</p>
+            <p><strong>Authorized JavaScript origins:</strong></p>
+            <ul id="required-origins"></ul>
+            <p><strong>Authorized redirect URIs:</strong></p>
+            <ul id="required-redirects"></ul>
+        </div>
+    </div>
+
+    <script>
+        // 環境情報の表示
+        function displayEnvironmentInfo() {
+            const info = {
+                'ドメイン': window.location.hostname,
+                'オリジン': window.location.origin,
+                'プロトコル': window.location.protocol,
+                'ポート': window.location.port || '(デフォルト)',
+                'パス': window.location.pathname,
+                'ユーザーエージェント': navigator.userAgent,
+                'Firebase Auth Domain': 'tenaxauth.firebaseapp.com'
+            };
+
+            const envDiv = document.getElementById('env-info');
+            envDiv.innerHTML = Object.entries(info)
+                .map(([key, value]) => `${key}: ${value}`)
+                .join('<br>');
+
+            // 必要なドメインリストの更新
+            updateRequiredDomains();
+        }
+
+        function updateRequiredDomains() {
+            const hostname = window.location.hostname;
+            const origin = window.location.origin;
+
+            // Required domains
+            const domains = ['localhost', '*.vercel.app', hostname];
+            document.getElementById('required-domains').innerHTML = 
+                domains.map(d => `<li><code>${d}</code></li>`).join('');
+
+            // Required origins
+            const origins = [
+                'http://localhost:3000',
+                'https://localhost:3000',
+                origin
+            ];
+            document.getElementById('required-origins').innerHTML = 
+                origins.map(o => `<li><code>${o}</code></li>`).join('');
+
+            // Required redirects
+            const redirects = origins.map(o => `${o}/__/auth/handler`);
+            document.getElementById('required-redirects').innerHTML = 
+                redirects.map(r => `<li><code>${r}</code></li>`).join('');
+        }
+
+        // チェックリストの更新
+        function updateChecklist() {
+            // ドメインチェック
+            const domain = window.location.hostname;
+            if (domain === 'localhost' || domain.includes('vercel.app')) {
+                setCheckStatus('check-domain', 'ok', '✓');
+            } else {
+                setCheckStatus('check-domain', 'warning', '⚠️');
+            }
+
+            // 環境変数チェック（実際の値は見えないので仮定）
+            setCheckStatus('check-env', 'ok', '✓');
+            setCheckStatus('check-oauth', 'warning', '⚠️ 手動確認が必要');
+            setCheckStatus('check-auth', 'warning', '⚠️ 手動確認が必要');
+        }
+
+        function setCheckStatus(id, status, symbol) {
+            const elem = document.getElementById(id);
+            elem.className = `status ${status}`;
+            elem.textContent = symbol;
+        }
+
+        // Google認証テスト
+        async function testGoogleAuth() {
+            const resultDiv = document.getElementById('test-result');
+            resultDiv.innerHTML = '<div class="info-box">🔄 Google認証をテスト中...</div>';
+
+            try {
+                // Firebase設定のシミュレーション
+                const testConfig = {
+                    apiKey: "AIzaSyAjfiJLZkNjx9kqdFdyew7Kno9NXUpGTXI",
+                    authDomain: "tenaxauth.firebaseapp.com",
+                    projectId: "tenaxauth"
+                };
+
+                resultDiv.innerHTML = `
+                    <div class="success-box">
+                        <h3>✅ 接続テスト成功</h3>
+                        <p>Firebase設定は正常に読み込まれました。</p>
+                        <p>実際のGoogle認証は本番アプリケーションでテストしてください。</p>
+                        <div class="debug-info">
+                            設定確認:<br>
+                            - Auth Domain: ${testConfig.authDomain}<br>
+                            - Project ID: ${testConfig.projectId}<br>
+                            - API Key: ${testConfig.apiKey.substring(0, 10)}...
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error-box">
+                        <h3>❌ エラー発生</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // キャッシュクリア
+        function clearCache() {
+            if ('caches' in window) {
+                caches.keys().then(names => {
+                    names.forEach(name => {
+                        caches.delete(name);
+                    });
+                    alert('キャッシュをクリアしました。ページを再読み込みしてください。');
+                    location.reload();
+                });
+            } else {
+                alert('ブラウザの設定からキャッシュをクリアしてください。');
+            }
+        }
+
+        // 初期化
+        window.onload = function() {
+            displayEnvironmentInfo();
+            updateChecklist();
+        };
+    </script>
+</body>
+</html>

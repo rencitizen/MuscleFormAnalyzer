@@ -46,7 +46,7 @@ export default function LoginPage() {
           <div className="flex justify-center mb-4">
             <Dumbbell className="w-12 h-12" />
           </div>
-          <CardTitle className="text-2xl">BodyScaleへようこそ</CardTitle>
+          <CardTitle className="text-2xl">TENAX FITへようこそ</CardTitle>
           <CardDescription>
             アカウントにログインしてトレーニングを開始しましょう
           </CardDescription>

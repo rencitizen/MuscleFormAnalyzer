@@ -3,12 +3,13 @@
 import { useState, useRef, useEffect, Suspense } from 'react'
 import { Button } from '../../components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card'
-import { Camera, Circle, Square, ChevronLeft, Activity, Ruler, TrendingUp, Upload, RefreshCw } from 'lucide-react'
+import { Camera, Circle, Square, ChevronLeft, Activity, Ruler, TrendingUp, Upload, RefreshCw, Plus } from 'lucide-react'
 import { usePoseDetection } from '../../lib/mediapipe/usePoseDetection'
 import { PoseResults } from '../../lib/mediapipe/types'
 import { ExerciseSelector } from '../../components/pose-analysis/ExerciseSelector'
 import { CalibrationModal } from '../../components/pose-analysis/CalibrationModal'
 import { AnalysisResults } from '../../components/pose-analysis/AnalysisResults'
+import { BodyMeasurementUpload } from '../../components/body-measurement/BodyMeasurementUpload'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import { useSearchParams } from 'next/navigation'
@@ -22,6 +23,8 @@ function AnalyzeContent() {
   const [showCalibration, setShowCalibration] = useState(false)
   const [showResults, setShowResults] = useState(false)
   const [recordingMode, setRecordingMode] = useState<'camera' | 'upload'>('camera')
+  const [showBodyMeasurementUpload, setShowBodyMeasurementUpload] = useState(false)
+  const [bodyMeasurements, setBodyMeasurements] = useState<any>(null)
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -101,8 +104,19 @@ function AnalyzeContent() {
     const file = event.target.files?.[0]
     if (!file) return
 
-    if (!file.type.startsWith('video/')) {
-      toast.error('動画ファイルを選択してください')
+    const acceptedTypes = [
+      'video/mp4',
+      'video/quicktime',
+      'video/x-msvideo',
+      'video/webm',
+      'video/mpeg',
+      'video/ogg',
+      'video/3gpp',
+      'video/3gpp2'
+    ]
+    
+    if (!acceptedTypes.includes(file.type)) {
+      toast.error('対応していない動画形式です。MP4, MOV, AVI, WebM, MPEG, OGGをご使用ください')
       return
     }
 
@@ -142,6 +156,42 @@ function AnalyzeContent() {
 
   // 身体測定ページの場合
   if (analyzeType === 'body_metrics') {
+    // 動画アップロード画面を表示
+    if (showBodyMeasurementUpload) {
+      return (
+        <div className="min-h-screen bg-background">
+          <header className="border-b">
+            <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setShowBodyMeasurementUpload(false)}
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </Button>
+                <h1 className="text-2xl font-bold flex items-center gap-2">
+                  <Ruler className="w-6 h-6" />
+                  身体測定 - 動画アップロード
+                </h1>
+              </div>
+            </div>
+          </header>
+
+          <main className="container mx-auto px-4 py-8 max-w-4xl">
+            <BodyMeasurementUpload
+              onMeasurementComplete={(measurements) => {
+                setBodyMeasurements(measurements)
+                setShowBodyMeasurementUpload(false)
+                toast.success('測定が完了しました')
+              }}
+              onCancel={() => setShowBodyMeasurementUpload(false)}
+            />
+          </main>
+        </div>
+      )
+    }
+
     return (
       <div className="min-h-screen bg-background">
         <header className="border-b">
@@ -157,6 +207,13 @@ function AnalyzeContent() {
                 身体測定
               </h1>
             </div>
+            <Button
+              onClick={() => setShowBodyMeasurementUpload(true)}
+              className="flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              新規測定
+            </Button>
           </div>
         </header>
 
@@ -175,15 +232,27 @@ function AnalyzeContent() {
                   <div className="space-y-3">
                     <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
                       <span className="text-sm font-medium">身長</span>
-                      <span className="font-mono">175.5 cm</span>
+                      <span className="font-mono">
+                        {bodyMeasurements?.height ? `${bodyMeasurements.height} cm` : '175.5 cm'}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                      <span className="text-sm font-medium">体重</span>
-                      <span className="font-mono">72.3 kg</span>
+                      <span className="text-sm font-medium">肩幅</span>
+                      <span className="font-mono">
+                        {bodyMeasurements?.shoulderWidth ? `${bodyMeasurements.shoulderWidth} cm` : '45.0 cm'}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                      <span className="text-sm font-medium">BMI</span>
-                      <span className="font-mono">23.5</span>
+                      <span className="text-sm font-medium">胴体の長さ</span>
+                      <span className="font-mono">
+                        {bodyMeasurements?.torsoLength ? `${bodyMeasurements.torsoLength} cm` : '50.5 cm'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                      <span className="text-sm font-medium">腰幅</span>
+                      <span className="font-mono">
+                        {bodyMeasurements?.hipWidth ? `${bodyMeasurements.hipWidth} cm` : '35.0 cm'}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -193,23 +262,44 @@ function AnalyzeContent() {
                   <div className="space-y-3">
                     <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
                       <span className="text-sm font-medium">左腕の長さ</span>
-                      <span className="font-mono">62.8 cm</span>
+                      <span className="font-mono">
+                        {bodyMeasurements?.armLength?.left ? `${bodyMeasurements.armLength.left} cm` : '62.8 cm'}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
                       <span className="text-sm font-medium">右腕の長さ</span>
-                      <span className="font-mono">63.1 cm</span>
+                      <span className="font-mono">
+                        {bodyMeasurements?.armLength?.right ? `${bodyMeasurements.armLength.right} cm` : '63.1 cm'}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
                       <span className="text-sm font-medium">左脚の長さ</span>
-                      <span className="font-mono">95.2 cm</span>
+                      <span className="font-mono">
+                        {bodyMeasurements?.legLength?.left ? `${bodyMeasurements.legLength.left} cm` : '95.2 cm'}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
                       <span className="text-sm font-medium">右脚の長さ</span>
-                      <span className="font-mono">95.0 cm</span>
+                      <span className="font-mono">
+                        {bodyMeasurements?.legLength?.right ? `${bodyMeasurements.legLength.right} cm` : '95.0 cm'}
+                      </span>
                     </div>
                   </div>
                 </div>
               </div>
+
+              {bodyMeasurements && (
+                <div className="mt-6 p-4 bg-primary/5 rounded-lg border border-primary/20">
+                  <p className="text-sm text-muted-foreground">
+                    最終測定日時: {new Date(bodyMeasurements.timestamp).toLocaleString('ja-JP')}
+                  </p>
+                  {bodyMeasurements.metadata?.confidence && (
+                    <p className="text-sm text-muted-foreground">
+                      測定精度: {Math.round(bodyMeasurements.metadata.confidence * 100)}%
+                    </p>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -221,10 +311,38 @@ function AnalyzeContent() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-12 text-muted-foreground">
-                <p>測定履歴がありません</p>
-                <p className="text-sm mt-2">定期的に測定を行うことで、進捗を確認できます</p>
-              </div>
+              {bodyMeasurements ? (
+                <div className="space-y-3">
+                  <div className="p-4 bg-muted rounded-lg">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="font-medium">
+                          {new Date(bodyMeasurements.timestamp).toLocaleDateString('ja-JP')}
+                        </p>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          身長: {bodyMeasurements.height}cm, 肩幅: {bodyMeasurements.shoulderWidth}cm
+                        </p>
+                      </div>
+                      <Button variant="ghost" size="sm">
+                        詳細
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-12 text-muted-foreground">
+                  <p>測定履歴がありません</p>
+                  <p className="text-sm mt-2">定期的に測定を行うことで、進捗を確認できます</p>
+                  <Button
+                    variant="outline"
+                    className="mt-4"
+                    onClick={() => setShowBodyMeasurementUpload(true)}
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    最初の測定を開始
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </main>
@@ -365,7 +483,7 @@ function AnalyzeContent() {
                           <input
                             ref={fileInputRef}
                             type="file"
-                            accept="video/*"
+                            accept="video/mp4,video/quicktime,video/x-msvideo,video/webm,video/mpeg,video/ogg,video/3gpp,video/3gpp2"
                             onChange={handleFileSelect}
                             className="hidden"
                           />
@@ -378,8 +496,9 @@ function AnalyzeContent() {
                             動画ファイルを選択
                           </Button>
                           <p className="text-sm text-muted-foreground">
-                            MP4, MOV, AVI形式の動画をアップロードできます<br />
-                            最大ファイルサイズ: 100MB
+                            対応形式: MP4, MOV, AVI, WebM, MPEG, OGG<br />
+                            最大ファイルサイズ: 100MB<br />
+                            推奨: 横向きで全身が映る動画
                           </p>
                         </div>
                       </>

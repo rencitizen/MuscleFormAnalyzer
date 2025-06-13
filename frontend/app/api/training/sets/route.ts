@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { sessions } from '../sessions/route'
 
 // モックデータストア（実際のプロジェクトではデータベースを使用）
 let sets: any[] = []
@@ -14,6 +15,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // セッションを探す
+    const session = sessions.find(s => s.id === body.session_id)
+    if (!session) {
+      return NextResponse.json(
+        { error: 'セッションが見つかりません' },
+        { status: 404 }
+      )
+    }
+
     const newSet = {
       id: Date.now().toString(),
       session_id: body.session_id,
@@ -25,6 +35,8 @@ export async function POST(request: NextRequest) {
       created_at: new Date().toISOString(),
     }
 
+    // セッションにセットを追加
+    session.sets.push(newSet)
     sets.push(newSet)
 
     return NextResponse.json(newSet)

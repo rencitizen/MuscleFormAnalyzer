@@ -11,7 +11,7 @@ const chalk = require('chalk');
 console.log(chalk.blue('\n🔍 Googleログイン設定ライブチェック開始...\n'));
 
 // 本番URLの設定
-const PRODUCTION_URL = 'https://muscle-form-analyzer.vercel.app';
+const PRODUCTION_URL = 'https://tenax-fit.vercel.app';
 
 // HTTPSリクエストを実行する関数
 function checkUrl(url) {

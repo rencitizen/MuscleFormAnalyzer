@@ -65,6 +65,7 @@ results/
 # Upload directories
 uploads/
 media/
+frontend/public/uploads/
 
 # Firebase
 firebase-debug.log

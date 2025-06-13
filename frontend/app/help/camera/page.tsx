@@ -21,7 +21,7 @@ export default function CameraHelpPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p>
-              MuscleFormAnalyzerでは、食事の撮影とフォーム分析でカメラを使用します。
+              TENAX FITでは、食事の撮影とフォーム分析でカメラを使用します。
               モバイルデバイスやPCのカメラを使って、リアルタイムで撮影・分析が可能です。
             </p>
           </CardContent>

@@ -45,9 +45,9 @@ export interface DailyStats {
   }
 }
 
-const STORAGE_KEY = 'bodyscale_meals'
-const FAVORITES_KEY = 'bodyscale_favorite_foods'
-const CUSTOM_FOODS_KEY = 'bodyscale_custom_foods'
+const STORAGE_KEY = 'tenaxfit_meals'
+const FAVORITES_KEY = 'tenaxfit_favorite_foods'
+const CUSTOM_FOODS_KEY = 'tenaxfit_custom_foods'
 
 export class MealStorage {
   // Create a new meal record

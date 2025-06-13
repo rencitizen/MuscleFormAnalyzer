@@ -24,7 +24,7 @@ NEXT_PUBLIC_FIREBASE_APP_ID=your-firebase-app-id
 
 ### バックエンドAPI URL
 ```
-NEXT_PUBLIC_API_URL=https://muscleformanalyzer-production.up.railway.app
+NEXT_PUBLIC_API_URL=https://tenaxfit-production.up.railway.app
 ```
 
 ### Supabase設定（使用する場合）

@@ -1,7 +1,7 @@
 {
-  "name": "Tenax Fit - MuscleFormAnalyzer",
-  "short_name": "Tenax Fit",
-  "description": "AIを活用した筋トレフォーム分析アプリ",
+  "name": "TENAX FIT",
+  "short_name": "TenaxFit",
+  "description": "AI-Powered Fitness Analysis Platform",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

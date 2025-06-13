@@ -6,7 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui
 import { Input } from '../ui/input'
 import { Textarea } from '../ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
-import { Plus, Save, X, Edit, Trash2, Copy } from 'lucide-react'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog'
+import { Plus, Save, X, Edit, Trash2, Copy, AlertTriangle } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 interface RoutineExercise {
@@ -69,6 +70,8 @@ export function RoutineManager() {
   const [routines, setRoutines] = useState<Routine[]>([])
   const [isCreating, setIsCreating] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
   const [newRoutine, setNewRoutine] = useState<Routine>({
     name: '',
     description: '',
@@ -132,22 +135,38 @@ export function RoutineManager() {
     }
   }
 
-  const deleteRoutine = async (id: string) => {
-    if (!confirm('このルーティンを削除しますか？')) return
+  const handleDeleteClick = (id: string) => {
+    setDeletingId(id)
+  }
 
+  const confirmDelete = async () => {
+    if (!deletingId) return
+
+    setIsDeleting(true)
     try {
-      const response = await fetch(`/api/training/routines/${id}`, {
+      const response = await fetch(`/api/training/routines/${deletingId}`, {
         method: 'DELETE',
       })
 
       if (response.ok) {
-        setRoutines(prev => prev.filter(r => r.id !== id))
+        // 楽観的UI更新
+        setRoutines(prev => prev.filter(r => r.id !== deletingId))
         toast.success('ルーティンを削除しました')
+        setDeletingId(null)
+      } else {
+        const error = await response.json()
+        toast.error(error.error || 'ルーティンの削除に失敗しました')
       }
     } catch (error) {
       console.error('ルーティン削除エラー:', error)
       toast.error('ルーティンの削除に失敗しました')
+    } finally {
+      setIsDeleting(false)
     }
+  }
+
+  const cancelDelete = () => {
+    setDeletingId(null)
   }
 
   const addExercise = () => {
@@ -380,7 +399,7 @@ export function RoutineManager() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => deleteRoutine(routine.id!)}
+                        onClick={() => handleDeleteClick(routine.id!)}
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
@@ -405,6 +424,34 @@ export function RoutineManager() {
           )}
         </div>
       )}
+
+      {/* 削除確認ダイアログ */}
+      <Dialog open={!!deletingId} onOpenChange={(open) => !open && cancelDelete()}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-destructive" />
+              ルーティンの削除確認
+            </DialogTitle>
+            <DialogDescription>
+              {routines.find(r => r.id === deletingId)?.name} を削除しますか？
+              この操作は取り消すことができません。
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={cancelDelete} disabled={isDeleting}>
+              キャンセル
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={confirmDelete}
+              disabled={isDeleting}
+            >
+              {isDeleting ? '削除中...' : '削除する'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -1,6 +1,6 @@
-# MuscleFormAnalyzer (Tenax Fit)
+# TENAX FIT
 
-動画から姿勢推定を行い、ユーザーの身長を元に実寸法（cm単位）で体の各部位を計測し、エクササイズフォームを分析するツール。
+AI-Powered Fitness Analysis Platform - 動画から姿勢推定を行い、ユーザーの身長を元に実寸法（cm単位）で体の各部位を計測し、エクササイズフォームを分析するツール。
 
 ## 機能
 

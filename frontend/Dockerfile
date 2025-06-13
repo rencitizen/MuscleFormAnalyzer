@@ -1,4 +1,4 @@
-# Frontend Dockerfile for BodyScale Pose Analyzer
+# Frontend Dockerfile for TENAX FIT
 FROM node:18-alpine
 
 # Set working directory

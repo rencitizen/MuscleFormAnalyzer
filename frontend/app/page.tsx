@@ -50,7 +50,7 @@ export default function HomePage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Dumbbell className="w-8 h-8 text-primary" />
-              <h1 className="text-2xl font-bold">BodyScale Pose Analyzer</h1>
+              <h1 className="text-2xl font-bold">TENAX FIT</h1>
             </div>
             <nav className="hidden md:flex items-center gap-6">
               <Link href="/dashboard" className="text-sm hover:text-primary">

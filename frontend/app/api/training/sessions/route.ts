@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { routines } from '../routines/route'
 
 // モックデータストア
 export let sessions: any[] = []
@@ -43,6 +44,20 @@ export async function POST(request: NextRequest) {
       start_time: new Date().toISOString(),
       sets: [],
       status: 'active',
+      plannedExercises: [],
+    }
+
+    // ルーティンIDが指定されている場合、ルーティンの種目を読み込む
+    if (body.routine_id) {
+      const routine = routines.find(r => r.id === body.routine_id)
+      if (routine && routine.exercises) {
+        // ルーティンから計画された種目を設定
+        newSession.plannedExercises = routine.exercises.map((exercise: any) => ({
+          ...exercise,
+          completed_sets: 0,
+          planned_sets: exercise.target_sets,
+        }))
+      }
     }
 
     sessions.push(newSession)

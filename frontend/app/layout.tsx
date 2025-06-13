@@ -16,8 +16,8 @@ const FeedbackWidget = dynamic(
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'MuscleFormAnalyzer - Tenax Fit',
-  description: 'AIを活用した筋トレフォーム分析アプリ',
+  title: 'TENAX FIT - AI-Powered Fitness Analysis',
+  description: 'AI-Powered Fitness Analysis Platform - Analyze your workout form, track body measurements, and optimize your fitness journey',
   manifest: '/manifest.json',
   icons: {
     icon: [
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'Tenax Fit'
+    title: 'TENAX FIT'
   }
 }
 
@@ -54,7 +54,7 @@ export default function RootLayout({
         {/* PWA必須メタタグ */}
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="Tenax Fit" />
+        <meta name="apple-mobile-web-app-title" content="TENAX FIT" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="format-detection" content="telephone=no" />
         <meta name="msapplication-TileColor" content="#000000" />

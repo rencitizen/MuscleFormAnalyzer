@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/backend/:path*",
-      "destination": "https://muscleformanalyzer-production.up.railway.app/:path*"
+      "destination": "https://tenaxfit-production.up.railway.app/:path*"
     }
   ],
   "headers": [

@@ -115,17 +115,17 @@ console.log(chalk.white(`
    ${chalk.gray('https://console.firebase.google.com')}
    □ Authentication → Sign-in method → Google 有効化
    □ Authentication → Settings → Authorized domains に追加:
-     - muscle-form-analyzer.vercel.app
+     - tenax-fit.vercel.app
      - localhost
 
 2. Google Cloud Console設定:
    ${chalk.gray('https://console.cloud.google.com')}
    □ APIs & Services → Credentials → OAuth 2.0 Client IDs 設定
    □ Authorized JavaScript origins:
-     - https://muscle-form-analyzer.vercel.app
+     - https://tenax-fit.vercel.app
      - http://localhost:3000
    □ Authorized redirect URIs:
-     - https://muscle-form-analyzer.vercel.app/__/auth/handler
+     - https://tenax-fit.vercel.app/__/auth/handler
      - http://localhost:3000/__/auth/handler
 
 3. Vercel設定:

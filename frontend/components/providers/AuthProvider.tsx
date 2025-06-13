@@ -14,6 +14,7 @@ import {
 import { auth } from '../../lib/firebase'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
+import { diagnoseGoogleAuthError, configurePWAGoogleAuth } from '../../lib/auth/googleAuthConfig'
 
 interface AuthContextType {
   user: User | null
@@ -124,13 +125,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('Firebase app:', auth?.app?.name)
       console.log('Current domain:', window.location.hostname)
       console.log('Protocol:', window.location.protocol)
+      console.log('Full URL:', window.location.href)
+      console.log('Origin:', window.location.origin)
+      console.log('Auth domain:', process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN)
       
       const provider = new GoogleAuthProvider()
-      provider.setCustomParameters({
-        prompt: 'select_account'
-      })
+      const pwaConfig = configurePWAGoogleAuth()
+      provider.setCustomParameters(pwaConfig.customParameters)
       
-      console.log('GoogleAuthProvider created with custom parameters')
+      console.log('GoogleAuthProvider created with custom parameters:', pwaConfig)
       
       // モバイルデバイスの検出
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
@@ -173,13 +176,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         'auth/operation-not-allowed': 'Google認証が無効です。Firebase Consoleで有効化してください',
         'auth/configuration-not-found': 'Firebase設定エラー。環境変数を確認してください',
         'auth/invalid-api-key': 'APIキーが無効です。Firebase設定を確認してください',
-        'auth/internal-error': 'Firebase内部エラー。設定を確認してください'
+        'auth/internal-error': 'Firebase内部エラー。設定を確認してください',
+        'auth/cancelled-popup-request': '別のポップアップが開いています',
+        'auth/network-request-failed': 'ネットワークエラー。接続を確認してください'
       }
       
       let errorMessage = errorMessages[error.code] || 'Googleログインに失敗しました'
       
-      // ドメイン認証エラーの詳細判定
-      if (error.message?.includes('unauthorized') || 
+      // Error 400やドメイン認証エラーの詳細診断
+      const diagnosis = diagnoseGoogleAuthError(error)
+      if (diagnosis) {
+        errorMessage = `
+🚨 ${diagnosis.title}
+
+修正手順:
+${diagnosis.steps.join('\n')}
+
+デバッグ情報:
+- 現在のドメイン: ${diagnosis.debugInfo.currentDomain}
+- Vercel環境: ${diagnosis.debugInfo.isVercel ? 'はい' : 'いいえ'}
+        `
+      } else if (error.message?.includes('unauthorized') || 
           error.message?.includes('not authorized') ||
           error.code === 'auth/unauthorized-domain') {
         errorMessage = `

@@ -27,7 +27,7 @@ const nextConfig = {
       {
         source: '/api/backend/:path*',
         destination: process.env.NODE_ENV === 'production' 
-          ? 'https://muscleformanalyzer-production.up.railway.app/:path*'
+          ? 'https://tenaxfit-production.up.railway.app/:path*'
           : 'http://localhost:5000/:path*'
       }
     ]

@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '../../../../lib/firebase'
 
 // モックデータストア（実際のプロジェクトではデータベースを使用）
-let routines: any[] = [
+// このデータは[id]/route.tsと共有する必要があるため、実際のプロジェクトでは
+// 別ファイルに切り出すか、データベースを使用してください
+export let routines: any[] = [
   {
     id: '1',
     name: '胸・肩・上腕三頭筋',

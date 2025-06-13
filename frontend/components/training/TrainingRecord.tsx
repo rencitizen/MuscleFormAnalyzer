@@ -17,6 +17,17 @@ interface TrainingSet {
   completed: boolean
 }
 
+interface PlannedExercise {
+  exercise_name: string
+  target_sets: number
+  target_reps: string
+  target_weight?: number
+  rest_time?: number
+  order_index?: number
+  completed_sets: number
+  planned_sets: number
+}
+
 interface TrainingSession {
   id: string
   routine_id?: string
@@ -24,6 +35,7 @@ interface TrainingSession {
   sets: TrainingSet[]
   start_time?: string
   end_time?: string
+  plannedExercises?: PlannedExercise[]
 }
 
 interface Routine {
@@ -116,6 +128,10 @@ export function TrainingRecord() {
         if (session) {
           setActiveSession(session)
           setSessionStartTime(new Date(session.start_time))
+          // 計画された種目がある場合、最初の種目を選択
+          if (session.plannedExercises && session.plannedExercises.length > 0) {
+            setCurrentExercise(session.plannedExercises[0].exercise_name)
+          }
         }
       }
     } catch (error) {
@@ -135,6 +151,14 @@ export function TrainingRecord() {
         const session = await response.json()
         setActiveSession(session)
         setSessionStartTime(new Date())
+        // 計画された種目がある場合、最初の種目を選択
+        if (session.plannedExercises && session.plannedExercises.length > 0) {
+          setCurrentExercise(session.plannedExercises[0].exercise_name)
+          // 目標重量がある場合は設定
+          if (session.plannedExercises[0].target_weight) {
+            setCurrentSet(prev => ({ ...prev, weight: session.plannedExercises[0].target_weight.toString() }))
+          }
+        }
         toast.success('トレーニングを開始しました')
       }
     } catch (error) {
@@ -167,14 +191,66 @@ export function TrainingRecord() {
 
       if (response.ok) {
         const newSet = await response.json()
-        setActiveSession(prev => prev ? {
-          ...prev,
-          sets: [...prev.sets, newSet],
-        } : null)
-        
-        // フォームリセット
-        setCurrentSet({ weight: '', reps: '' })
-        toast.success(`${currentExercise} セット${setNumber}を記録しました`)
+        setActiveSession(prev => {
+          if (!prev) return null
+          
+          const updatedSession = {
+            ...prev,
+            sets: [...prev.sets, newSet],
+          }
+          
+          // ルーティンの進捗をチェックし、次の種目に移動
+          if (prev.plannedExercises && prev.plannedExercises.length > 0) {
+            const currentExerciseIndex = prev.plannedExercises.findIndex(
+              e => e.exercise_name === currentExercise
+            )
+            if (currentExerciseIndex !== -1) {
+              const currentPlannedExercise = prev.plannedExercises[currentExerciseIndex]
+              const completedSetsForExercise = updatedSession.sets.filter(
+                s => s.exercise_name === currentExercise
+              ).length
+              
+              // 現在の種目が完了したら次の種目に移動
+              if (completedSetsForExercise >= currentPlannedExercise.target_sets) {
+                const nextIncompleteExercise = prev.plannedExercises.find((ex, idx) => {
+                  if (idx <= currentExerciseIndex) return false
+                  const setsCompleted = updatedSession.sets.filter(
+                    s => s.exercise_name === ex.exercise_name
+                  ).length
+                  return setsCompleted < ex.target_sets
+                })
+                
+                if (nextIncompleteExercise) {
+                  setCurrentExercise(nextIncompleteExercise.exercise_name)
+                  if (nextIncompleteExercise.target_weight) {
+                    setCurrentSet({ weight: nextIncompleteExercise.target_weight.toString(), reps: '' })
+                  } else {
+                    setCurrentSet({ weight: '', reps: '' })
+                  }
+                  toast.success(`${currentExercise} セット${setNumber}を記録しました\n次: ${nextIncompleteExercise.exercise_name}`)
+                } else {
+                  // フォームリセット
+                  setCurrentSet({ weight: '', reps: '' })
+                  toast.success(`${currentExercise} セット${setNumber}を記録しました`)
+                }
+              } else {
+                // フォームリセット（レップ数のみ）
+                setCurrentSet(prev => ({ ...prev, reps: '' }))
+                toast.success(`${currentExercise} セット${setNumber}を記録しました`)
+              }
+            } else {
+              // フォームリセット
+              setCurrentSet({ weight: '', reps: '' })
+              toast.success(`${currentExercise} セット${setNumber}を記録しました`)
+            }
+          } else {
+            // フォームリセット
+            setCurrentSet({ weight: '', reps: '' })
+            toast.success(`${currentExercise} セット${setNumber}を記録しました`)
+          }
+          
+          return updatedSession
+        })
       }
     } catch (error) {
       console.error('セット記録エラー:', error)
@@ -275,6 +351,27 @@ export function TrainingRecord() {
     )
   }
 
+  // ルーティンの進捗計算
+  const getRoutineProgress = () => {
+    if (!activeSession.plannedExercises || activeSession.plannedExercises.length === 0) {
+      return null
+    }
+    
+    const totalSets = activeSession.plannedExercises.reduce(
+      (sum, ex) => sum + ex.target_sets, 0
+    )
+    const completedSets = activeSession.sets.length
+    const progressPercentage = Math.round((completedSets / totalSets) * 100)
+    
+    return {
+      completedSets,
+      totalSets,
+      progressPercentage,
+    }
+  }
+
+  const routineProgress = getRoutineProgress()
+
   // トレーニング記録画面
   return (
     <div className="space-y-6">
@@ -288,8 +385,86 @@ export function TrainingRecord() {
             </CardTitle>
             <div className="text-2xl font-mono font-bold">{getElapsedTime()}</div>
           </div>
+          {routineProgress && (
+            <div className="mt-4">
+              <div className="flex items-center justify-between text-sm mb-2">
+                <span className="text-muted-foreground">ルーティン進捗</span>
+                <span className="font-semibold">
+                  {routineProgress.completedSets} / {routineProgress.totalSets} セット
+                </span>
+              </div>
+              <div className="w-full bg-secondary rounded-full h-2">
+                <div
+                  className="bg-primary h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${routineProgress.progressPercentage}%` }}
+                />
+              </div>
+            </div>
+          )}
         </CardHeader>
       </Card>
+
+      {/* ルーティンから計画された種目 */}
+      {activeSession.plannedExercises && activeSession.plannedExercises.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>本日のトレーニングメニュー</CardTitle>
+            <CardDescription>
+              ルーティンから読み込まれた種目一覧
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {activeSession.plannedExercises.map((exercise, index) => {
+                const completedSets = activeSession.sets.filter(
+                  s => s.exercise_name === exercise.exercise_name
+                ).length
+                const isCompleted = completedSets >= exercise.target_sets
+                const isActive = currentExercise === exercise.exercise_name
+                
+                return (
+                  <div
+                    key={index}
+                    className={`p-4 rounded-lg border transition-all cursor-pointer ${
+                      isActive ? 'border-primary bg-primary/5' : 'border-border'
+                    } ${isCompleted ? 'opacity-60' : ''}`}
+                    onClick={() => {
+                      setCurrentExercise(exercise.exercise_name)
+                      if (exercise.target_weight) {
+                        setCurrentSet(prev => ({ ...prev, weight: exercise.target_weight.toString() }))
+                      }
+                    }}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="font-semibold flex items-center gap-2">
+                          {exercise.exercise_name}
+                          {isCompleted && <Check className="w-4 h-4 text-green-600" />}
+                        </h4>
+                        <p className="text-sm text-muted-foreground">
+                          {exercise.target_sets}セット × {exercise.target_reps}レップ
+                          {exercise.target_weight && ` @ ${exercise.target_weight}kg`}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-lg font-semibold">
+                          {completedSets} / {exercise.target_sets}
+                        </div>
+                        <div className="text-xs text-muted-foreground">完了セット</div>
+                      </div>
+                    </div>
+                    {exercise.rest_time && (
+                      <div className="mt-2 text-xs text-muted-foreground">
+                        推奨休憩時間: {exercise.rest_time}秒
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* セット入力 */}
       <Card>
@@ -304,7 +479,22 @@ export function TrainingRecord() {
                 <SelectValue placeholder="エクササイズを選択" />
               </SelectTrigger>
               <SelectContent>
-                {EXERCISE_LIST.map(exercise => (
+                {/* ルーティンの種目を優先表示 */}
+                {activeSession.plannedExercises && activeSession.plannedExercises.length > 0 && (
+                  <>
+                    <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">ルーティンの種目</div>
+                    {activeSession.plannedExercises.map((exercise, idx) => (
+                      <SelectItem key={`planned-${idx}`} value={exercise.exercise_name}>
+                        {exercise.exercise_name}
+                      </SelectItem>
+                    ))}
+                    <div className="my-1 border-t" />
+                    <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">その他の種目</div>
+                  </>
+                )}
+                {EXERCISE_LIST.filter(exercise => 
+                  !activeSession.plannedExercises?.some(p => p.exercise_name === exercise)
+                ).map(exercise => (
                   <SelectItem key={exercise} value={exercise}>
                     {exercise}
                   </SelectItem>
