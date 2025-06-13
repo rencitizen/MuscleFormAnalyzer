@@ -5,13 +5,13 @@ import { Toaster } from '../components/ui/toaster'
 import { AuthProvider } from '../components/providers/AuthProvider'
 import { ThemeProvider } from '../components/providers/ThemeProvider'
 import { MobileNav } from '../components/layout/MobileNav'
-import dynamic from 'next/dynamic'
+// import dynamic from 'next/dynamic'
 
-// フィードバックウィジェットを動的インポート（クライアントサイドのみ）
-const FeedbackWidget = dynamic(
-  () => import('../components/feedback/FeedbackWidget').then(mod => mod.FeedbackWidget),
-  { ssr: false }
-)
+// フィードバックウィジェットを一時的に無効化（デプロイエラー修正のため）
+// const FeedbackWidget = dynamic(
+//   () => import('../components/feedback/FeedbackWidget').then(mod => mod.FeedbackWidget),
+//   { ssr: false }
+// )
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -89,7 +89,7 @@ export default function RootLayout({
               {children}
             </div>
             <MobileNav />
-            <FeedbackWidget />
+            {/* <FeedbackWidget /> */}
             <Toaster />
           </AuthProvider>
         </ThemeProvider>
