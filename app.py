@@ -72,6 +72,20 @@ except Exception as e:
     MEAL_ANALYSIS_AVAILABLE = False
     logger.warning(f"食事分析モジュール初期化エラー: {e}")
 
+# Import v3 integrated API
+try:
+    from api.v3.integrated_endpoints import api_v3
+    V3_API_AVAILABLE = True
+    logger.info("TENAX FIT v3.0 統合APIが初期化されました")
+except ImportError as e:
+    api_v3 = None
+    V3_API_AVAILABLE = False
+    logger.warning(f"v3 APIモジュールが利用できません: {e}")
+except Exception as e:
+    api_v3 = None
+    V3_API_AVAILABLE = False
+    logger.warning(f"v3 API初期化エラー: {e}")
+
 app = Flask(__name__)
 
 # CORS設定（利用可能な場合のみ）
@@ -93,6 +107,11 @@ logger = logging.getLogger(__name__)
 if MEAL_ANALYSIS_AVAILABLE and meal_bp:
     app.register_blueprint(meal_bp, url_prefix='/meal')
     logger.info("食事分析ブループリントを登録しました")
+
+# Register v3 integrated API blueprint
+if V3_API_AVAILABLE and api_v3:
+    app.register_blueprint(api_v3)
+    logger.info("TENAX FIT v3.0 統合APIブループリントを登録しました")
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']

@@ -45,6 +45,9 @@ frontend/dist/
 frontend/.env.local
 frontend/.env.production
 
+# Root node_modules
+node_modules/
+
 # Test
 coverage/
 .coverage

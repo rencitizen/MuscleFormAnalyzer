@@ -7,7 +7,16 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "type-check": "tsc --noEmit"
+    "lint:fix": "next lint --fix",
+    "type-check": "tsc --noEmit",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "pre-deploy": "npm run lint && npm run type-check && npm run test && npm run build",
+    "deploy:staging": "npm run pre-deploy && vercel --target staging",
+    "deploy:prod": "npm run pre-deploy && vercel --prod"
   },
   "dependencies": {
     "@mediapipe/camera_utils": "^0.3.1675466862",

@@ -23,10 +23,10 @@ import {
 
 const navItems = [
   { href: '/', label: 'ホーム', icon: Home },
+  { href: '/v3', label: 'v3.0分析', icon: BarChart3 },
   { href: '/analyze', label: 'フォーム分析', icon: Camera },
   { href: '/nutrition', label: '栄養管理', icon: Utensils },
   { href: '/progress', label: '進捗', icon: TrendingUp },
-  { href: '/dashboard', label: 'ダッシュボード', icon: BarChart3 },
 ]
 
 export function MobileNav() {
@@ -81,6 +81,13 @@ export function MobileNav() {
                 </Link>
               ))}
               <hr className="my-4" />
+              <Link
+                href="/dashboard"
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-3 py-2 px-3 rounded-lg hover:bg-secondary"
+              >
+                ダッシュボード
+              </Link>
               <Link
                 href="/settings"
                 onClick={() => setOpen(false)}

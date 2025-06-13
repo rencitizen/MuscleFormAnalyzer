@@ -67,10 +67,23 @@ docs
 # Development files
 *.test.ts
 *.test.tsx
+*.test.js
+*.test.jsx
+*.spec.ts
+*.spec.tsx
+*.spec.js
+*.spec.jsx
 __tests__
 __mocks__
+tests/
 .storybook
 *.stories.tsx
+
+# Test configuration
+playwright.config.ts
+jest.config.js
+playwright-report/
+test-results/
 
 # Scripts directory (not needed for deployment)
 scripts/
