@@ -3,6 +3,8 @@ import { BodyCompositionEngine } from '@/lib/engines/bodyComposition';
 import { MetabolismEngine } from '@/lib/engines/metabolism';
 import { NutritionEngine } from '@/lib/engines/nutrition';
 import { SafetyEngine } from '@/lib/engines/safety';
+import { ComprehensiveAnalysisData } from '@/lib/engines/training/comprehensiveAnalysis';
+import { AITrainingRecommendationEngine } from '@/lib/engines/training/aiRecommendation';
 
 interface UserInput {
   gender: 'male' | 'female';
@@ -156,6 +158,57 @@ export async function POST(request: NextRequest) {
       activityMapping[data.activityLevel]
     );
     
+    // 包括的分析データの構築
+    const comprehensiveAnalysis = new ComprehensiveAnalysisData();
+    comprehensiveAnalysis.bodyMetrics = {
+      height: data.height,
+      weight: data.weight,
+      bodyFat: bodyComposition.bodyFatPercentage,
+      muscleMass: bodyComposition.leanBodyMass,
+      bmr: metabolism.bmr,
+      tdee: metabolism.tdee
+    };
+    comprehensiveAnalysis.nutritionStatus = {
+      dailyCalories: metabolism.targetCalories,
+      protein: nutritionPlan.dailyMacros.protein,
+      carbs: nutritionPlan.dailyMacros.carbs,
+      fat: nutritionPlan.dailyMacros.fats,
+      hydration: waterIntake.daily
+    };
+    comprehensiveAnalysis.userProfile = {
+      age: data.age,
+      gender: data.gender,
+      experience: data.experience,
+      activityLevel: data.activityLevel
+    };
+    comprehensiveAnalysis.goals = {
+      primary: data.goal === 'cutting' ? 'fat_loss' : 
+               data.goal === 'bulking' ? 'muscle_gain' : 
+               'maintenance',
+      targetBodyFat: targetBodyFat
+    };
+    comprehensiveAnalysis.lifestyle = {
+      weeklyTrainingTime: data.trainingDaysPerWeek * 1, // 1時間/セッションと仮定
+      sleepHours: 7, // デフォルト値
+      stressLevel: 'moderate', // デフォルト値
+      workType: 'sedentary', // デフォルト値
+      schedule: 'regular' // デフォルト値
+    };
+    comprehensiveAnalysis.preferences = {
+      equipment: ['barbell', 'dumbbell', 'bench', 'pullup_bar'],
+      trainingLocation: 'gym'
+    };
+    
+    // 包括的分析の実行
+    const analysisResult = comprehensiveAnalysis.generateComprehensiveAnalysis();
+    
+    // AIトレーニング推奨の生成（分析結果がある場合のみ）
+    let trainingRecommendation = null;
+    if (analysisResult) {
+      const aiEngine = new AITrainingRecommendationEngine(analysisResult);
+      trainingRecommendation = aiEngine.generatePersonalizedProgram();
+    }
+    
     // 統合結果
     const results = {
       userProfile: {
@@ -169,10 +222,13 @@ export async function POST(request: NextRequest) {
         pfcMacros: nutritionPlan.dailyMacros,
         mealDistribution: nutritionPlan.mealDistribution,
         proteinPerKg: nutritionPlan.proteinPerKg,
-        recommendations: nutritionPlan.recommendations
+        recommendations: nutritionPlan.recommendations,
+        achievability: nutritionPlan.achievability
       },
       hydration: waterIntake,
       safetyAnalysis,
+      trainingRecommendation,
+      comprehensiveAnalysis: analysisResult,
       summary: {
         dailyCalorieDeficit: data.goal === 'cutting' ? metabolism.calorieDeficit : undefined,
         dailyCalorieSurplus: data.goal === 'bulking' ? metabolism.calorieSurplus : undefined,

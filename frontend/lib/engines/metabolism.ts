@@ -52,14 +52,15 @@ export class MetabolismEngine {
 
   /**
    * 活動レベル係数の取得
+   * より現実的な係数に調整（理論値よりも控えめに設定）
    */
   getActivityMultiplier(activityLevel: ActivityLevel): number {
     const multipliers: Record<ActivityLevel, number> = {
-      sedentary: 1.2,     // 座りがち（運動なし）
-      light: 1.375,       // 軽い活動（週1-3日の運動）
-      moderate: 1.55,     // 中程度（週3-5日の運動）
-      active: 1.725,      // 活発（週6-7日の運動）
-      veryActive: 1.9     // 非常に活発（激しい運動/肉体労働）
+      sedentary: 1.15,     // 座りがち（運動なし）理論値1.2→1.15
+      light: 1.25,         // 軽い活動（週1-3日の運動）理論値1.375→1.25
+      moderate: 1.35,      // 中程度（週3-5日の運動）理論値1.55→1.35
+      active: 1.45,        // 活発（週6-7日の運動）理論値1.725→1.45
+      veryActive: 1.6      // 非常に活発（激しい運動/肉体労働）理論値1.9→1.6
     };
     return multipliers[activityLevel];
   }
@@ -74,21 +75,32 @@ export class MetabolismEngine {
 
   /**
    * 目標に応じたカロリー調整
+   * TDEEに対する割合ベースで計算（固定値より現実的）
    */
-  getGoalAdjustment(goal: Goal): number {
-    const adjustments: Record<Goal, number> = {
-      cutting: -400,      // 減量: 週0.3-0.4kg減
-      maintenance: 0,     // 維持
-      bulking: 400        // 増量: 週0.3-0.4kg増
+  getGoalAdjustment(goal: Goal, tdee: number): number {
+    const adjustmentRates: Record<Goal, number> = {
+      cutting: -0.15,      // 減量: TDEEの15%減（最大-400kcal）
+      maintenance: 0,      // 維持
+      bulking: 0.12        // 増量: TDEEの12%増（最大+300kcal）
     };
-    return adjustments[goal];
+    
+    const adjustment = tdee * adjustmentRates[goal];
+    
+    // 極端な調整を防ぐため上限を設定
+    if (goal === 'cutting') {
+      return Math.max(adjustment, -400); // 最大-400kcal
+    } else if (goal === 'bulking') {
+      return Math.min(adjustment, 300);   // 最大+300kcal
+    }
+    
+    return adjustment;
   }
 
   /**
    * 目標カロリー計算
    */
   calculateCalorieGoals(tdee: number, goal: Goal): number {
-    const adjustment = this.getGoalAdjustment(goal);
+    const adjustment = this.getGoalAdjustment(goal, tdee);
     return tdee + adjustment;
   }
 

@@ -38,32 +38,51 @@ export interface NutritionPlan {
     carbs: FoodRecommendation[];
     fats: FoodRecommendation[];
   };
+  achievability?: {
+    score: number;
+    level: string;
+    challenges: string[];
+  };
 }
 
 export class NutritionEngine {
   /**
    * 目標別のPFC比率
+   * より現実的で継続可能なバランスに調整
    */
   getPFCRatios(goal: 'cutting' | 'maintenance' | 'bulking'): NutritionRatios {
     const ratios: Record<string, NutritionRatios> = {
-      cutting: { protein: 0.35, fats: 0.25, carbs: 0.40 },      // 高タンパク低炭水化物
-      maintenance: { protein: 0.25, fats: 0.25, carbs: 0.50 }, // バランス型
-      bulking: { protein: 0.25, fats: 0.20, carbs: 0.55 }      // 高炭水化物
+      cutting: { protein: 0.30, fats: 0.25, carbs: 0.45 },      // 理論値P35% → P30%（継続しやすい）
+      maintenance: { protein: 0.25, fats: 0.25, carbs: 0.50 },  // バランス型（変更なし）
+      bulking: { protein: 0.20, fats: 0.25, carbs: 0.55 }       // 理論値P25% → P20%（炭水化物重視）
     };
     return ratios[goal];
   }
 
   /**
    * PFCマクロ栄養素計算
+   * 体重に基づく現実的な上限を設定
    */
-  calculatePFCMacros(calories: number, goal: 'cutting' | 'maintenance' | 'bulking'): MacroNutrients {
+  calculatePFCMacros(calories: number, goal: 'cutting' | 'maintenance' | 'bulking', weight?: number): MacroNutrients {
     const ratios = this.getPFCRatios(goal);
     
     // カロリーからグラム数を計算
     // タンパク質: 4kcal/g, 炭水化物: 4kcal/g, 脂質: 9kcal/g
-    const protein = Math.round((calories * ratios.protein) / 4);
-    const carbs = Math.round((calories * ratios.carbs) / 4);
-    const fats = Math.round((calories * ratios.fats) / 9);
+    let protein = Math.round((calories * ratios.protein) / 4);
+    
+    // 体重が提供されている場合、現実的な上限を適用
+    if (weight) {
+      const maxProtein = Math.round(weight * 2.0); // 体重×2gが現実的な上限
+      protein = Math.min(protein, maxProtein);
+    }
+    
+    // プロテインが制限された場合、残りのカロリーを炭水化物と脂質に再配分
+    const proteinCalories = protein * 4;
+    const remainingCalories = calories - proteinCalories;
+    const remainingRatio = ratios.carbs + ratios.fats;
+    
+    const carbs = Math.round((remainingCalories * (ratios.carbs / remainingRatio)) / 4);
+    const fats = Math.round((remainingCalories * (ratios.fats / remainingRatio)) / 9);
     
     // 実際のカロリーを再計算（丸め誤差調整）
     const actualCalories = protein * 4 + carbs * 4 + fats * 9;
@@ -78,6 +97,7 @@ export class NutritionEngine {
 
   /**
    * 体重あたりのタンパク質必要量計算
+   * 現実的に摂取・継続可能な範囲に調整（1.2-2.0g/kg）
    */
   calculateProteinNeeds(
     weight: number,
@@ -85,10 +105,11 @@ export class NutritionEngine {
     activityLevel: 'sedentary' | 'active' | 'athlete'
   ): number {
     // 体重1kgあたりのタンパク質必要量（g）
+    // 理論値から現実的な値に調整
     const proteinPerKg: Record<string, Record<string, number>> = {
-      cutting: { sedentary: 2.0, active: 2.3, athlete: 2.5 },
-      maintenance: { sedentary: 1.6, active: 1.8, athlete: 2.0 },
-      bulking: { sedentary: 1.8, active: 2.0, athlete: 2.2 }
+      cutting: { sedentary: 1.6, active: 1.8, athlete: 2.0 },      // 理論値2.0-2.5 → 1.6-2.0
+      maintenance: { sedentary: 1.2, active: 1.4, athlete: 1.6 },  // 理論値1.6-2.0 → 1.2-1.6
+      bulking: { sedentary: 1.4, active: 1.6, athlete: 1.8 }      // 理論値1.8-2.2 → 1.4-1.8
     };
     
     return proteinPerKg[goal][activityLevel];
@@ -184,6 +205,72 @@ export class NutritionEngine {
   }
 
   /**
+   * 栄養目標の達成可能性評価
+   */
+  assessAchievability(macros: MacroNutrients, weight: number): NutritionPlan['achievability'] {
+    const proteinPerKg = macros.protein / weight;
+    let score = 100;
+    const challenges: string[] = [];
+
+    // プロテイン評価
+    if (proteinPerKg > 2.2) {
+      score -= 30;
+      challenges.push('プロテイン摂取量が多すぎます（体重×2.2g以上）');
+    } else if (proteinPerKg > 1.8) {
+      score -= 15;
+      challenges.push('プロテイン摂取に相当な努力が必要です');
+    }
+
+    // 脂質評価
+    if (macros.fats < 40) {
+      score -= 20;
+      challenges.push('脂質が少なすぎて満足感を得にくい可能性');
+    } else if (macros.fats > 100) {
+      score -= 10;
+      challenges.push('脂質が多めですが、良質な脂質を選びましょう');
+    }
+
+    // 炭水化物評価
+    if (macros.carbs < 100) {
+      score -= 25;
+      challenges.push('炭水化物が少なすぎて活力不足の恐れ');
+    } else if (macros.carbs > 350) {
+      score -= 15;
+      challenges.push('炭水化物が多く、消化に負担がかかる可能性');
+    }
+
+    // カロリー評価
+    if (macros.calories < 1200) {
+      score -= 30;
+      challenges.push('カロリーが低すぎて健康リスクがあります');
+    } else if (macros.calories > 3500) {
+      score -= 20;
+      challenges.push('カロリーが多く、実際に摂取するのが困難');
+    }
+
+    // レベル判定
+    let level: string;
+    if (score >= 80) {
+      level = '達成しやすい';
+    } else if (score >= 60) {
+      level = '努力次第で達成可能';
+    } else if (score >= 40) {
+      level = '達成困難';
+    } else {
+      level = '非現実的';
+    }
+
+    // 最低スコアを30に設定
+    score = Math.max(score, 30);
+
+    return {
+      score,
+      level,
+      challenges
+    };
+  }
+
+  /**
    * 包括的な栄養プラン作成
    */
   createNutritionPlan(
@@ -193,9 +280,11 @@ export class NutritionEngine {
     activityLevel: 'sedentary' | 'active' | 'athlete',
     mealPattern: '3meals' | '4meals' | '5meals' = '4meals'
   ): NutritionPlan {
-    const dailyMacros = this.calculatePFCMacros(calories, goal);
+    const dailyMacros = this.calculatePFCMacros(calories, goal, weight);
     const proteinPerKg = this.calculateProteinNeeds(weight, goal, activityLevel);
     const mealDistribution = this.calculateMealDistribution(dailyMacros, mealPattern);
+
+    const achievability = this.assessAchievability(dailyMacros, weight);
 
     return {
       dailyMacros,
@@ -205,7 +294,8 @@ export class NutritionEngine {
         protein: this.getHighProteinFoods().meat.concat(this.getHighProteinFoods().fish),
         carbs: this.getQualityCarbSources(),
         fats: this.getHealthyFatSources()
-      }
+      },
+      achievability
     };
   }
 }

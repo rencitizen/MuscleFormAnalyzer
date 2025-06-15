@@ -10,7 +10,10 @@ import {
   TrendingUp,
   BarChart3,
   Menu,
-  X
+  X,
+  Settings,
+  Dumbbell,
+  Database
 } from 'lucide-react'
 import { Button } from '../ui/button'
 import {
@@ -20,18 +23,20 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet'
-
-const navItems = [
-  { href: '/', label: 'ホーム', icon: Home },
-  { href: '/v3', label: 'v3.0分析', icon: BarChart3 },
-  { href: '/analyze', label: 'フォーム分析', icon: Camera },
-  { href: '/nutrition', label: '栄養管理', icon: Utensils },
-  { href: '/progress', label: '進捗', icon: TrendingUp },
-]
+import { useLanguage } from '@/contexts/LanguageContext'
 
 export function MobileNav() {
   const [open, setOpen] = useState(false)
   const pathname = usePathname()
+  const { t } = useLanguage()
+
+  const navItems = [
+    { href: '/', label: t('navigation.dashboard'), icon: Home },
+    { href: '/v3', label: 'v3.0', icon: BarChart3 },
+    { href: '/analyze', label: t('navigation.analyze'), icon: Camera },
+    { href: '/nutrition', label: t('navigation.nutrition'), icon: Utensils },
+    { href: '/progress', label: t('navigation.progress'), icon: TrendingUp },
+  ]
 
   return (
     <>
@@ -66,7 +71,7 @@ export function MobileNav() {
           </SheetTrigger>
           <SheetContent>
             <SheetHeader>
-              <SheetTitle>メニュー</SheetTitle>
+              <SheetTitle>Menu</SheetTitle>
             </SheetHeader>
             <nav className="mt-6 space-y-4">
               {navItems.map(({ href, label, icon: Icon }) => (
@@ -86,28 +91,32 @@ export function MobileNav() {
                 onClick={() => setOpen(false)}
                 className="flex items-center gap-3 py-2 px-3 rounded-lg hover:bg-secondary"
               >
-                ダッシュボード
+                <Home className="h-5 w-5" />
+                <span>{t('navigation.dashboard')}</span>
               </Link>
               <Link
                 href="/settings"
                 onClick={() => setOpen(false)}
                 className="flex items-center gap-3 py-2 px-3 rounded-lg hover:bg-secondary"
               >
-                設定
+                <Settings className="h-5 w-5" />
+                <span>{t('navigation.settings')}</span>
               </Link>
               <Link
                 href="/exercises"
                 onClick={() => setOpen(false)}
                 className="flex items-center gap-3 py-2 px-3 rounded-lg hover:bg-secondary"
               >
-                エクササイズDB
+                <Dumbbell className="h-5 w-5" />
+                <span>Exercises</span>
               </Link>
               <Link
                 href="/training_data_management"
                 onClick={() => setOpen(false)}
                 className="flex items-center gap-3 py-2 px-3 rounded-lg hover:bg-secondary"
               >
-                データ管理
+                <Database className="h-5 w-5" />
+                <span>Data</span>
               </Link>
             </nav>
           </SheetContent>

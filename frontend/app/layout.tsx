@@ -5,6 +5,7 @@ import { Toaster } from '../components/ui/toaster'
 import { AuthProvider } from '../components/providers/AuthProvider'
 import { ThemeProvider } from '../components/providers/ThemeProvider'
 import { MobileNav } from '../components/layout/MobileNav'
+import { LanguageProvider } from '../contexts/LanguageContext'
 // import dynamic from 'next/dynamic'
 
 // フィードバックウィジェットを一時的に無効化（デプロイエラー修正のため）
@@ -85,12 +86,14 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider>
-            <div className="pb-16 md:pb-0">
-              {children}
-            </div>
-            <MobileNav />
-            {/* <FeedbackWidget /> */}
-            <Toaster />
+            <LanguageProvider>
+              <div className="pb-16 md:pb-0">
+                {children}
+              </div>
+              <MobileNav />
+              {/* <FeedbackWidget /> */}
+              <Toaster />
+            </LanguageProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>
