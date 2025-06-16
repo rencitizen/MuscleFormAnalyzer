@@ -15,6 +15,7 @@ import { auth } from '../../lib/firebase'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 import { diagnoseGoogleAuthError, configurePWAGoogleAuth } from '../../lib/auth/googleAuthConfig'
+import { formatErrorMessage, shouldRetryWithRedirect } from '../../lib/auth/authErrorHandler'
 
 interface AuthContextType {
   user: User | null
@@ -150,9 +151,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.error('Popup error:', popupError)
         
         // ポップアップがブロックされた場合、リダイレクトを試行
-        if (popupError.code === 'auth/popup-blocked' || 
-            popupError.code === 'auth/popup-closed-by-user' ||
-            isMobile) {
+        if (shouldRetryWithRedirect(popupError) || isMobile) {
           console.log('Falling back to redirect method...')
           toast.info('リダイレクト方式でログインを試行します...')
           
@@ -168,53 +167,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error('Error message:', error.message)
       console.error('Full error:', error)
       
-      // エラーメッセージマッピング
-      const errorMessages: Record<string, string> = {
-        'auth/popup-blocked': 'ポップアップがブロックされました。リダイレクト方式を試します。',
-        'auth/popup-closed-by-user': 'ログインがキャンセルされました',
-        'auth/unauthorized-domain': `認証ドメインエラー: Firebase Consoleで ${window.location.hostname} を追加してください`,
-        'auth/operation-not-allowed': 'Google認証が無効です。Firebase Consoleで有効化してください',
-        'auth/configuration-not-found': 'Firebase設定エラー。環境変数を確認してください',
-        'auth/invalid-api-key': 'APIキーが無効です。Firebase設定を確認してください',
-        'auth/internal-error': 'Firebase内部エラー。設定を確認してください',
-        'auth/cancelled-popup-request': '別のポップアップが開いています',
-        'auth/network-request-failed': 'ネットワークエラー。接続を確認してください'
-      }
-      
-      let errorMessage = errorMessages[error.code] || 'Googleログインに失敗しました'
-      
-      // Error 400やドメイン認証エラーの詳細診断
-      const diagnosis = diagnoseGoogleAuthError(error)
-      if (diagnosis) {
-        errorMessage = `
-🚨 ${diagnosis.title}
-
-修正手順:
-${diagnosis.steps.join('\n')}
-
-デバッグ情報:
-- 現在のドメイン: ${diagnosis.debugInfo.currentDomain}
-- Vercel環境: ${diagnosis.debugInfo.isVercel ? 'はい' : 'いいえ'}
-        `
-      } else if (error.message?.includes('unauthorized') || 
-          error.message?.includes('not authorized') ||
-          error.code === 'auth/unauthorized-domain') {
-        errorMessage = `
-🚨 認証ドメインエラー
-
-必要な設定:
-1. Firebase Console → Authentication → Settings → Authorized domains
-   追加: ${window.location.hostname}
-
-2. Google Cloud Console → APIs & Services → Credentials
-   OAuth 2.0 Client ID 設定:
-   - Authorized JavaScript origins: ${window.location.origin}
-   - Authorized redirect URIs: ${window.location.origin}/__/auth/handler
-
-3. 環境変数の確認:
-   - NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN が正しく設定されているか
-        `
-      }
+      // 新しいエラーハンドラーを使用
+      const errorMessage = formatErrorMessage(error)
       
       toast.error(errorMessage, {
         duration: 10000,

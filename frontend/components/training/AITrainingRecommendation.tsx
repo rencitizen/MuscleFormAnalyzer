@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface AITrainingRecommendationProps {
   comprehensiveAnalysis?: any;
@@ -20,6 +21,7 @@ const AITrainingRecommendation: React.FC<AITrainingRecommendationProps> = ({
   trainingRecommendation,
   onAdoptProgram
 }) => {
+  const { t, currentLanguage } = useLanguage();
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedTab, setSelectedTab] = useState('overview');
 
@@ -28,7 +30,7 @@ const AITrainingRecommendation: React.FC<AITrainingRecommendationProps> = ({
       <Card>
         <CardContent className="p-8 text-center">
           <AlertCircle className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-          <p className="text-gray-600">包括的な分析を先に実行してください</p>
+          <p className="text-gray-600">{t('aiTraining.analysisRequired')}</p>
         </CardContent>
       </Card>
     );
@@ -39,7 +41,7 @@ const AITrainingRecommendation: React.FC<AITrainingRecommendationProps> = ({
       <Card>
         <CardContent className="p-8 text-center">
           <div className="animate-spin w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-gray-600">AIトレーニングプログラムを生成中...</p>
+          <p className="text-gray-600">{t('aiTraining.generating')}</p>
         </CardContent>
       </Card>
     );
@@ -67,7 +69,7 @@ const AITrainingRecommendation: React.FC<AITrainingRecommendationProps> = ({
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             <div>
-              <h4 className="font-semibold mb-2 text-blue-800">期待される効果</h4>
+              <h4 className="font-semibold mb-2 text-blue-800">{currentLanguage === 'ja' ? '期待される効果' : 'Expected Outcomes'}</h4>
               <ul className="space-y-1">
                 {programOverview.expectedOutcomes.map((outcome: string, index: number) => (
                   <li key={index} className="flex items-start">
@@ -78,7 +80,7 @@ const AITrainingRecommendation: React.FC<AITrainingRecommendationProps> = ({
               </ul>
             </div>
             <div>
-              <h4 className="font-semibold mb-2 text-purple-800">重要な原則</h4>
+              <h4 className="font-semibold mb-2 text-purple-800">{currentLanguage === 'ja' ? '重要な原則' : 'Key Principles'}</h4>
               <ul className="space-y-1">
                 {programOverview.keyPrinciples.map((principle: string, index: number) => (
                   <li key={index} className="flex items-start">
@@ -94,7 +96,7 @@ const AITrainingRecommendation: React.FC<AITrainingRecommendationProps> = ({
             onClick={() => onAdoptProgram?.(trainingRecommendation)}
             className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
           >
-            このプログラムを採用する
+            {currentLanguage === 'ja' ? 'このプログラムを採用する' : 'Adopt This Program'}
           </Button>
         </CardContent>
       </Card>
@@ -102,10 +104,10 @@ const AITrainingRecommendation: React.FC<AITrainingRecommendationProps> = ({
       {/* タブ形式の詳細情報 */}
       <Tabs value={selectedTab} onValueChange={setSelectedTab}>
         <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="overview">概要</TabsTrigger>
-          <TabsTrigger value="schedule">スケジュール</TabsTrigger>
-          <TabsTrigger value="exercises">エクササイズ</TabsTrigger>
-          <TabsTrigger value="recovery">回復</TabsTrigger>
+          <TabsTrigger value="overview">{currentLanguage === 'ja' ? '概要' : 'Overview'}</TabsTrigger>
+          <TabsTrigger value="schedule">{currentLanguage === 'ja' ? 'スケジュール' : 'Schedule'}</TabsTrigger>
+          <TabsTrigger value="exercises">{currentLanguage === 'ja' ? 'エクササイズ' : 'Exercises'}</TabsTrigger>
+          <TabsTrigger value="recovery">{currentLanguage === 'ja' ? '回復' : 'Recovery'}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview">

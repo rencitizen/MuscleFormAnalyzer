@@ -4,12 +4,13 @@ import { useState, useRef, useEffect, Suspense } from 'react'
 import { Button } from '../../components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card'
 import { Camera, Circle, Square, ChevronLeft, Activity, Ruler, TrendingUp, Upload, RefreshCw, Plus } from 'lucide-react'
-import { usePoseDetection } from '../../lib/mediapipe/usePoseDetection'
+import { usePoseDetectionEnhanced } from '../../lib/mediapipe/usePoseDetectionEnhanced'
 import { PoseResults } from '../../lib/mediapipe/types'
 import { ExerciseSelector } from '../../components/pose-analysis/ExerciseSelector'
 import { CalibrationModal } from '../../components/pose-analysis/CalibrationModal'
 import { AnalysisResults } from '../../components/pose-analysis/AnalysisResults'
 import { BodyMeasurementUpload } from '../../components/body-measurement/BodyMeasurementUpload'
+import { CameraStatusDebug } from '../../components/camera/CameraStatusDebug'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import { useSearchParams } from 'next/navigation'
@@ -44,8 +45,10 @@ function AnalyzeContent() {
     stopDetection,
     switchCamera,
     currentFacingMode,
-  } = usePoseDetection({
+    hasMultipleCameras,
+  } = usePoseDetectionEnhanced({
     onResults: handlePoseResults,
+    initialFacingMode: 'environment'
   })
 
   useEffect(() => {
@@ -446,16 +449,26 @@ function AnalyzeContent() {
                               </div>
                             </div>
                           )}
+                          
+                          {/* Debug info */}
+                          <CameraStatusDebug
+                            currentCamera={currentFacingMode}
+                            isLoading={isLoading}
+                            error={error}
+                            isDetecting={isDetecting}
+                            streamActive={!!videoRef.current?.srcObject}
+                          />
                         </div>
 
                         <div className="mt-6 flex justify-center gap-4">
                           <Button
                             variant="outline"
                             onClick={switchCamera}
-                            disabled={isLoading || !!error || isRecording}
+                            disabled={isLoading || !!error || isRecording || !hasMultipleCameras}
+                            title={!hasMultipleCameras ? 'Multiple cameras not detected' : ''}
                           >
                             <RefreshCw className="w-5 h-5 mr-2" />
-                            {currentFacingMode === 'user' ? '外カメラ' : '内カメラ'}
+                            {currentFacingMode === 'user' ? '外カメラに切替' : '内カメラに切替'}
                           </Button>
                           <Button
                             size="lg"

@@ -3,10 +3,12 @@
 import React, { useState } from 'react';
 import ComprehensiveDashboard from '@/components/dashboard/ComprehensiveDashboard';
 import ProfileForm from '@/components/forms/ProfileForm';
+import AITrainingRecommendation from '@/components/training/AITrainingRecommendation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Brain, Calculator, Shield, TrendingUp, Users, ChevronRight } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function TenaxFitV3Page() {
   const [analysisResults, setAnalysisResults] = useState<any>(null);

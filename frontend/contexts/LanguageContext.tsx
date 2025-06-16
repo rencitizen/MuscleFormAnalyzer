@@ -58,6 +58,31 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
     loadLanguage();
   }, []);
 
+  // Load user's language preference from Firebase when logged in
+  useEffect(() => {
+    const loadUserLanguage = async () => {
+      if (user) {
+        try {
+          const { doc, getDoc } = await import('firebase/firestore');
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            if (userData.language && LANGUAGES[userData.language as LanguageCode]) {
+              setCurrentLanguage(userData.language as LanguageCode);
+              localStorage.setItem('tenax_language', userData.language);
+              document.documentElement.lang = userData.language;
+            }
+          }
+        } catch (error) {
+          console.error('Error loading user language from Firebase:', error);
+        }
+      }
+    };
+
+    loadUserLanguage();
+  }, [user]);
+
   // Change language
   const changeLanguage = async (langCode: LanguageCode) => {
     try {

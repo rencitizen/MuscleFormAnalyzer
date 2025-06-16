@@ -8,6 +8,7 @@ import { Label } from '../../../components/ui/label'
 import { useAuth } from '@/components/providers/AuthProvider'
 import Link from 'next/link'
 import { Dumbbell } from 'lucide-react'
+import { OAuthDebugPanel } from '@/components/auth/OAuthDebugPanel'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -131,6 +132,7 @@ export default function LoginPage() {
           </CardFooter>
         </form>
       </Card>
+      <OAuthDebugPanel />
     </div>
   )
 }

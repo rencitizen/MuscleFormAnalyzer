@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { Button } from '../ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
 import { Progress } from '../ui/progress'
@@ -13,7 +13,10 @@ import {
   Loader2,
   X,
   FileVideo,
-  Ruler
+  Ruler,
+  Clock,
+  AlertTriangle,
+  Ban
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { 
@@ -23,7 +26,7 @@ import {
   type ProcessingProgress 
 } from '../../lib/mediapipe/improvedBodyMeasurement'
 
-interface BodyMeasurementUploadProps {
+interface ImprovedBodyMeasurementUploadProps {
   onMeasurementComplete: (measurements: any) => void
   onCancel: () => void
 }
@@ -34,47 +37,46 @@ const ACCEPTED_VIDEO_FORMATS = [
   'video/x-msvideo',
   'video/webm',
   'video/mpeg',
-  'video/ogg',
-  'video/3gpp',
-  'video/3gpp2'
+  'video/ogg'
 ]
 
-const MAX_FILE_SIZE = 100 * 1024 * 1024 // 100MB
-
-export function BodyMeasurementUpload({ 
+export function ImprovedBodyMeasurementUpload({ 
   onMeasurementComplete, 
   onCancel 
-}: BodyMeasurementUploadProps) {
+}: ImprovedBodyMeasurementUploadProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isDragging, setIsDragging] = useState(false)
   const [processingProgress, setProcessingProgress] = useState<ProcessingProgress | null>(null)
-  const [processingStartTime, setProcessingStartTime] = useState<number>(0)
+  const [isCancelling, setIsCancelling] = useState(false)
   
   const fileInputRef = useRef<HTMLInputElement>(null)
   const videoPreviewRef = useRef<HTMLVideoElement>(null)
+  const abortControllerRef = useRef<AbortController | null>(null)
 
-  const handleValidation = async (file: File): Promise<string | null> => {
-    const validation = await validateVideoFile(file)
-    if (!validation.valid) {
-      return validation.error || '無効なファイルです'
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
     }
-    return null
-  }
+  }, [])
 
   const handleFileSelect = async (file: File) => {
     setError(null)
     
-    const validationError = await handleValidation(file)
-    if (validationError) {
-      setError(validationError)
+    // Validate file
+    const validation = await validateVideoFile(file)
+    if (!validation.valid) {
+      setError(validation.error || '無効なファイルです')
       return
     }
 
     setSelectedFile(file)
     
-    // ビデオプレビュー
+    // Video preview
     if (videoPreviewRef.current) {
       const url = URL.createObjectURL(file)
       videoPreviewRef.current.src = url
@@ -117,7 +119,7 @@ export function BodyMeasurementUpload({
     setIsProcessing(true)
     setError(null)
     setProcessingProgress(null)
-    setProcessingStartTime(Date.now())
+    abortControllerRef.current = new AbortController()
 
     try {
       const measurements = await processVideoForBodyMeasurements(
@@ -133,7 +135,7 @@ export function BodyMeasurementUpload({
         }
       )
 
-      // 結果を親コンポーネントに渡す
+      // Create result with metadata
       const result = {
         ...measurements,
         timestamp: new Date().toISOString(),
@@ -176,6 +178,20 @@ export function BodyMeasurementUpload({
     } finally {
       setIsProcessing(false)
       setProcessingProgress(null)
+      abortControllerRef.current = null
+    }
+  }
+
+  const cancelProcessing = () => {
+    if (abortControllerRef.current) {
+      setIsCancelling(true)
+      abortControllerRef.current.abort()
+      setTimeout(() => {
+        setIsProcessing(false)
+        setProcessingProgress(null)
+        setIsCancelling(false)
+        toast.info('処理をキャンセルしました')
+      }, 500)
     }
   }
 
@@ -192,6 +208,8 @@ export function BodyMeasurementUpload({
     }
   }
 
+  const processingStartTime = Date.now()
+
   return (
     <div className="space-y-6">
       <Card>
@@ -205,7 +223,7 @@ export function BodyMeasurementUpload({
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* エラー表示 */}
+          {/* Error display */}
           {error && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
@@ -213,8 +231,8 @@ export function BodyMeasurementUpload({
             </Alert>
           )}
 
-          {/* ファイル選択エリア */}
-          {!selectedFile && !isUploading && !isProcessing && (
+          {/* File selection area */}
+          {!selectedFile && !isProcessing && (
             <div
               className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
                 isDragging 
@@ -260,8 +278,8 @@ export function BodyMeasurementUpload({
             </div>
           )}
 
-          {/* ファイルプレビュー */}
-          {selectedFile && !isUploading && !isProcessing && (
+          {/* File preview */}
+          {selectedFile && !isProcessing && (
             <div className="space-y-4">
               <div className="bg-muted rounded-lg p-4">
                 <div className="flex items-center justify-between mb-4">
@@ -299,48 +317,76 @@ export function BodyMeasurementUpload({
                   キャンセル
                 </Button>
                 <Button
-                  onClick={uploadVideo}
+                  onClick={processVideo}
                   className="min-w-[120px]"
                 >
                   <Video className="w-4 h-4 mr-2" />
-                  アップロード
+                  測定開始
                 </Button>
               </div>
             </div>
           )}
 
-          {/* アップロード進捗 */}
-          {isUploading && (
+          {/* Processing progress */}
+          {isProcessing && processingProgress && (
             <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <Loader2 className="w-5 h-5 animate-spin text-primary" />
-                <span className="font-medium">アップロード中...</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                  <span className="font-medium">
+                    {processingProgress.message}
+                  </span>
+                </div>
+                {processingProgress.estimatedTimeRemaining && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Clock className="w-4 h-4" />
+                    <span>残り約{processingProgress.estimatedTimeRemaining}秒</span>
+                  </div>
+                )}
               </div>
-              <Progress value={uploadProgress} className="h-2" />
-              <p className="text-sm text-muted-foreground text-center">
-                {uploadProgress}% 完了
-              </p>
-            </div>
-          )}
+              
+              <Progress value={processingProgress.percentage} className="h-2" />
+              
+              <div className="flex items-center justify-between text-sm text-muted-foreground">
+                <span>
+                  {processingProgress.currentFrame}/{processingProgress.totalFrames} フレーム
+                </span>
+                <span>{Math.round(processingProgress.percentage)}% 完了</span>
+              </div>
 
-          {/* 処理中 */}
-          {isProcessing && (
-            <div className="text-center space-y-4 py-8">
-              <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-                <Loader2 className="w-8 h-8 animate-spin text-primary" />
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-lg font-semibold">測定中...</h3>
-                <p className="text-sm text-muted-foreground">
-                  動画から身体の各部位を検出しています
-                </p>
-              </div>
+              {processingProgress.stage === 'processing' && (
+                <Alert>
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription className="text-sm">
+                    処理中は動画を閉じたり、ブラウザを更新しないでください
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              <Button
+                variant="destructive"
+                onClick={cancelProcessing}
+                disabled={isCancelling}
+                className="w-full"
+              >
+                {isCancelling ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    キャンセル中...
+                  </>
+                ) : (
+                  <>
+                    <Ban className="w-4 h-4 mr-2" />
+                    処理を中止
+                  </>
+                )}
+              </Button>
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* 撮影ガイド */}
+      {/* Shooting guide */}
       <Card>
         <CardHeader>
           <CardTitle>撮影ガイド</CardTitle>
@@ -348,7 +394,7 @@ export function BodyMeasurementUpload({
         <CardContent>
           <div className="space-y-3">
             <div className="flex items-start gap-3">
-              <CheckCircle className="w-5 h-5 text-green-600 mt-0.5" />
+              <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 shrink-0" />
               <div>
                 <p className="font-medium">全身を撮影</p>
                 <p className="text-sm text-muted-foreground">
@@ -357,7 +403,7 @@ export function BodyMeasurementUpload({
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <CheckCircle className="w-5 h-5 text-green-600 mt-0.5" />
+              <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 shrink-0" />
               <div>
                 <p className="font-medium">正面から撮影</p>
                 <p className="text-sm text-muted-foreground">
@@ -366,7 +412,7 @@ export function BodyMeasurementUpload({
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <CheckCircle className="w-5 h-5 text-green-600 mt-0.5" />
+              <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 shrink-0" />
               <div>
                 <p className="font-medium">明るい場所で</p>
                 <p className="text-sm text-muted-foreground">
@@ -375,11 +421,20 @@ export function BodyMeasurementUpload({
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <CheckCircle className="w-5 h-5 text-green-600 mt-0.5" />
+              <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 shrink-0" />
               <div>
-                <p className="font-medium">フィットした服装</p>
+                <p className="font-medium">安定した撮影</p>
                 <p className="text-sm text-muted-foreground">
-                  体のラインが分かりやすい服装がおすすめです
+                  カメラを固定して、ブレのない動画を撮影してください
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5 shrink-0" />
+              <div>
+                <p className="font-medium">動画の長さ</p>
+                <p className="text-sm text-muted-foreground">
+                  10〜30秒程度の動画が最適です（最大60秒）
                 </p>
               </div>
             </div>
