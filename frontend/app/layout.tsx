@@ -6,6 +6,7 @@ import { AuthProvider } from '../components/providers/AuthProvider'
 import { ThemeProvider } from '../components/providers/ThemeProvider'
 import { MobileNav } from '../components/layout/MobileNav'
 import { LanguageProvider } from '../contexts/LanguageContext'
+import { Providers } from './providers'
 // import dynamic from 'next/dynamic'
 
 // フィードバックウィジェットを一時的に無効化（デプロイエラー修正のため）
@@ -79,23 +80,25 @@ export default function RootLayout({
         <link rel="shortcut icon" href="/favicon.ico" />
       </head>
       <body className={inter.className}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <AuthProvider>
-            <LanguageProvider>
-              <div className="pb-16 md:pb-0">
-                {children}
-              </div>
-              <MobileNav />
-              {/* <FeedbackWidget /> */}
-              <Toaster />
-            </LanguageProvider>
-          </AuthProvider>
-        </ThemeProvider>
+        <Providers>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <AuthProvider>
+              <LanguageProvider>
+                <div className="pb-16 md:pb-0">
+                  {children}
+                </div>
+                <MobileNav />
+                {/* <FeedbackWidget /> */}
+                <Toaster />
+              </LanguageProvider>
+            </AuthProvider>
+          </ThemeProvider>
+        </Providers>
       </body>
     </html>
   )

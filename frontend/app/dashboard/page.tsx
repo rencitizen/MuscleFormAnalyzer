@@ -2,147 +2,189 @@
 
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Progress } from '@/components/ui/progress'
+import { Button } from '@/components/ui/button'
 import { 
-  TrendingUp, 
-  Activity, 
-  Weight,
-  Utensils
+  Camera,
+  Utensils,
+  Calculator,
+  Dumbbell,
+  Database,
+  TrendingUp,
+  User,
+  Shield,
+  History,
+  BarChart3
 } from 'lucide-react'
 import Link from 'next/link'
-
+import { useSession } from 'next-auth/react'
 
 export default function DashboardPage() {
-  const [isLoading, setIsLoading] = useState(true)
+  const { data: session } = useSession()
+  const [recentActivity, setRecentActivity] = useState<any[]>([])
 
   useEffect(() => {
-    // シミュレートされたデータ読み込み
-    setTimeout(() => setIsLoading(false), 1000)
+    // 最近のアクティビティを取得（API実装後に置き換え）
+    setRecentActivity([
+      { type: 'pose', date: new Date().toISOString(), description: '姿勢分析を実行' },
+      { type: 'meal', date: new Date().toISOString(), description: '朝食を記録' },
+      { type: 'training', date: new Date().toISOString(), description: 'トレーニングプログラムを生成' }
+    ])
   }, [])
 
-  // サンプルデータ（実際の実装では、APIから取得）
-  const statsData = [
+  const mainFeatures = [
     {
-      title: 'トレーニング',
-      value: 4,
-      unit: '回',
-      description: '今週',
-      icon: <Activity className="w-5 h-5" />,
-      link: '/training'
+      title: '姿勢分析',
+      description: 'カメラや動画から姿勢を分析',
+      icon: Camera,
+      link: '/pose-analysis',
+      color: 'bg-blue-500'
     },
     {
-      title: '体重',
-      value: 72.5,
-      unit: 'kg',
-      description: '現在',
-      icon: <Weight className="w-5 h-5" />,
-      link: '/progress'
+      title: '食事分析',
+      description: '写真から食事内容を分析',
+      icon: Utensils,
+      link: '/meal-analysis',
+      color: 'bg-green-500'
     },
     {
-      title: 'カロリー',
-      value: 2150,
-      unit: 'kcal',
-      description: '今日',
-      icon: <Utensils className="w-5 h-5" />,
-      link: '/nutrition'
+      title: '栄養計算',
+      description: '必要カロリーとPFCバランスを計算',
+      icon: Calculator,
+      link: '/nutrition-calculator',
+      color: 'bg-purple-500'
     },
     {
-      title: '進捗',
-      value: 78,
-      unit: '%',
-      description: '今月',
-      icon: <TrendingUp className="w-5 h-5" />
+      title: 'トレーニング生成',
+      description: 'パーソナライズされたプログラム作成',
+      icon: Dumbbell,
+      link: '/training-generator',
+      color: 'bg-orange-500'
     }
   ]
 
-  const weeklyProgress = [
-    { day: '月', completed: true, value: 100 },
-    { day: '火', completed: false, value: 0 },
-    { day: '水', completed: true, value: 100 },
-    { day: '木', completed: true, value: 100 },
-    { day: '金', completed: false, value: 0 },
-    { day: '土', completed: true, value: 100 },
-    { day: '日', completed: false, value: 0 }
+  const additionalFeatures = [
+    {
+      title: 'エクササイズDB',
+      description: '600種類以上のエクササイズ',
+      icon: Database,
+      link: '/exercise-database'
+    },
+    {
+      title: 'プログレス追跡',
+      description: '成長を可視化',
+      icon: TrendingUp,
+      link: '/progress-tracking'
+    },
+    {
+      title: 'プロファイル',
+      description: 'ユーザー情報管理',
+      icon: User,
+      link: '/profile'
+    },
+    {
+      title: '履歴',
+      description: '過去のデータ確認',
+      icon: History,
+      link: '/history'
+    }
   ]
-
-
-  if (isLoading) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-center h-[60vh]">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-            <p className="mt-4 text-muted-foreground">データを読み込んでいます...</p>
-          </div>
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div className="container mx-auto px-4 py-8 pb-24 md:pb-8">
       {/* ヘッダー */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">ダッシュボード</h1>
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2">TENAX FIT ダッシュボード</h1>
+        <p className="text-muted-foreground">
+          {session?.user?.name ? `${session.user.name}さん、` : ''}今日も頑張りましょう！
+        </p>
       </div>
 
-
-      {/* 統計カード */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
-        {statsData.map((stat, index) => (
-          <Card key={index} className="relative overflow-hidden">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                {stat.title}
-              </CardTitle>
-              <div className="text-muted-foreground">{stat.icon}</div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {stat.value}
-                {stat.unit && <span className="text-sm font-normal text-muted-foreground ml-1">{stat.unit}</span>}
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {stat.description}
-              </p>
-              {stat.link && (
-                <Link href={stat.link} className="absolute inset-0" />
-              )}
-            </CardContent>
-          </Card>
-        ))}
+      {/* メイン機能 */}
+      <div className="mb-12">
+        <h2 className="text-xl font-semibold mb-4">メイン機能</h2>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {mainFeatures.map((feature) => (
+            <Link key={feature.title} href={feature.link}>
+              <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer">
+                <CardHeader className="pb-4">
+                  <div className={`w-12 h-12 rounded-lg ${feature.color} flex items-center justify-center mb-3`}>
+                    <feature.icon className="w-6 h-6 text-white" />
+                  </div>
+                  <CardTitle className="text-lg">{feature.title}</CardTitle>
+                  <CardDescription className="text-sm">
+                    {feature.description}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button className="w-full" variant="outline">
+                    開始する
+                  </Button>
+                </CardContent>
+              </Card>
+            </Link>
+          ))}
+        </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-1">
-        {/* 週間進捗 */}
-        <Card>
-          <CardHeader>
-            <CardTitle>週間トレーニング進捗</CardTitle>
-            <CardDescription>今週のトレーニング完了状況</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {weeklyProgress.map((day, index) => (
-                <div key={index} className="flex items-center gap-3">
-                  <div className="w-8 text-sm font-medium">{day.day}</div>
-                  <div className="flex-1">
-                    <Progress value={day.value} className="h-2" />
+      {/* その他の機能 */}
+      <div className="mb-12">
+        <h2 className="text-xl font-semibold mb-4">その他の機能</h2>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {additionalFeatures.map((feature) => (
+            <Link key={feature.title} href={feature.link}>
+              <Card className="hover:shadow-md transition-shadow cursor-pointer">
+                <CardHeader className="flex flex-row items-center space-y-0 pb-2">
+                  <feature.icon className="w-5 h-5 mr-2 text-muted-foreground" />
+                  <div>
+                    <CardTitle className="text-base">{feature.title}</CardTitle>
+                    <CardDescription className="text-xs mt-1">
+                      {feature.description}
+                    </CardDescription>
                   </div>
-                  <div className="text-sm text-muted-foreground">
-                    {day.completed ? '完了' : '未完了'}
-                  </div>
+                </CardHeader>
+              </Card>
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      {/* 最近のアクティビティ */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <BarChart3 className="w-5 h-5" />
+            最近のアクティビティ
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {recentActivity.length > 0 ? (
+            <div className="space-y-2">
+              {recentActivity.map((activity, index) => (
+                <div key={index} className="flex items-center justify-between py-2 border-b last:border-0">
+                  <span className="text-sm">{activity.description}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {new Date(activity.date).toLocaleString('ja-JP')}
+                  </span>
                 </div>
               ))}
             </div>
-            <div className="mt-4">
-              <p className="text-sm text-muted-foreground">
-                完了率: 4/7日
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+          ) : (
+            <p className="text-sm text-muted-foreground">まだアクティビティがありません</p>
+          )}
+        </CardContent>
+      </Card>
 
-      </div>
+      {/* 管理者リンク（管理者のみ表示） */}
+      {session?.user?.email === 'admin@tenaxfit.com' && (
+        <div className="mt-8">
+          <Link href="/admin">
+            <Button variant="outline" className="w-full md:w-auto">
+              <Shield className="w-4 h-4 mr-2" />
+              管理者画面
+            </Button>
+          </Link>
+        </div>
+      )}
     </div>
   )
 }
