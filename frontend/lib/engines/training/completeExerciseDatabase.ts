@@ -3,8 +3,7 @@
  * 全フェーズの種目を統合
  */
 
-import { Exercise } from './exerciseDatabase';
-import { EXERCISE_DATABASE } from './exerciseDatabase';
+import { Exercise, EXERCISE_DATABASE } from './exerciseDatabase';
 import { PHASE1_EXERCISES } from './exerciseDatabasePhase1';
 
 // Phase 1の種目を既存のデータベースにマージ
