@@ -6,7 +6,7 @@ import { COMPLETE_EXERCISE_DATABASE, getExerciseStatistics } from '@/lib/engines
 import { PHASE2_EXERCISES } from '@/lib/engines/training/exerciseDatabasePhase2';
 import { MUSCLE_GROUPS, EQUIPMENT_CATEGORIES, DIFFICULTY_LEVELS } from '@/lib/engines/training/exerciseCategories';
 import { Exercise } from '@/lib/engines/training/exerciseDatabase';
-import { ExerciseCard } from './ExerciseCard';
+import ExerciseCard from './ExerciseCard';
 
 // Merge all exercises
 const ALL_EXERCISES = {
@@ -328,7 +328,7 @@ export const ExerciseBrowser: React.FC = () => {
                 </button>
               </div>
               
-              <ExerciseCard exercise={selectedExercise} isExpanded={true} />
+              <ExerciseCard exercise={selectedExercise} />
             </div>
           </div>
         </div>
