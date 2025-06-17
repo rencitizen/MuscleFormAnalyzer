@@ -14,6 +14,11 @@ const ALL_EXERCISES = {
   ...PHASE2_EXERCISES
 };
 
+// Debug logging
+console.log('COMPLETE_EXERCISE_DATABASE:', Object.keys(COMPLETE_EXERCISE_DATABASE).length);
+console.log('PHASE2_EXERCISES:', Object.keys(PHASE2_EXERCISES).length);
+console.log('ALL_EXERCISES:', Object.keys(ALL_EXERCISES).length);
+
 export const ExerciseBrowser: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -45,6 +50,7 @@ export const ExerciseBrowser: React.FC = () => {
 
   // Filter exercises
   const filteredExercises = useMemo(() => {
+    console.log('Filtering exercises, total:', Object.values(ALL_EXERCISES).length);
     return Object.values(ALL_EXERCISES).filter(exercise => {
       // Search query
       if (searchQuery) {
@@ -292,8 +298,14 @@ export const ExerciseBrowser: React.FC = () => {
       </div>
 
       {/* Exercise Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredExercises.map(exercise => (
+      {filteredExercises.length === 0 ? (
+        <div className="text-center py-12">
+          <p className="text-gray-500 text-lg">データベースに該当する種目が見つかりません</p>
+          <p className="text-gray-400 text-sm mt-2">フィルター条件を変更してみてください</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredExercises.map(exercise => (
           <div
             key={exercise.id}
             className="cursor-pointer transform transition-transform hover:scale-105"
@@ -303,6 +315,7 @@ export const ExerciseBrowser: React.FC = () => {
           </div>
         ))}
       </div>
+      )}
 
       {/* Exercise Detail Modal */}
       {selectedExercise && (
