@@ -32,7 +32,6 @@ export function MobileNav() {
 
   const navItems = [
     { href: '/', label: t('navigation.dashboard'), icon: Home },
-    { href: '/v3', label: 'v3.0', icon: BarChart3 },
     { href: '/analyze', label: t('navigation.analyze'), icon: Camera },
     { href: '/nutrition', label: t('navigation.nutrition'), icon: Utensils },
     { href: '/progress', label: t('navigation.progress'), icon: TrendingUp },
@@ -42,7 +41,7 @@ export function MobileNav() {
     <>
       {/* Mobile Bottom Navigation */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t z-50">
-        <div className="grid grid-cols-5 h-16">
+        <div className="grid grid-cols-4 h-16">
           {navItems.map(({ href, label, icon: Icon }) => {
             const isActive = pathname === href
             return (
@@ -73,27 +72,7 @@ export function MobileNav() {
             <SheetHeader>
               <SheetTitle>Menu</SheetTitle>
             </SheetHeader>
-            <nav className="mt-6 space-y-4">
-              {navItems.map(({ href, label, icon: Icon }) => (
-                <Link
-                  key={href}
-                  href={href}
-                  onClick={() => setOpen(false)}
-                  className="flex items-center gap-3 py-2 px-3 rounded-lg hover:bg-secondary"
-                >
-                  <Icon className="h-5 w-5" />
-                  <span>{label}</span>
-                </Link>
-              ))}
-              <hr className="my-4" />
-              <Link
-                href="/dashboard"
-                onClick={() => setOpen(false)}
-                className="flex items-center gap-3 py-2 px-3 rounded-lg hover:bg-secondary"
-              >
-                <Home className="h-5 w-5" />
-                <span>{t('navigation.dashboard')}</span>
-              </Link>
+            <nav className="mt-6 space-y-2">
               <Link
                 href="/settings"
                 onClick={() => setOpen(false)}
@@ -109,14 +88,6 @@ export function MobileNav() {
               >
                 <Dumbbell className="h-5 w-5" />
                 <span>Exercises</span>
-              </Link>
-              <Link
-                href="/training_data_management"
-                onClick={() => setOpen(false)}
-                className="flex items-center gap-3 py-2 px-3 rounded-lg hover:bg-secondary"
-              >
-                <Database className="h-5 w-5" />
-                <span>Data</span>
               </Link>
             </nav>
           </SheetContent>

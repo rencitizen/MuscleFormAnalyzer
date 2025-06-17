@@ -34,11 +34,13 @@ export class CameraManager {
    */
   stopCurrentStream(): void {
     if (this.currentStream) {
+      console.log('[CameraManager] Stopping current stream...');
       this.currentStream.getTracks().forEach(track => {
+        console.log(`[CameraManager] Stopping ${track.kind} track:`, track.label, track.getSettings());
         track.stop();
-        console.log('Track stopped:', track.label);
       });
       this.currentStream = null;
+      console.log('[CameraManager] Stream stopped and cleared');
     }
   }
 
@@ -70,7 +72,9 @@ export class CameraManager {
           facingMode: { exact: facingMode },
           width: { ideal: 1280, min: 640 },
           height: { ideal: 720, min: 480 },
-          frameRate: { ideal: 30, min: 15 }
+          frameRate: { ideal: 30, min: 15 },
+          // Add additional constraints for better compatibility
+          aspectRatio: { ideal: 16/9 }
         },
         audio: false
       };
@@ -84,16 +88,41 @@ export class CameraManager {
 
       // Apply to video element
       if (videoElement) {
+        console.log('[CameraManager] Applying stream to video element...');
+        
+        // Clear previous srcObject first
+        if (videoElement.srcObject) {
+          console.log('[CameraManager] Clearing previous srcObject');
+          videoElement.srcObject = null;
+        }
+        
+        // Apply new stream
         videoElement.srcObject = this.currentStream;
         
         // Wait for metadata to load
         await new Promise<void>((resolve, reject) => {
-          videoElement.onloadedmetadata = () => resolve();
-          videoElement.onerror = () => reject(new Error('Video element error'));
-          setTimeout(() => reject(new Error('Metadata load timeout')), 5000);
+          const timeoutId = setTimeout(() => {
+            console.error('[CameraManager] Metadata load timeout');
+            reject(new Error('Metadata load timeout'));
+          }, 5000);
+          
+          videoElement.onloadedmetadata = () => {
+            clearTimeout(timeoutId);
+            console.log('[CameraManager] Video metadata loaded');
+            const settings = this.currentStream?.getVideoTracks()[0]?.getSettings();
+            console.log('[CameraManager] Video settings:', settings);
+            resolve();
+          };
+          
+          videoElement.onerror = (e) => {
+            clearTimeout(timeoutId);
+            console.error('[CameraManager] Video element error:', e);
+            reject(new Error('Video element error'));
+          };
         });
 
         await videoElement.play();
+        console.log('[CameraManager] Video playback started');
       }
 
       console.log('Camera initialized successfully:', facingMode);
@@ -116,8 +145,23 @@ export class CameraManager {
           this.currentCamera = facingMode;
 
           if (videoElement) {
+            // Clear previous srcObject first
+            if (videoElement.srcObject) {
+              videoElement.srcObject = null;
+            }
+            
             videoElement.srcObject = this.currentStream;
+            
+            // Wait for video to be ready
+            await new Promise<void>((resolve) => {
+              videoElement.onloadedmetadata = () => {
+                console.log('[CameraManager] Retry: Video metadata loaded');
+                resolve();
+              };
+            });
+            
             await videoElement.play();
+            console.log('[CameraManager] Retry: Video playback started');
           }
 
           console.log('Retry successful:', facingMode);

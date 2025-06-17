@@ -162,14 +162,32 @@ export function usePoseDetectionEnhanced(options: UsePoseDetectionEnhancedOption
       return
     }
 
+    // Verify video is ready and playing
+    if (videoRef.current.readyState < 2) {
+      console.log('[MediaPipe] Video not ready, waiting...')
+      animationFrameRef.current = requestAnimationFrame(processFrame)
+      return
+    }
+
     try {
       await poseRef.current.send({ image: videoRef.current })
     } catch (err) {
-      console.error('Error processing frame:', err)
+      console.error('[MediaPipe] Error processing frame:', err)
+      // If error is related to video state, retry
+      if (err.message?.includes('video') && isDetecting) {
+        setTimeout(() => {
+          if (isDetecting) {
+            processFrame()
+          }
+        }, 100)
+        return
+      }
     }
 
     // Continue processing
-    animationFrameRef.current = requestAnimationFrame(processFrame)
+    if (isDetecting) {
+      animationFrameRef.current = requestAnimationFrame(processFrame)
+    }
   }, [isDetecting, isMediaPipeReady])
 
   // Start detection
@@ -199,23 +217,45 @@ export function usePoseDetectionEnhanced(options: UsePoseDetectionEnhancedOption
 
   // Enhanced camera switch with proper cleanup
   const switchCamera = useCallback(async () => {
-    console.log('Switching camera with enhanced handler...')
+    console.log('[MediaPipe] Starting camera switch process...')
     
-    // Stop detection before switching
+    // Store current detection state
+    const wasDetecting = isDetecting
+    
+    // Stop detection and clear animation frame
     stopDetection()
     
-    // Switch camera
+    // Wait for current frame processing to complete
+    await new Promise(resolve => setTimeout(resolve, 100))
+    
+    console.log('[MediaPipe] Switching camera...')
     const success = await cameraSwitchHandler()
     
-    if (success && isDetecting) {
-      // Resume detection after switch
-      setTimeout(() => {
-        startDetection()
-      }, 500)
+    if (success) {
+      console.log('[MediaPipe] Camera switch successful')
+      
+      // Wait for video stream to stabilize
+      await new Promise(resolve => setTimeout(resolve, 300))
+      
+      // Verify video element has new stream
+      if (videoRef.current && videoRef.current.srcObject) {
+        const tracks = (videoRef.current.srcObject as MediaStream).getVideoTracks()
+        console.log('[MediaPipe] New video tracks:', tracks.length, tracks[0]?.getSettings())
+        
+        // Resume detection if it was active before
+        if (wasDetecting && poseRef.current && isMediaPipeReady) {
+          console.log('[MediaPipe] Resuming detection...')
+          startDetection()
+        }
+      } else {
+        console.error('[MediaPipe] Video element not ready after camera switch')
+      }
+    } else {
+      console.error('[MediaPipe] Camera switch failed')
     }
     
     return success
-  }, [cameraSwitchHandler, stopDetection, startDetection, isDetecting])
+  }, [cameraSwitchHandler, stopDetection, startDetection, isDetecting, isMediaPipeReady])
 
   // Cleanup on unmount
   useEffect(() => {
