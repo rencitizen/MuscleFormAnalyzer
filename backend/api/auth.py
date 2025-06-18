@@ -1,3 +1,4 @@
+# TODO: Add rate limiting with slowapi or similar
 """
 Authentication API Endpoints
 Firebase Authentication integration
