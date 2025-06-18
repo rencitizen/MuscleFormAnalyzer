@@ -1,8 +1,8 @@
 // services/v3Api.ts
-"""
-TENAX FIT v3.0 API Service
-包括的フィットネス分析APIとの通信を管理
-"""
+/**
+ * TENAX FIT v3.0 API Service
+ * 包括的フィットネス分析APIとの通信を管理
+ */
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'
 const V3_API_PREFIX = '/api/v3'

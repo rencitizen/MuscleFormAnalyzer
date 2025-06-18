@@ -18,7 +18,7 @@ import {
   ChevronRight,
   X
 } from 'lucide-react'
-import { completeExerciseDatabase } from '@/lib/engines/training/completeExerciseDatabase'
+import { COMPLETE_EXERCISE_DATABASE } from '@/lib/engines/training/completeExerciseDatabase'
 
 interface ExerciseFilter {
   search: string
@@ -38,20 +38,22 @@ export default function ExerciseDatabasePage() {
   })
   const [selectedExercise, setSelectedExercise] = useState<any>(null)
 
-  // カテゴリー別にエクササイズを整理
-  const allExercises = Object.entries(completeExerciseDatabase).flatMap(([category, exercises]) =>
-    Object.entries(exercises).map(([key, exercise]) => ({
-      ...exercise,
-      id: key,
-      category
-    }))
-  )
+  // エクササイズを配列に変換
+  const allExercises = Object.entries(COMPLETE_EXERCISE_DATABASE).map(([key, exercise]) => ({
+    ...exercise,
+    id: key
+  }))
 
   // フィルタリング
   const filteredExercises = useMemo(() => {
     return allExercises.filter(exercise => {
-      if (filter.search && !exercise.name.toLowerCase().includes(filter.search.toLowerCase())) {
-        return false
+      if (filter.search) {
+        const searchLower = filter.search.toLowerCase()
+        const matchesName = exercise.name.toLowerCase().includes(searchLower)
+        const matchesNameJa = exercise.nameJa?.toLowerCase().includes(searchLower)
+        if (!matchesName && !matchesNameJa) {
+          return false
+        }
       }
       if (filter.category !== 'all' && exercise.category !== filter.category) {
         return false
@@ -59,7 +61,7 @@ export default function ExerciseDatabasePage() {
       if (filter.muscle !== 'all' && !exercise.primaryMuscles.includes(filter.muscle)) {
         return false
       }
-      if (filter.equipment !== 'all' && exercise.equipment !== filter.equipment) {
+      if (filter.equipment !== 'all' && !exercise.equipment.includes(filter.equipment)) {
         return false
       }
       if (filter.difficulty !== 'all' && exercise.difficulty !== filter.difficulty) {
@@ -75,9 +77,9 @@ export default function ExerciseDatabasePage() {
     byCategory: {
       compound: allExercises.filter(e => e.category === 'compound').length,
       isolation: allExercises.filter(e => e.category === 'isolation').length,
-      olympic: allExercises.filter(e => e.category === 'olympic').length,
-      plyometric: allExercises.filter(e => e.category === 'plyometric').length,
-      cardio: allExercises.filter(e => e.category === 'cardio').length
+      cardio: allExercises.filter(e => e.category === 'cardio').length,
+      flexibility: allExercises.filter(e => e.category === 'flexibility').length,
+      core: allExercises.filter(e => e.category === 'core').length
     }
   }
 
@@ -85,9 +87,9 @@ export default function ExerciseDatabasePage() {
     { value: 'all', label: 'すべて' },
     { value: 'compound', label: 'コンパウンド' },
     { value: 'isolation', label: 'アイソレーション' },
-    { value: 'olympic', label: 'オリンピックリフト' },
-    { value: 'plyometric', label: 'プライオメトリック' },
-    { value: 'cardio', label: '有酸素' }
+    { value: 'cardio', label: '有酸素' },
+    { value: 'flexibility', label: '柔軟性' },
+    { value: 'core', label: '体幹' }
   ]
 
   const muscles = [
@@ -295,9 +297,9 @@ export default function ExerciseDatabasePage() {
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <div>
-                      <CardTitle className="text-lg">{exercise.name}</CardTitle>
+                      <CardTitle className="text-lg">{exercise.nameJa || exercise.name}</CardTitle>
                       <CardDescription className="capitalize">
-                        {exercise.category} • {exercise.equipment}
+                        {exercise.name} • {exercise.category} • {exercise.equipment.join(', ')}
                       </CardDescription>
                     </div>
                     <Badge className={`${getDifficultyColor(exercise.difficulty)} text-white`}>
@@ -324,7 +326,7 @@ export default function ExerciseDatabasePage() {
                     )}
                   </div>
                   <p className="text-sm text-muted-foreground line-clamp-2">
-                    {exercise.description}
+                    {exercise.instructions?.[0] || exercise.nameJa}
                   </p>
                 </CardContent>
               </Card>
@@ -353,9 +355,9 @@ export default function ExerciseDatabasePage() {
             <CardHeader>
               <div className="flex justify-between items-start">
                 <div>
-                  <CardTitle>{selectedExercise.name}</CardTitle>
+                  <CardTitle>{selectedExercise.nameJa || selectedExercise.name}</CardTitle>
                   <CardDescription className="capitalize">
-                    {selectedExercise.category} • {selectedExercise.equipment}
+                    {selectedExercise.name} • {selectedExercise.category} • {selectedExercise.equipment.join(', ')}
                   </CardDescription>
                 </div>
                 <Button
@@ -382,12 +384,12 @@ export default function ExerciseDatabasePage() {
                     <Star className="w-4 h-4 mr-2" />
                     ポイント
                   </TabsTrigger>
-                </Tabs>
+                </TabsList>
 
                 <TabsContent value="details" className="space-y-4">
                   <div>
                     <h4 className="font-semibold mb-2">説明</h4>
-                    <p className="text-sm">{selectedExercise.description}</p>
+                    <p className="text-sm">{selectedExercise.instructions?.join(' ') || selectedExercise.nameJa}</p>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -415,12 +417,12 @@ export default function ExerciseDatabasePage() {
 
                 <TabsContent value="execution" className="space-y-4">
                   <div>
-                    <h4 className="font-semibold mb-2">準備</h4>
-                    <p className="text-sm">{selectedExercise.preparation}</p>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold mb-2">実行</h4>
-                    <p className="text-sm">{selectedExercise.execution}</p>
+                    <h4 className="font-semibold mb-2">実行方法</h4>
+                    <ul className="list-disc list-inside space-y-1">
+                      {selectedExercise.instructions?.map((instruction: string, index: number) => (
+                        <li key={index} className="text-sm">{instruction}</li>
+                      ))}
+                    </ul>
                   </div>
                 </TabsContent>
 

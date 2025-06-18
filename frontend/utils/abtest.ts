@@ -3,6 +3,7 @@
  * ユーザーエクスペリエンスの継続的改善のためのテスト基盤
  */
 
+import React from 'react'
 import { useAnalytics } from '@/hooks/useAnalytics'
 
 interface ABTestConfig {
