@@ -6,6 +6,7 @@ from fastapi import FastAPI, HTTPException, Depends, UploadFile, File, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
 from contextlib import asynccontextmanager
 import os
 import logging
@@ -18,6 +19,20 @@ from .config import settings
 from .database import engine, get_db
 from ..models import user, workout, nutrition, progress
 from ..api import auth, form_analysis, height_measurement, nutrition_api, progress_api, health_check
+from ..api.v3 import v3_router
+from .exceptions import (
+    APIException,
+    api_exception_handler,
+    http_exception_handler,
+    validation_exception_handler,
+    general_exception_handler
+)
+from .middleware import (
+    RequestIDMiddleware,
+    ResponseTimeMiddleware,
+    SecurityHeadersMiddleware,
+    RateLimitMiddleware
+)
 
 # Configure logging
 logging.basicConfig(
@@ -152,10 +167,37 @@ app.include_router(
     tags=["Progress Tracking"]
 )
 
-# Global exception handlers
+# V3 API router (new scientific features)
+app.include_router(
+    v3_router,
+    tags=["V3 API"]
+)
+
+# Register exception handlers
+app.add_exception_handler(APIException, api_exception_handler)
+app.add_exception_handler(HTTPException, http_exception_handler)
+app.add_exception_handler(RequestValidationError, validation_exception_handler)
+
+# General exception handler for production
+if settings.ENVIRONMENT == "production":
+    app.add_exception_handler(Exception, general_exception_handler)
+
+# Store environment in app state for exception handlers
+app.state.environment = settings.ENVIRONMENT
+
+# Add custom middleware
+app.add_middleware(RequestIDMiddleware)
+app.add_middleware(ResponseTimeMiddleware)
+app.add_middleware(SecurityHeadersMiddleware)
+
+# Add rate limiting in production
+if settings.ENVIRONMENT == "production":
+    app.add_middleware(RateLimitMiddleware, calls=100, period=60)
+
+# Legacy global exception handlers (kept for backward compatibility)
 @app.exception_handler(HTTPException)
-async def http_exception_handler(request: Request, exc: HTTPException):
-    """Handle HTTP exceptions"""
+async def legacy_http_exception_handler(request: Request, exc: HTTPException):
+    """Legacy HTTP exception handler"""
     return JSONResponse(
         status_code=exc.status_code,
         content={

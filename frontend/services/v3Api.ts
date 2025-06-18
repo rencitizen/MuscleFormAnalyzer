@@ -24,6 +24,101 @@ export interface UserProfile {
   timeframe_weeks?: number
 }
 
+// 科学計算用の型定義
+export interface BMRInput {
+  weight: number
+  height: number
+  age: number
+  gender: 'male' | 'female'
+}
+
+export interface BMRResult {
+  bmr: number
+  formula: string
+  unit: string
+}
+
+export interface TDEEInput extends BMRInput {
+  activity_level: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active'
+}
+
+export interface TDEEResult {
+  tdee: number
+  bmr: number
+  activity_multiplier: number
+  activity_level_description: string
+}
+
+export interface BodyFatInput {
+  gender: 'male' | 'female'
+  waist_cm?: number
+  neck_cm?: number
+  hip_cm?: number
+  weight?: number
+  height?: number
+}
+
+export interface BodyFatResult {
+  body_fat_percentage: number
+  method: string
+  lean_body_mass: number
+  fat_mass: number
+}
+
+export interface TargetCaloriesInput {
+  tdee: number
+  goal: 'cutting' | 'maintenance' | 'bulking'
+  experience_level: 'beginner' | 'intermediate' | 'advanced'
+}
+
+export interface TargetCaloriesResult {
+  daily_calories: number
+  deficit_or_surplus: number
+  weekly_weight_change_estimate: number
+  description: string
+}
+
+export interface PFCBalanceInput {
+  daily_calories: number
+  goal: 'cutting' | 'maintenance' | 'bulking'
+  weight: number
+  experience_level: 'beginner' | 'intermediate' | 'advanced'
+}
+
+export interface PFCBalanceResult {
+  protein: {
+    grams: number
+    calories: number
+    percentage: number
+  }
+  fat: {
+    grams: number
+    calories: number
+    percentage: number
+  }
+  carbs: {
+    grams: number
+    calories: number
+    percentage: number
+  }
+  total_calories: number
+}
+
+export interface CalorieSafetyInput {
+  daily_calories: number
+  bmr: number
+  gender: 'male' | 'female'
+  age: number
+  goal: 'cutting' | 'maintenance' | 'bulking'
+}
+
+export interface CalorieSafetyResult {
+  is_safe: boolean
+  warnings: string[]
+  minimum_safe_calories: number
+  recommendation: string
+}
+
 export interface ComprehensiveAnalysisResult {
   analysis_id: string
   user_profile: any
@@ -305,6 +400,162 @@ class V3ApiService {
       return true
     }
   }
+
+  /**
+   * BMR（基礎代謝率）を計算
+   */
+  async calculateBMR(data: BMRInput): Promise<BMRResult> {
+    try {
+      const response = await fetch(`${this.baseUrl}/calculations/bmr`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(data),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.message || 'BMR計算に失敗しました')
+      }
+
+      return await response.json()
+    } catch (error) {
+      console.error('BMR calculation error:', error)
+      throw error
+    }
+  }
+
+  /**
+   * TDEE（総消費カロリー）を計算
+   */
+  async calculateTDEE(data: TDEEInput): Promise<TDEEResult> {
+    try {
+      const response = await fetch(`${this.baseUrl}/calculations/tdee`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(data),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.message || 'TDEE計算に失敗しました')
+      }
+
+      return await response.json()
+    } catch (error) {
+      console.error('TDEE calculation error:', error)
+      throw error
+    }
+  }
+
+  /**
+   * 体脂肪率を推定
+   */
+  async estimateBodyFat(data: BodyFatInput): Promise<BodyFatResult> {
+    try {
+      const response = await fetch(`${this.baseUrl}/calculations/body-fat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(data),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.message || '体脂肪率推定に失敗しました')
+      }
+
+      return await response.json()
+    } catch (error) {
+      console.error('Body fat estimation error:', error)
+      throw error
+    }
+  }
+
+  /**
+   * 目標カロリーを計算
+   */
+  async getTargetCalories(data: TargetCaloriesInput): Promise<TargetCaloriesResult> {
+    try {
+      const response = await fetch(`${this.baseUrl}/calculations/target-calories`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(data),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.message || '目標カロリー計算に失敗しました')
+      }
+
+      return await response.json()
+    } catch (error) {
+      console.error('Target calories calculation error:', error)
+      throw error
+    }
+  }
+
+  /**
+   * PFCバランスを計算
+   */
+  async getPFCBalance(data: PFCBalanceInput): Promise<PFCBalanceResult> {
+    try {
+      const response = await fetch(`${this.baseUrl}/nutrition/pfc-balance`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(data),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.message || 'PFCバランス計算に失敗しました')
+      }
+
+      return await response.json()
+    } catch (error) {
+      console.error('PFC balance calculation error:', error)
+      throw error
+    }
+  }
+
+  /**
+   * カロリー設定の安全性をチェック
+   */
+  async checkCalorieSafety(data: CalorieSafetyInput): Promise<CalorieSafetyResult> {
+    try {
+      const response = await fetch(`${this.baseUrl}/safety/calorie-check`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(data),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.message || '安全性チェックに失敗しました')
+      }
+
+      return await response.json()
+    } catch (error) {
+      console.error('Calorie safety check error:', error)
+      throw error
+    }
+  }
 }
 
 // シングルトンインスタンスをエクスポート
@@ -323,5 +574,12 @@ export function useV3Api() {
     getLastAnalysis: v3Api.getLastAnalysis.bind(v3Api),
     saveAnalysis: v3Api.saveAnalysis.bind(v3Api),
     isAnalysisStale: v3Api.isAnalysisStale.bind(v3Api),
+    // 科学計算メソッド
+    calculateBMR: v3Api.calculateBMR.bind(v3Api),
+    calculateTDEE: v3Api.calculateTDEE.bind(v3Api),
+    estimateBodyFat: v3Api.estimateBodyFat.bind(v3Api),
+    getTargetCalories: v3Api.getTargetCalories.bind(v3Api),
+    getPFCBalance: v3Api.getPFCBalance.bind(v3Api),
+    checkCalorieSafety: v3Api.checkCalorieSafety.bind(v3Api),
   }
 }

@@ -259,5 +259,5 @@ interface ABTestComponentProps {
 
 export function ABTestComponent({ testId, control, treatment }: ABTestComponentProps) {
   const { variant } = useABTest(testId)
-  return <>{variant === 'control' ? control : treatment}</>
+  return variant === 'control' ? control : treatment
 }

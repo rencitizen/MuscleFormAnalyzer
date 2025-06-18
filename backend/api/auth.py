@@ -4,7 +4,7 @@ Firebase Authentication integration
 """
 import logging
 from typing import Optional
-from fastapi import APIRouter, HTTPException, Depends, Request
+from fastapi import APIRouter, Depends, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 import firebase_admin
@@ -16,6 +16,12 @@ from ..config import settings
 from ..database import get_db
 from ..models.user import User, UserSession
 from sqlalchemy.orm import Session
+from ..app.exceptions import (
+    AuthenticationException,
+    AuthorizationException,
+    BadRequestException,
+    NotFoundException
+)
 
 logger = logging.getLogger(__name__)
 

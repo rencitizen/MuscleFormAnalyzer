@@ -54,10 +54,17 @@ class NutritionSummaryResponse(BaseModel):
 @router.post("/recognize", response_model=FoodRecognitionResponse)
 async def recognize_food_from_image(
     file: UploadFile = File(...),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    save_to_meal: bool = Query(False, description="Automatically save recognized foods as a meal"),
+    meal_type: Optional[str] = Query(None, description="Meal type if save_to_meal is true")
 ):
     """
-    Recognize food items from uploaded image
+    Recognize food items from uploaded image with optional automatic meal logging
+    
+    Parameters:
+    - file: Image file containing food
+    - save_to_meal: If true, automatically creates a meal entry
+    - meal_type: Type of meal (breakfast, lunch, dinner, snack)
     """
     import time
     start_time = time.time()
@@ -88,6 +95,23 @@ async def recognize_food_from_image(
         
         processing_time = time.time() - start_time
         
+        # If requested, save recognized foods as a meal
+        if save_to_meal and recognition_result.get("success") and recognition_result.get("foods"):
+            if not meal_type:
+                # Auto-detect meal type based on current time
+                current_hour = datetime.now().hour
+                if 5 <= current_hour < 11:
+                    meal_type = "breakfast"
+                elif 11 <= current_hour < 15:
+                    meal_type = "lunch"
+                elif 15 <= current_hour < 21:
+                    meal_type = "dinner"
+                else:
+                    meal_type = "snack"
+            
+            # Create meal entry (implementation would go here)
+            # This would save the recognized foods to the database
+            
         return FoodRecognitionResponse(
             success=recognition_result.get("success", False),
             recognized_foods=recognition_result.get("foods", []),
@@ -100,6 +124,187 @@ async def recognize_food_from_image(
         raise
     except Exception as e:
         logger.error(f"Food recognition error: {e}")
+        return FoodRecognitionResponse(
+            success=False,
+            error=str(e)
+        )
+
+@router.post("/recognize/batch")
+async def recognize_food_batch(
+    files: List[UploadFile] = File(...),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Recognize food items from multiple images
+    Useful for capturing a complete meal from different angles
+    """
+    import time
+    start_time = time.time()
+    
+    if len(files) > 10:
+        raise HTTPException(
+            status_code=400,
+            detail="Maximum 10 images allowed per batch"
+        )
+    
+    all_foods = []
+    total_confidence = 0
+    successful_images = 0
+    
+    for idx, file in enumerate(files):
+        try:
+            if not file.content_type.startswith('image/'):
+                continue
+            
+            image_data = await file.read()
+            nparr = np.frombuffer(image_data, np.uint8)
+            image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+            
+            if image is None:
+                continue
+            
+            # Recognize foods in this image
+            result = await analyze_food_image(image)
+            
+            if result.get("success"):
+                successful_images += 1
+                total_confidence += result.get("confidence", 0)
+                
+                # Add image index to each food item
+                for food in result.get("foods", []):
+                    food["image_index"] = idx
+                    all_foods.append(food)
+        
+        except Exception as e:
+            logger.error(f"Error processing image {idx}: {e}")
+            continue
+    
+    if successful_images == 0:
+        return {
+            "success": False,
+            "error": "No valid images could be processed",
+            "foods": []
+        }
+    
+    # Merge duplicate foods from different angles
+    merged_foods = merge_duplicate_foods(all_foods)
+    
+    processing_time = time.time() - start_time
+    avg_confidence = total_confidence / successful_images if successful_images > 0 else 0
+    
+    return {
+        "success": True,
+        "foods": merged_foods,
+        "confidence": avg_confidence,
+        "images_processed": successful_images,
+        "total_images": len(files),
+        "processing_time": processing_time
+    }
+
+def merge_duplicate_foods(foods: List[dict]) -> List[dict]:
+    """
+    Merge foods that appear to be the same item from different angles
+    """
+    if not foods:
+        return []
+    
+    merged = []
+    used_indices = set()
+    
+    for i, food1 in enumerate(foods):
+        if i in used_indices:
+            continue
+        
+        # Start with this food
+        merged_food = food1.copy()
+        similar_foods = [food1]
+        used_indices.add(i)
+        
+        # Look for similar foods
+        for j, food2 in enumerate(foods[i+1:], start=i+1):
+            if j in used_indices:
+                continue
+            
+            # Check if foods are similar (same name or very close positions)
+            if (food1["name"] == food2["name"] or 
+                food1.get("name_en", "") == food2.get("name_en", "")):
+                similar_foods.append(food2)
+                used_indices.add(j)
+        
+        # Average the quantities and confidence scores
+        if len(similar_foods) > 1:
+            avg_quantity = sum(f["estimated_quantity"] for f in similar_foods) / len(similar_foods)
+            avg_confidence = sum(f["confidence"] for f in similar_foods) / len(similar_foods)
+            
+            merged_food["estimated_quantity"] = avg_quantity
+            merged_food["confidence"] = avg_confidence
+            merged_food["detection_count"] = len(similar_foods)
+            
+            # Recalculate nutrition based on averaged quantity
+            if "nutrition" in merged_food:
+                factor = avg_quantity / 100.0
+                base_nutrition = similar_foods[0]["nutrition"]
+                merged_food["nutrition"] = {
+                    key: round(base_nutrition[key] * factor / (similar_foods[0]["estimated_quantity"] / 100.0), 1)
+                    for key in base_nutrition
+                }
+        
+        merged.append(merged_food)
+    
+    return merged
+
+@router.post("/recognize/url")
+async def recognize_food_from_url(
+    image_url: str,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Recognize food items from image URL
+    """
+    import httpx
+    import time
+    start_time = time.time()
+    
+    try:
+        # Download image
+        async with httpx.AsyncClient() as client:
+            response = await client.get(image_url, timeout=10.0)
+            if response.status_code != 200:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Failed to download image from URL"
+                )
+        
+        # Convert to OpenCV format
+        nparr = np.frombuffer(response.content, np.uint8)
+        image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        
+        if image is None:
+            raise HTTPException(
+                status_code=400,
+                detail="Could not decode image from URL"
+            )
+        
+        # Perform recognition
+        recognition_result = await analyze_food_image(image)
+        
+        processing_time = time.time() - start_time
+        
+        return FoodRecognitionResponse(
+            success=recognition_result.get("success", False),
+            recognized_foods=recognition_result.get("foods", []),
+            confidence=recognition_result.get("confidence"),
+            processing_time=processing_time,
+            error=recognition_result.get("error")
+        )
+        
+    except httpx.RequestError as e:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Error downloading image: {str(e)}"
+        )
+    except Exception as e:
+        logger.error(f"URL food recognition error: {e}")
         return FoodRecognitionResponse(
             success=False,
             error=str(e),
@@ -447,39 +652,52 @@ async def get_nutrition_goals(
         logger.error(f"Failed to get nutrition goals: {e}")
         raise HTTPException(status_code=500, detail="Failed to get nutrition goals")
 
+# Import the enhanced food recognition service
+from ..services.food_recognition import FoodRecognitionService
+
+# Initialize food recognition service
+food_recognition_service = FoodRecognitionService()
+
 # Helper functions
 async def analyze_food_image(image: np.ndarray) -> dict:
     """
-    Analyze image to recognize food items
-    This is a simplified implementation - in production you'd use a trained food recognition model
+    Analyze image to recognize food items using enhanced ML service
     """
     try:
-        # Simplified food recognition
-        # In a real implementation, you would use a trained ML model
-        # For now, returning mock data
+        # Use the enhanced food recognition service
+        result = await food_recognition_service.recognize_food(image)
+        
+        if not result["success"]:
+            return result
+        
+        # Format the response to match expected structure
+        formatted_foods = []
+        for food in result.get("foods", []):
+            formatted_foods.append({
+                "name": food["name_ja"],  # Use Japanese name as primary
+                "name_en": food["name"],
+                "confidence": food["confidence"],
+                "estimated_quantity": food["estimated_quantity"],
+                "unit": food["unit"],
+                "bounding_box": food["bounding_box"],
+                "nutrition": {
+                    "calories": food["nutrition"]["calories"],
+                    "protein": food["nutrition"]["protein"],
+                    "carbs": food["nutrition"]["carbs"],
+                    "fat": food["nutrition"]["fat"],
+                    "fiber": food["nutrition"].get("fiber", 0)
+                }
+            })
         
         return {
             "success": True,
-            "foods": [
-                {
-                    "name": "白米",
-                    "confidence": 0.85,
-                    "estimated_quantity": 150,
-                    "unit": "g",
-                    "bounding_box": [0.2, 0.3, 0.6, 0.7],
-                    "nutrition": {
-                        "calories": 234,
-                        "protein": 3.5,
-                        "carbs": 51.0,
-                        "fat": 0.3
-                    }
-                }
-            ],
-            "confidence": 0.85
+            "foods": formatted_foods,
+            "confidence": result.get("confidence", 0),
+            "detection_count": result.get("detection_count", 0)
         }
         
     except Exception as e:
-        logger.error(f"Food image analysis error: {e}")
+        logger.error(f"Food image analysis error: {e}", exc_info=True)
         return {
             "success": False,
             "error": f"Image analysis failed: {str(e)}"

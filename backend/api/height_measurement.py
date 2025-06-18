@@ -290,117 +290,132 @@ async def delete_height_measurement(
         logger.error(f"Failed to delete measurement: {e}")
         raise HTTPException(status_code=500, detail="Failed to delete measurement")
 
-# Helper functions
+# Import the enhanced height analyzer
+from ..services.height_analyzer import HeightAnalyzer
+
+# Update the video analysis endpoint to use request body
+class VideoHeightRequest(BaseModel):
+    reference_object: Optional[str] = None
+    reference_height_mm: Optional[float] = None
+
+@router.post("/measure/video/upload", response_model=HeightMeasurementResponse)
+async def measure_height_from_video_upload(
+    file: UploadFile = File(...),
+    reference_object: Optional[str] = None,
+    reference_height_mm: Optional[float] = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Measure height from uploaded video using enhanced AI analysis
+    
+    Supported reference objects:
+    - credit_card: Standard credit card (85.6mm x 53.98mm)
+    - a4_paper: A4 paper (297mm x 210mm)
+    - custom: Custom marker with specified height
+    """
+    try:
+        # Validate file type
+        if not file.content_type.startswith('video/'):
+            raise HTTPException(
+                status_code=400,
+                detail="File must be a video"
+            )
+        
+        # Validate reference object
+        valid_objects = ["credit_card", "a4_paper", "smartphone", "door_frame", "custom"]
+        if reference_object and reference_object not in valid_objects:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid reference object. Must be one of: {', '.join(valid_objects)}"
+            )
+        
+        # Save uploaded video to temporary file
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.mp4') as temp_file:
+            content = await file.read()
+            temp_file.write(content)
+            temp_path = temp_file.name
+        
+        try:
+            # Use enhanced height analyzer
+            analyzer = HeightAnalyzer()
+            height_result = analyzer.analyze_video(
+                temp_path, 
+                reference_object,
+                reference_height_mm
+            )
+            
+            if not height_result["success"]:
+                raise HTTPException(
+                    status_code=400,
+                    detail=height_result.get("error", "Height analysis failed")
+                )
+            
+            height_cm = height_result["height_cm"]
+            confidence = height_result["confidence"]
+            
+            # Create measurement record with detailed notes
+            notes = f"AI analysis with {confidence:.1%} confidence"
+            if reference_object:
+                notes += f", using {reference_object} as reference"
+            notes += f", {height_result['measurements_count']} measurements"
+            notes += f", consistency: {height_result.get('consistency_score', 0):.1%}"
+            
+            measurement = UserBodyMeasurement(
+                user_id=current_user.id,
+                height_cm=height_cm,
+                measurement_method="video",
+                measurement_notes=notes,
+                measured_by="ai"
+            )
+            
+            db.add(measurement)
+            db.commit()
+            db.refresh(measurement)
+            
+            # Update user profile only if confidence is high
+            if confidence > 0.8:
+                current_user.height_cm = height_cm
+                current_user.height_measure_method = "video"
+                db.commit()
+                logger.info(f"Updated user profile with video height: {height_cm}cm")
+            
+            return HeightMeasurementResponse(
+                success=True,
+                height_cm=height_cm,
+                confidence=confidence,
+                method="video",
+                measurement_id=measurement.id
+            )
+            
+        finally:
+            # Clean up temporary file
+            if os.path.exists(temp_path):
+                os.unlink(temp_path)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Video height measurement failed: {e}", exc_info=True)
+        return HeightMeasurementResponse(
+            success=False,
+            method="video",
+            error=str(e)
+        )
+
+# Helper functions for backward compatibility
 async def analyze_height_from_video(
     video_path: str, 
     reference_height: Optional[float] = None
 ) -> dict:
     """
-    Analyze video to estimate height using pose detection
+    Legacy function - redirects to new analyzer
     """
-    try:
-        import mediapipe as mp
+    analyzer = HeightAnalyzer()
+    if reference_height:
+        # Convert mm to object type
+        reference_object = "custom"
+    else:
+        reference_object = None
         
-        mp_pose = mp.solutions.pose
-        pose = mp_pose.Pose(
-            static_image_mode=False,
-            model_complexity=1,
-            enable_segmentation=False,
-            min_detection_confidence=0.7,
-            min_tracking_confidence=0.7
-        )
-        
-        cap = cv2.VideoCapture(video_path)
-        frame_count = 0
-        valid_measurements = []
-        
-        while cap.read()[0] and frame_count < 100:  # Limit to 100 frames
-            ret, frame = cap.read()
-            if not ret:
-                break
-            
-            # Convert BGR to RGB
-            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            
-            # Process with MediaPipe
-            results = pose.process(rgb_frame)
-            
-            if results.pose_landmarks:
-                # Extract key points for height calculation
-                landmarks = results.pose_landmarks.landmark
-                
-                # Get head and foot landmarks
-                nose = landmarks[mp_pose.PoseLandmark.NOSE]
-                left_heel = landmarks[mp_pose.PoseLandmark.LEFT_HEEL]
-                right_heel = landmarks[mp_pose.PoseLandmark.RIGHT_HEEL]
-                
-                # Calculate pixel height
-                heel_y = (left_heel.y + right_heel.y) / 2
-                pixel_height = abs(heel_y - nose.y) * frame.shape[0]
-                
-                # Basic height estimation (this is simplified)
-                # In a real implementation, you'd use reference objects or camera calibration
-                estimated_height_cm = pixel_height * 0.5  # Simplified conversion factor
-                
-                # Use reference height if provided
-                if reference_height:
-                    # More sophisticated calculation with reference object
-                    estimated_height_cm = calculate_height_with_reference(
-                        pixel_height, reference_height, frame
-                    )
-                
-                if 100 < estimated_height_cm < 220:  # Reasonable height range
-                    valid_measurements.append(estimated_height_cm)
-            
-            frame_count += 1
-        
-        cap.release()
-        pose.close()
-        
-        if not valid_measurements:
-            return {
-                "success": False,
-                "error": "Could not detect person in video or extract height measurements"
-            }
-        
-        # Calculate average and confidence
-        avg_height = sum(valid_measurements) / len(valid_measurements)
-        height_std = np.std(valid_measurements)
-        
-        # Confidence based on consistency of measurements
-        confidence = max(0.0, 1.0 - (height_std / avg_height))
-        confidence = min(confidence, 0.95)  # Cap at 95%
-        
-        return {
-            "success": True,
-            "height_cm": round(avg_height, 1),
-            "confidence": confidence,
-            "measurements_count": len(valid_measurements),
-            "measurement_std": height_std
-        }
-        
-    except Exception as e:
-        logger.error(f"Video height analysis error: {e}")
-        return {
-            "success": False,
-            "error": f"Video analysis failed: {str(e)}"
-        }
-
-def calculate_height_with_reference(
-    pixel_height: float, 
-    reference_height_mm: float, 
-    frame: np.ndarray
-) -> float:
-    """
-    Calculate height using a reference object
-    This is a simplified implementation
-    """
-    # In a real implementation, you would:
-    # 1. Detect the reference object in the frame
-    # 2. Calculate its pixel size
-    # 3. Use the ratio to convert pixel height to real height
-    
-    # For now, using a simplified conversion
-    # Assuming reference object provides scale information
-    scale_factor = reference_height_mm / 200  # Simplified assumption
-    return pixel_height * scale_factor / 10  # Convert to cm
+    return analyzer.analyze_video(video_path, reference_object, reference_height)

@@ -13,7 +13,8 @@ import {
   User,
   Shield,
   History,
-  BarChart3
+  BarChart3,
+  Brain
 } from 'lucide-react'
 import Link from 'next/link'
 import { useSession } from 'next-auth/react'
@@ -63,6 +64,12 @@ export default function DashboardPage() {
   ]
 
   const additionalFeatures = [
+    {
+      title: '科学的計算',
+      description: 'BMR・TDEE・PFCバランス',
+      icon: Brain,
+      link: '/dashboard/scientific'
+    },
     {
       title: 'エクササイズDB',
       description: '600種類以上のエクササイズ',
