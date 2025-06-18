@@ -22,7 +22,7 @@ export default function OAuthExamplePage() {
   } = useOAuthTokenManager({
     config: {
       clientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
-      redirectUri: `${window.location.origin}/auth/callback`,
+      redirectUri: typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : '',
       scope: 'openid email profile'
     },
     autoRefresh: true,

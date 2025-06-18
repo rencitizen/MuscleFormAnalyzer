@@ -11,7 +11,7 @@ import { ScientificProfileForm, type ScientificUserProfile } from '@/components/
 import { ScientificMetrics } from '@/components/dashboard/ScientificMetrics'
 import { HealthWarnings } from '@/components/safety/HealthWarnings'
 import { useV3Api } from '@/services/v3Api'
-import { Calculator, ChartBar, AlertCircle, ArrowLeft, RefreshCw } from 'lucide-react'
+import { Calculator, BarChart, AlertCircle, ArrowLeft, RefreshCw } from 'lucide-react'
 import { useAnalytics } from '@/hooks/useAnalytics'
 
 export default function ScientificDashboardPage() {
@@ -214,7 +214,7 @@ export default function ScientificDashboardPage() {
             プロフィール設定
           </TabsTrigger>
           <TabsTrigger value="results" disabled={!bmrResult}>
-            <ChartBar className="h-4 w-4 mr-2" />
+            <BarChart className="h-4 w-4 mr-2" />
             計算結果
           </TabsTrigger>
           <TabsTrigger value="warnings" disabled={warnings.length === 0}>
