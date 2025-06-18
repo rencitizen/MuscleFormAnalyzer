@@ -130,6 +130,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('Origin:', window.location.origin)
       console.log('Auth domain:', process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN)
       
+      // Firebase設定の詳細ログ
+      console.log('🔧 Firebase Configuration:')
+      console.log('API Key exists:', !!process.env.NEXT_PUBLIC_FIREBASE_API_KEY)
+      console.log('Auth Domain:', process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN)
+      console.log('Project ID:', process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID)
+      console.log('All env vars:', Object.keys(process.env).filter(key => key.startsWith('NEXT_PUBLIC_FIREBASE')))
+      
       const provider = new GoogleAuthProvider()
       const pwaConfig = configurePWAGoogleAuth()
       provider.setCustomParameters(pwaConfig.customParameters)
@@ -148,7 +155,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         toast.success('Googleアカウントでログインしました')
         router.push('/')
       } catch (popupError: any) {
-        console.error('Popup error:', popupError)
+        console.error('❌ Popup error:', popupError)
+        console.error('Error details:', {
+          code: popupError.code,
+          message: popupError.message,
+          customData: popupError.customData,
+          name: popupError.name
+        })
         
         // ポップアップがブロックされた場合、リダイレクトを試行
         if (shouldRetryWithRedirect(popupError) || isMobile) {

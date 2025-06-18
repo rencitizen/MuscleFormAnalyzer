@@ -127,6 +127,17 @@ export const analyzeAuthError = (error: any): AuthErrorSolution | null => {
 export const formatErrorMessage = (error: any): string => {
   const solution = analyzeAuthError(error)
   
+  // 診断で表示されている必要なドメインを含める
+  const currentDomain = window.location.hostname
+  const requiredDomains = {
+    firebase: currentDomain,
+    googleOAuthOrigins: `https://${currentDomain}`,
+    googleOAuthRedirects: [
+      `https://${currentDomain}/__/auth/handler`,
+      `https://${currentDomain}/auth/callback`
+    ]
+  }
+  
   if (solution) {
     return `
 🚨 ${solution.title}
@@ -136,13 +147,31 @@ ${solution.steps.map((step, i) => step ? `${step}` : '').join('\n')}
 
 デバッグ情報:
 - エラーコード: ${error.code}
-- 現在のドメイン: ${window.location.hostname}
+- エラーメッセージ: ${error.message}
+- 現在のドメイン: ${currentDomain}
+- 必要な設定:
+  Firebase承認済みドメイン: ${requiredDomains.firebase}
+  Google OAuth JavaScript origins: ${requiredDomains.googleOAuthOrigins}
+  Google OAuth Redirect URIs: 
+${requiredDomains.googleOAuthRedirects.map(uri => `    ${uri}`).join('\n')}
 - 現在時刻: ${new Date().toLocaleString('ja-JP')}
     `.trim()
   }
   
-  // デフォルトエラーメッセージ
-  return `認証エラーが発生しました: ${error.message || error.code || 'Unknown error'}`
+  // デフォルトエラーメッセージ（詳細情報付き）
+  return `
+認証エラーが発生しました
+
+エラー詳細:
+- コード: ${error.code || 'なし'}
+- メッセージ: ${error.message || 'Unknown error'}
+- 現在のドメイン: ${currentDomain}
+
+解決方法:
+1. Firebase ConsoleとGoogle Cloud Consoleで上記ドメインが承認されているか確認
+2. ブラウザのキャッシュをクリアして再試行
+3. シークレットモードで試す
+  `.trim()
 }
 
 export const shouldRetryWithRedirect = (error: any): boolean => {
