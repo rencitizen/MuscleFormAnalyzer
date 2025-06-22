@@ -8,8 +8,8 @@ const nextConfig = {
   // ESMモジュールの外部化設定
   experimental: {
     esmExternals: 'loose',
-    // 最適化されたランタイム
-    optimizeCss: true,
+    // 最適化されたランタイム - Vercelでの問題を避けるため無効化
+    // optimizeCss: true,
   },
   
   // バンドルサイズ最適化設定

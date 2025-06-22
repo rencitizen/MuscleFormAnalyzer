@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { auth } from '@/lib/firebase'
@@ -10,6 +10,23 @@ export default function TestAuthPage() {
   const [result, setResult] = useState<any>(null)
   const [error, setError] = useState<any>(null)
   const [loading, setLoading] = useState(false)
+  const [windowLocation, setWindowLocation] = useState<{
+    hostname: string
+    protocol: string
+    origin: string
+    href: string
+  } | null>(null)
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setWindowLocation({
+        hostname: window.location.hostname,
+        protocol: window.location.protocol,
+        origin: window.location.origin,
+        href: window.location.href
+      })
+    }
+  }, [])
 
   const testGoogleAuth = async () => {
     setLoading(true)
@@ -18,7 +35,9 @@ export default function TestAuthPage() {
 
     try {
       console.log('Starting Google Auth Test...')
-      console.log('Current URL:', window.location.href)
+      if (typeof window !== 'undefined') {
+        console.log('Current URL:', window.location.href)
+      }
       console.log('Firebase Config:', {
         apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ? 'Set' : 'Not set',
         authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -60,9 +79,9 @@ export default function TestAuthPage() {
             <h3 className="font-semibold mb-2">現在の設定:</h3>
             <pre className="text-sm">
               {JSON.stringify({
-                domain: window.location.hostname,
-                protocol: window.location.protocol,
-                origin: window.location.origin,
+                domain: windowLocation?.hostname || 'loading...',
+                protocol: windowLocation?.protocol || 'loading...',
+                origin: windowLocation?.origin || 'loading...',
                 authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
                 projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
               }, null, 2)}
@@ -109,14 +128,14 @@ export default function TestAuthPage() {
                   解決方法:
                 </h4>
                 <div className="text-sm text-yellow-700 dark:text-yellow-300">
-                  {error.code === 'auth/unauthorized-domain' && (
+                  {error.code === 'auth/unauthorized-domain' && windowLocation && (
                     <ol className="list-decimal list-inside space-y-1">
                       <li>Firebase Console → Authentication → Settings → Authorized domains</li>
-                      <li>"{window.location.hostname}" を追加</li>
+                      <li>"{windowLocation.hostname}" を追加</li>
                       <li>Google Cloud Console → APIs & Services → Credentials</li>
                       <li>OAuth 2.0 Client IDsを編集</li>
-                      <li>Authorized JavaScript origins: {window.location.origin}</li>
-                      <li>Authorized redirect URIs: {window.location.origin}/__/auth/handler</li>
+                      <li>Authorized JavaScript origins: {windowLocation.origin}</li>
+                      <li>Authorized redirect URIs: {windowLocation.origin}/__/auth/handler</li>
                     </ol>
                   )}
                   {error.code === 'auth/operation-not-allowed' && (

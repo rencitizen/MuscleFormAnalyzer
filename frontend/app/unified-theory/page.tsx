@@ -120,6 +120,10 @@ export default function UnifiedTheoryPage() {
   }
 
   const exportAnalysisReport = () => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+      return
+    }
+    
     const report = {
       timestamp: new Date().toISOString(),
       userProfile: mockUserProfile,
