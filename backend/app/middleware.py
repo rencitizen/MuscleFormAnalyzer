@@ -8,6 +8,8 @@ from typing import Callable
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
+import gzip
+from io import BytesIO
 
 logger = logging.getLogger(__name__)
 
@@ -138,3 +140,55 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             }
         
         return await call_next(request)
+
+class GZipMiddleware(BaseHTTPMiddleware):
+    """Compress responses with gzip"""
+    
+    def __init__(self, app, minimum_size: int = 1000):
+        super().__init__(app)
+        self.minimum_size = minimum_size
+    
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+        # Check if client accepts gzip
+        accept_encoding = request.headers.get("accept-encoding", "")
+        
+        response = await call_next(request)
+        
+        # Only compress if client accepts gzip and response is large enough
+        if "gzip" not in accept_encoding.lower():
+            return response
+            
+        # Only compress JSON and text responses
+        content_type = response.headers.get("content-type", "")
+        if not any(ct in content_type for ct in ["application/json", "text/"]):
+            return response
+            
+        # Read response body
+        body = b""
+        async for chunk in response.body_iterator:
+            body += chunk
+            
+        # Check size threshold
+        if len(body) < self.minimum_size:
+            # Return original response
+            return Response(
+                content=body,
+                status_code=response.status_code,
+                headers=dict(response.headers),
+                media_type=response.media_type
+            )
+        
+        # Compress body
+        compressed = gzip.compress(body)
+        
+        # Update headers
+        headers = dict(response.headers)
+        headers["content-encoding"] = "gzip"
+        headers["content-length"] = str(len(compressed))
+        
+        return Response(
+            content=compressed,
+            status_code=response.status_code,
+            headers=headers,
+            media_type=response.media_type
+        )

@@ -12,8 +12,6 @@ from .database import Database
 
 # v3.0 Scientific Engines
 from .body_composition_engine import BodyCompositionEngine
-from .metabolism_engine import MetabolismEngine
-from .nutrition_engine import NutritionEngine
 from .training_engine import TrainingEngine
 from .safety_engine import SafetyEngine
 
@@ -25,8 +23,6 @@ __all__ = [
     'Database',
     # v3.0
     'BodyCompositionEngine',
-    'MetabolismEngine',
-    'NutritionEngine',
     'TrainingEngine',
     'SafetyEngine'
 ]

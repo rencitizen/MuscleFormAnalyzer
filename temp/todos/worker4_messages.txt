@@ -1,0 +1,30 @@
+【Worker4 - インフラ・セキュリティタスク】
+
+TENAX FIT v3.0の無料インフラ構築とセキュリティを担当してください。
+
+## 最優先タスク
+1. **無料インフラ構築**
+   - Vercel無料プラン最適化
+   - Supabase無料枠活用
+   - Cloudflare Pages/Workers
+   - GitHub Actions CI/CD
+
+2. **セキュリティ強化**
+   - CSPヘッダー実装
+   - OWASP Top 10対策
+   - 環境変数の暗号化
+   - APIレート制限
+
+3. **監視・ログ**
+   - Sentry無料プラン
+   - Vercel Analytics
+   - Cloudflare Analytics
+   - エラー自動通知
+
+4. **DevOps自動化**
+   - 自動デプロイパイプライン
+   - ロールバック機能
+   - Blue/Greenデプロイ
+   - インフラasコード
+
+全てのサービスは無料枠内で構築し、月額コスト0円を実現してください。[2025-06-18 23:49:57] インフラ構築状況：Google認証の無料実装ガイドを作成済み。Vercel/Firebase/Google Cloud Consoleの設定手順を文書化。全て無料枠で実装可能。次はVercel自動デプロイとGitHub Actions CI/CDの設定を進めます。

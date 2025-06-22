@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Image Optimizer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        .canvas-container {
+            display: none;
+        }
+        .result {
+            margin: 10px 0;
+        }
+        button {
+            margin: 5px;
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>MuscleFormAnalyzer 画像最適化</h1>
+    <p>このページを使用して画像を適切なサイズにリサイズします。</p>
+    
+    <div class="canvas-container">
+        <canvas id="canvas"></canvas>
+    </div>
+    
+    <div>
+        <h2>手順:</h2>
+        <ol>
+            <li>各ボタンをクリックして画像をリサイズ</li>
+            <li>右クリックして「名前を付けて画像を保存」</li>
+            <li>適切なファイル名で保存</li>
+        </ol>
+    </div>
+    
+    <div>
+        <button onclick="processImage('icon-512x512.png', 16, 'favicon-16x16-new.png')">
+            Favicon 16x16を生成
+        </button>
+        <button onclick="processImage('icon-512x512.png', 32, 'favicon-32x32-new.png')">
+            Favicon 32x32を生成
+        </button>
+        <button onclick="processImage('icon-512x512.png', 180, 'apple-touch-icon-new.png')">
+            Apple Touch Icon 180x180を生成
+        </button>
+        <button onclick="processImage('icon-512x512.png', 192, 'icon-192x192-new.png')">
+            Icon 192x192を生成
+        </button>
+        <button onclick="processImage('icon-512x512.png', 512, 'icon-512x512-new.png')">
+            Icon 512x512を最適化
+        </button>
+    </div>
+    
+    <div id="results"></div>
+    
+    <script>
+        function processImage(inputFile, targetSize, outputName) {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            const img = new Image();
+            
+            img.onload = function() {
+                // キャンバスのサイズを設定
+                canvas.width = targetSize;
+                canvas.height = targetSize;
+                
+                // 画像をリサイズして描画
+                ctx.drawImage(img, 0, 0, targetSize, targetSize);
+                
+                // データURLとして取得
+                canvas.toBlob(function(blob) {
+                    const url = URL.createObjectURL(blob);
+                    const size = (blob.size / 1024).toFixed(1);
+                    
+                    // 結果を表示
+                    const resultsDiv = document.getElementById('results');
+                    const result = document.createElement('div');
+                    result.className = 'result';
+                    result.innerHTML = `
+                        <h3>${outputName} (${targetSize}x${targetSize})</h3>
+                        <p>サイズ: ${size}KB</p>
+                        <img src="${url}" style="border: 1px solid #ccc; margin: 5px;">
+                        <a href="${url}" download="${outputName}" style="margin-left: 10px;">
+                            ダウンロード
+                        </a>
+                    `;
+                    resultsDiv.appendChild(result);
+                }, 'image/png');
+            };
+            
+            img.src = inputFile;
+        }
+    </script>
+</body>
+</html>

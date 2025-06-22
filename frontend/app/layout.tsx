@@ -4,16 +4,20 @@ import './globals.css'
 import { Toaster } from '../components/ui/toaster'
 import { AuthProvider } from '../components/providers/AuthProvider'
 import { ThemeProvider } from '../components/providers/ThemeProvider'
-import { MobileNav } from '../components/layout/MobileNav'
+import dynamic from 'next/dynamic'
 import { LanguageProvider } from '../contexts/LanguageContext'
 import { Providers } from './providers'
-// import dynamic from 'next/dynamic'
 
-// フィードバックウィジェットを一時的に無効化（デプロイエラー修正のため）
-// const FeedbackWidget = dynamic(
-//   () => import('../components/feedback/FeedbackWidget').then(mod => mod.FeedbackWidget),
-//   { ssr: false }
-// )
+// 動的インポートでバンドルサイズを削減
+const UnifiedNavigation = dynamic(
+  () => import('../components/layout/UnifiedNavigation').then(mod => mod.UnifiedNavigation),
+  { ssr: true }
+)
+
+const FeedbackWidget = dynamic(
+  () => import('../components/feedback/FeedbackWidget').then(mod => mod.FeedbackWidget),
+  { ssr: false }
+)
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -89,10 +93,10 @@ export default function RootLayout({
           >
             <AuthProvider>
               <LanguageProvider>
-                <div className="pb-16 md:pb-0">
+                <UnifiedNavigation />
+                <main className="min-h-[calc(100vh-4rem)] md:min-h-[calc(100vh-4rem)] pb-16 md:pb-0">
                   {children}
-                </div>
-                <MobileNav />
+                </main>
                 {/* <FeedbackWidget /> */}
                 <Toaster />
               </LanguageProvider>

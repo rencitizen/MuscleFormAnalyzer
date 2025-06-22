@@ -16,7 +16,7 @@ import {
   Target,
   AlertCircle
 } from 'lucide-react'
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts'
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from './ChartWrapper'
 import {
   BMRResult,
   TDEEResult,

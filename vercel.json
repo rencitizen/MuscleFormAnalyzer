@@ -3,13 +3,18 @@
   "outputDirectory": "frontend/.next",
   "installCommand": "cd frontend && npm install",
   "framework": "nextjs",
-  "regions": ["iad1"],
+  "regions": ["hnd1"],
   "functions": {
     "frontend/app/api/analyze/upload/route.ts": {
       "maxDuration": 60
     },
     "frontend/app/api/training/**/*.ts": {
       "maxDuration": 30
+    }
+  },
+  "build": {
+    "env": {
+      "NODE_OPTIONS": "--max-old-space-size=4096"
     }
   },
   "headers": [

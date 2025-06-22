@@ -16,7 +16,10 @@
     "test:e2e:ui": "playwright test --ui",
     "pre-deploy": "npm run lint && npm run type-check && npm run test && npm run build",
     "deploy:staging": "npm run pre-deploy && vercel --target staging",
-    "deploy:prod": "npm run pre-deploy && vercel --prod"
+    "deploy:prod": "npm run pre-deploy && vercel --prod",
+    "analyze": "ANALYZE=true next build",
+    "analyze:browser": "BUNDLE_ANALYZE=browser next build",
+    "build:static": "STATIC_EXPORT=true next build"
   },
   "dependencies": {
     "@mediapipe/camera_utils": "^0.3.1675466862",
@@ -44,7 +47,7 @@
     "firebase": "^10.7.1",
     "framer-motion": "^10.16.16",
     "lucide-react": "^0.303.0",
-    "next": "14.1.0",
+    "next": "^14.2.30",
     "next-auth": "^4.24.11",
     "next-themes": "^0.2.1",
     "react": "^18.2.0",

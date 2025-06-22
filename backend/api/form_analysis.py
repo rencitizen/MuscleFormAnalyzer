@@ -7,7 +7,7 @@ import logging
 import tempfile
 import os
 from typing import Optional, List
-from fastapi import APIRouter, HTTPException, UploadFile, File, Depends, BackgroundTasks
+from fastapi import APIRouter, HTTPException, UploadFile, File, Depends, BackgroundTasks, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 import cv2
@@ -16,7 +16,9 @@ import numpy as np
 from ..services.mediapipe_service import analyzer, AnalysisResult
 from ..database import get_db
 from ..models.workout import WorkoutSession, FormAnalysis
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
+from ..services.cache_service import cached
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -217,11 +219,20 @@ async def analyze_video_sequence(
         )
 
 @router.get("/exercises/supported")
-async def get_supported_exercises():
+async def get_supported_exercises(request: Request = None):
     """
     Get list of supported exercises for analysis
     """
-    return {
+    # Use cache from request state if available
+    cache_service = getattr(request.app.state, 'cache_service', None) if request else None
+    
+    if cache_service:
+        cache_key = "exercises:supported"
+        cached_data = cache_service.get(cache_key)
+        if cached_data:
+            return cached_data
+    
+    result = {
         "exercises": [
             {
                 "id": "squat",
@@ -255,6 +266,12 @@ async def get_supported_exercises():
             }
         ]
     }
+    
+    # Cache result
+    if cache_service:
+        cache_service.set(cache_key, result, ttl=3600)  # Cache for 1 hour
+    
+    return result
 
 @router.get("/analysis/history/{user_id}")
 async def get_analysis_history(
@@ -262,20 +279,36 @@ async def get_analysis_history(
     exercise_type: Optional[str] = None,
     limit: int = 20,
     offset: int = 0,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    request: Request = None
 ):
     """
     Get user's form analysis history
     """
+    # Use cache from request state if available
+    cache_service = getattr(request.app.state, 'cache_service', None) if request else None
+    
+    if cache_service:
+        cache_key = f"analysis_history:{user_id}:{exercise_type}:{limit}:{offset}"
+        cached_data = cache_service.get(cache_key)
+        if cached_data:
+            return cached_data
+    
     try:
-        query = db.query(FormAnalysis).filter(FormAnalysis.user_id == user_id)
+        # Use eager loading to avoid N+1 queries
+        query = db.query(FormAnalysis).options(
+            joinedload(FormAnalysis.session)
+        ).filter(FormAnalysis.user_id == user_id)
         
         if exercise_type:
             query = query.filter(FormAnalysis.exercise_type == exercise_type)
         
+        # Get total count before applying limit/offset
+        total_count = query.count()
+        
         analyses = query.order_by(FormAnalysis.created_at.desc()).offset(offset).limit(limit).all()
         
-        return {
+        result = {
             "success": True,
             "analyses": [
                 {
@@ -290,8 +323,14 @@ async def get_analysis_history(
                 }
                 for analysis in analyses
             ],
-            "total": query.count()
+            "total": total_count
         }
+        
+        # Cache result for 5 minutes
+        if cache_service:
+            cache_service.set(cache_key, result, ttl=300)
+        
+        return result
         
     except Exception as e:
         logger.error(f"Failed to get analysis history: {e}")

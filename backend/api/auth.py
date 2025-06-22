@@ -5,9 +5,10 @@ Firebase Authentication integration
 """
 import logging
 from typing import Optional
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
+from datetime import datetime
 import firebase_admin
 from firebase_admin import auth, credentials
 import json
@@ -23,6 +24,7 @@ from ..app.exceptions import (
     BadRequestException,
     NotFoundException
 )
+from ..services.cache_service import CacheService
 
 logger = logging.getLogger(__name__)
 
@@ -233,12 +235,22 @@ async def logout(
 
 @router.get("/me")
 async def get_current_user_profile(
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    request: Request = None
 ):
     """
     Get current user profile
     """
-    return {
+    # Use cache from request state if available
+    cache_service = getattr(request.app.state, 'cache_service', None) if request else None
+    
+    if cache_service:
+        cache_key = f"user_profile:{current_user.id}"
+        cached_profile = cache_service.get(cache_key)
+        if cached_profile:
+            return cached_profile
+    
+    profile = {
         "id": current_user.id,
         "email": current_user.email,
         "display_name": current_user.display_name,
@@ -251,12 +263,19 @@ async def get_current_user_profile(
         "created_at": current_user.created_at.isoformat(),
         "last_login": current_user.last_login.isoformat() if current_user.last_login else None
     }
+    
+    # Cache profile for 5 minutes
+    if cache_service:
+        cache_service.set(cache_key, profile, ttl=300)
+    
+    return profile
 
 @router.put("/me")
 async def update_user_profile(
     profile_data: UserProfileRequest,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    request: Request = None
 ):
     """
     Update user profile
@@ -282,6 +301,12 @@ async def update_user_profile(
         
         db.commit()
         db.refresh(current_user)
+        
+        # Invalidate cache
+        cache_service = getattr(request.app.state, 'cache_service', None) if request else None
+        if cache_service:
+            cache_key = f"user_profile:{current_user.id}"
+            cache_service.delete(cache_key)
         
         return {
             "success": True,

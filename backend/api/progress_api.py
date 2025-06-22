@@ -4,16 +4,16 @@ Analytics and progress monitoring
 """
 import logging
 from typing import Optional, List
-from fastapi import APIRouter, HTTPException, Depends, Query
+from fastapi import APIRouter, HTTPException, Depends, Query, Request
 from pydantic import BaseModel
 from datetime import datetime, date, timedelta
 from sqlalchemy import func, desc
+from ..services.cache_service import cached
 
 from ..database import get_db
 from ..models.user import User
 from ..models.progress import ProgressSnapshot, Goal, Achievement, ProgressPhoto, Streak
 from ..models.workout import FormAnalysis, WorkoutSession
-from ..models.nutrition import MealEntry
 from ..api.auth import get_current_user
 from sqlalchemy.orm import Session
 
@@ -39,11 +39,21 @@ class ProgressResponse(BaseModel):
 @router.get("/overview")
 async def get_progress_overview(
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    request: Request = None
 ):
     """
     Get comprehensive progress overview
     """
+    # Use cache from request state if available
+    cache_service = getattr(request.app.state, 'cache_service', None) if request else None
+    
+    if cache_service:
+        cache_key = f"progress_overview:{current_user.id}"
+        cached_data = cache_service.get(cache_key)
+        if cached_data:
+            return cached_data
+    
     try:
         # Get recent progress snapshot
         recent_snapshot = db.query(ProgressSnapshot).filter(
@@ -84,12 +94,7 @@ async def get_progress_overview(
         if weekly_form_scores:
             avg_form_score = sum(a.score for a in weekly_form_scores) / len(weekly_form_scores)
         
-        weekly_meals = db.query(MealEntry).filter(
-            MealEntry.user_id == current_user.id,
-            MealEntry.consumed_at >= week_ago
-        ).count()
-        
-        return {
+        result = {
             "success": True,
             "overview": {
                 "current_stats": {
@@ -100,8 +105,7 @@ async def get_progress_overview(
                 },
                 "weekly_summary": {
                     "workouts_completed": weekly_workouts,
-                    "average_form_score": round(avg_form_score, 1),
-                    "meals_logged": weekly_meals
+                    "average_form_score": round(avg_form_score, 1)
                 },
                 "goals": {
                     "active_count": len(active_goals),
@@ -136,6 +140,12 @@ async def get_progress_overview(
                 ]
             }
         }
+        
+        # Cache result for 5 minutes
+        if cache_service:
+            cache_service.set(cache_key, result, ttl=300)
+        
+        return result
         
     except Exception as e:
         logger.error(f"Failed to get progress overview: {e}")

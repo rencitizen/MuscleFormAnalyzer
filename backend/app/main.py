@@ -17,9 +17,10 @@ from datetime import datetime
 
 from .config import settings
 from .database import engine, get_db
-from ..models import user, workout, nutrition, progress
-from ..api import auth, form_analysis, height_measurement, nutrition_api, progress_api, health_check
+from ..models import user, workout, progress
+from ..api import auth, form_analysis, height_measurement, progress_api, health_check, websocket_camera, monitoring, unified_theory_api
 from ..api.v3 import v3_router
+from ..api.websocket_unified import websocket_route
 from .exceptions import (
     APIException,
     api_exception_handler,
@@ -31,8 +32,10 @@ from .middleware import (
     RequestIDMiddleware,
     ResponseTimeMiddleware,
     SecurityHeadersMiddleware,
-    RateLimitMiddleware
+    RateLimitMiddleware,
+    GZipMiddleware
 )
+from ..services.cache_service import CacheService
 
 # Configure logging
 logging.basicConfig(
@@ -49,6 +52,11 @@ async def lifespan(app: FastAPI):
     logger.info(f"Environment: {settings.ENVIRONMENT}")
     logger.info(f"Database URL configured: {'Yes' if settings.DATABASE_URL else 'No'}")
     
+    # Initialize cache service
+    redis_url = getattr(settings, 'REDIS_URL', None)
+    cache_service = CacheService(redis_url=redis_url, default_ttl=300)  # 5 minute default TTL
+    app.state.cache_service = cache_service
+    
     # Check database connection first
     from .database import check_database_connection
     db_connected = check_database_connection()
@@ -58,7 +66,6 @@ async def lifespan(app: FastAPI):
         try:
             user.Base.metadata.create_all(bind=engine)
             workout.Base.metadata.create_all(bind=engine)
-            nutrition.Base.metadata.create_all(bind=engine)
             progress.Base.metadata.create_all(bind=engine)
             logger.info("Database tables created successfully")
         except Exception as e:
@@ -77,7 +84,7 @@ async def lifespan(app: FastAPI):
 # FastAPI application initialization
 app = FastAPI(
     title="MuscleFormAnalyzer API",
-    description="AI-powered fitness form analysis and nutrition management system",
+    description="AI-powered fitness form analysis system",
     version="1.0.0",
     docs_url="/docs" if settings.ENVIRONMENT != "production" else None,
     redoc_url="/redoc" if settings.ENVIRONMENT != "production" else None,
@@ -150,15 +157,15 @@ app.include_router(
 )
 
 app.include_router(
-    height_measurement.router, 
-    prefix="/api/height", 
-    tags=["Height Measurement"]
+    websocket_camera.router, 
+    prefix="/api/form", 
+    tags=["WebSocket Camera"]
 )
 
 app.include_router(
-    nutrition_api.router, 
-    prefix="/api/nutrition", 
-    tags=["Nutrition Management"]
+    height_measurement.router, 
+    prefix="/api/height", 
+    tags=["Height Measurement"]
 )
 
 app.include_router(
@@ -171,6 +178,22 @@ app.include_router(
 app.include_router(
     v3_router,
     tags=["V3 API"]
+)
+
+# Unified Theory API router
+app.include_router(
+    unified_theory_api.router,
+    tags=["Unified Theory"]
+)
+
+# WebSocket route for unified theory analysis
+app.add_websocket_route("/ws/unified-theory", websocket_route)
+
+# Monitoring API (only in non-production or for admins)
+app.include_router(
+    monitoring.router,
+    prefix="/api/monitoring",
+    tags=["Monitoring"]
 )
 
 # Register exception handlers
@@ -189,6 +212,7 @@ app.state.environment = settings.ENVIRONMENT
 app.add_middleware(RequestIDMiddleware)
 app.add_middleware(ResponseTimeMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(GZipMiddleware, minimum_size=500)  # Compress responses > 500 bytes
 
 # Add rate limiting in production
 if settings.ENVIRONMENT == "production":

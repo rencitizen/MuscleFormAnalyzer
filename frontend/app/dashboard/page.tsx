@@ -41,6 +41,13 @@ export default function DashboardPage() {
       color: 'bg-blue-500'
     },
     {
+      title: 'リアルタイム分析',
+      description: '内カメラでリアルタイムフォーム分析',
+      icon: Camera,
+      link: '/workout/realtime',
+      color: 'bg-red-500'
+    },
+    {
       title: '食事分析',
       description: '写真から食事内容を分析',
       icon: Utensils,
@@ -109,7 +116,7 @@ export default function DashboardPage() {
       {/* メイン機能 */}
       <div className="mb-12">
         <h2 className="text-xl font-semibold mb-4">メイン機能</h2>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
           {mainFeatures.map((feature) => (
             <Link key={feature.title} href={feature.link}>
               <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer">
