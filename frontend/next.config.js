@@ -10,8 +10,6 @@ const nextConfig = {
     esmExternals: 'loose',
     // 最適化されたランタイム
     optimizeCss: true,
-    // WebAssemblyサポート
-    asyncWebAssembly: true,
   },
   
   // バンドルサイズ最適化設定
@@ -222,9 +220,21 @@ const nextConfig = {
     );
     
     // ajvモジュールの外部化
-    config.externals = config.externals || [];
     if (!isServer) {
-      config.externals.push('ajv');
+      // externalsが配列でない場合の処理
+      if (Array.isArray(config.externals)) {
+        config.externals.push('ajv');
+      } else if (typeof config.externals === 'function') {
+        const originalExternals = config.externals;
+        config.externals = (context, request, callback) => {
+          if (request === 'ajv') {
+            return callback(null, 'commonjs ' + request);
+          }
+          return originalExternals(context, request, callback);
+        };
+      } else {
+        config.externals = ['ajv'];
+      }
     }
     
     return config;
