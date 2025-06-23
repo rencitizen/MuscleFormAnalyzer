@@ -1,19 +1,24 @@
 'use client'
 
+export const dynamic = 'force-dynamic'
+
 import React, { useState } from 'react'
 import { Card } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
-import { 
-  Activity,
-  BarChart3,
-  BookOpen,
-  Settings,
-  FileText,
-  Download
-} from 'lucide-react'
 import RealtimeUnifiedAnalysis from '@/components/unified-theory/RealtimeUnifiedAnalysis'
 import UnifiedTheoryDashboard from '@/components/unified-theory/UnifiedTheoryDashboard'
+
+// Import icons safely
+let Activity: any, BarChart3: any, BookOpen: any, Settings: any, Download: any
+if (typeof window !== 'undefined') {
+  const Icons = require('lucide-react')
+  Activity = Icons.Activity
+  BarChart3 = Icons.BarChart3
+  BookOpen = Icons.BookOpen
+  Settings = Icons.Settings
+  Download = Icons.Download
+}
 
 // Mock user profile - in real app, this would come from user data
 const mockUserProfile = {
@@ -153,19 +158,19 @@ export default function UnifiedTheoryPage() {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-4 mb-6">
           <TabsTrigger value="realtime" className="gap-2">
-            <Activity className="w-4 h-4" />
+            {Activity && <Activity className="w-4 h-4" />}
             Real-time Analysis
           </TabsTrigger>
           <TabsTrigger value="history" className="gap-2">
-            <BarChart3 className="w-4 h-4" />
+            {BarChart3 && <BarChart3 className="w-4 h-4" />}
             Analysis History
           </TabsTrigger>
           <TabsTrigger value="theory" className="gap-2">
-            <BookOpen className="w-4 h-4" />
+            {BookOpen && <BookOpen className="w-4 h-4" />}
             Theory Guide
           </TabsTrigger>
           <TabsTrigger value="settings" className="gap-2">
-            <Settings className="w-4 h-4" />
+            {Settings && <Settings className="w-4 h-4" />}
             Settings
           </TabsTrigger>
         </TabsList>
@@ -181,7 +186,7 @@ export default function UnifiedTheoryPage() {
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-2xl font-semibold">Historical Analysis</h2>
             <Button onClick={exportAnalysisReport} variant="outline" className="gap-2">
-              <Download className="w-4 h-4" />
+              {Download && <Download className="w-4 h-4" />}
               Export Report
             </Button>
           </div>
