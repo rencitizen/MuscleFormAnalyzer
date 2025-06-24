@@ -9,7 +9,7 @@ import RealtimeUnifiedAnalysis from '@/components/unified-theory/RealtimeUnified
 import UnifiedTheoryDashboard from '@/components/unified-theory/UnifiedTheoryDashboard'
 
 // Disable SSR for this page
-export const dynamic = 'force-dynamic'
+export const runtime = 'edge'
 export const revalidate = 0
 
 // Dynamic import icons with no SSR
